@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net">
   <diagram name="Page-1" id="HA7OU9RvT5ExFQ1MZvQ_">
-    <mxGraphModel dx="1498" dy="622" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="2098" dy="756" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -245,7 +245,7 @@
         <mxCell id="bjoJI3RK-CvbSReVuDEk-46" parent="1" style="ellipse;whiteSpace=wrap;html=1;align=center;" value="Address" vertex="1">
           <mxGeometry height="40" width="100" x="660" y="565" as="geometry" />
         </mxCell>
-        <mxCell id="bjoJI3RK-CvbSReVuDEk-47" parent="1" style="ellipse;whiteSpace=wrap;html=1;align=center;" value="UserID(pk)" vertex="1">
+        <mxCell id="bjoJI3RK-CvbSReVuDEk-47" parent="1" style="ellipse;whiteSpace=wrap;html=1;align=center;" value="UserID(fk)" vertex="1">
           <mxGeometry height="40" width="100" x="610" y="520" as="geometry" />
         </mxCell>
         <mxCell id="bjoJI3RK-CvbSReVuDEk-48" parent="1" style="ellipse;whiteSpace=wrap;html=1;align=center;" value="ConsumerID" vertex="1">
