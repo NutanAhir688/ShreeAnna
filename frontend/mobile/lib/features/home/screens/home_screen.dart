@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+
 import '../../../app/theme.dart';
 
 import '../../../app/theme.dart';
 import '../../auth/screen/otp_screen.dart';
+import '../../lots/screen/my_lots_screen.dart';
+import '../../lots/screen/sell_millet_screen.dart';
+import '../../lots/screen/lot_details_screen.dart';
+import '../../farm/screen/farm_screen.dart';
+import '../../profile/screen/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -105,7 +111,10 @@ class _HomeScreenState extends State<HomeScreen> {
             height: 46,
             child: ElevatedButton.icon(
               onPressed: () {
-                debugPrint('Sell Millet pressed');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SellMilletScreen()),
+                );
               },
               icon: const Icon(Icons.agriculture, size: 19),
               label: const Text(
@@ -413,7 +422,18 @@ class _HomeScreenState extends State<HomeScreen> {
             height: 34,
             child: OutlinedButton(
               onPressed: () {
-                debugPrint('View details: Lot $lotNumber');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => LotDetailsScreen(
+                      lotNumber: lotNumber,
+                      milletName: millet,
+                      quantity: '1,200 kg',
+                      submissionDate: submittedDate,
+                      status: status,
+                    ),
+                  ),
+                );
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: ShreeAnnaTheme.primaryGreen,
@@ -481,8 +501,16 @@ class _HomeScreenState extends State<HomeScreen> {
   // ============================================================
 
   Widget _buildPlaceholderPage() {
+    if (_selectedIndex == 1) {
+      return const MyLotsScreen();
+    }
     final titles = ['Home', 'My Lots', 'Farm', 'Profile'];
-
+    if (_selectedIndex == 2) {
+      return const FarmScreen();
+    }
+    if (_selectedIndex == 3) {
+      return const ProfileScreen();
+    }
     return Center(
       child: Text(
         titles[_selectedIndex],

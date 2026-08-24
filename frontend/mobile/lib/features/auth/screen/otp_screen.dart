@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../home/screens/home_screen.dart';
 import '../../../app/theme.dart';
 
 class OtpScreen extends StatefulWidget {
@@ -90,6 +91,10 @@ class _OtpScreenState extends State<OtpScreen> {
     // Actual OTP verification will be connected to the backend later.
     ScaffoldMessenger.of(context)
         .showSnackBar(const SnackBar(content: Text('OTP accepted')));
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
+    );
   }
 
   void _resendOtp() {
