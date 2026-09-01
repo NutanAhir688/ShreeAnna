@@ -142,6 +142,38 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
+          const SizedBox(height: 10),
+
+          // ------------------------------------------------------
+          // MANAGE FARMS BUTTON
+          // ------------------------------------------------------
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const FarmManagementScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.agriculture_outlined, size: 18),
+              label: const Text(
+                'Manage Farms',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: ShreeAnnaTheme.primaryGreen,
+                side: const BorderSide(color: ShreeAnnaTheme.primaryGreen),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+          ),
+
           const SizedBox(height: 20),
 
           // ------------------------------------------------------
@@ -204,30 +236,30 @@ class _HomeScreenState extends State<HomeScreen> {
           // ------------------------------------------------------
           // WAREHOUSE IMAGE
           // ------------------------------------------------------
-          ClipRRect(
-            borderRadius: BorderRadius.circular(5),
-            child: Image.asset(
-              'assets/images/warehouse.png',
-              width: double.infinity,
-              height: 150,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  width: double.infinity,
-                  height: 150,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE4EBDC),
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  child: const Icon(
-                    Icons.warehouse_outlined,
-                    size: 50,
-                    color: ShreeAnnaTheme.primaryGreen,
-                  ),
-                );
-              },
-            ),
-          ),
+          // ClipRRect(
+          //   borderRadius: BorderRadius.circular(5),
+          //   child: Image.asset(
+          //     'assets/images/warehouse.png',
+          //     width: double.infinity,
+          //     height: 150,
+          //     fit: BoxFit.cover,
+          //     errorBuilder: (context, error, stackTrace) {
+          //       return Container(
+          //         width: double.infinity,
+          //         height: 150,
+          //         decoration: BoxDecoration(
+          //           color: const Color(0xFFE4EBDC),
+          //           borderRadius: BorderRadius.circular(5),
+          //         ),
+          //         child: const Icon(
+          //           Icons.warehouse_outlined,
+          //           size: 50,
+          //           color: ShreeAnnaTheme.primaryGreen,
+          //         ),
+          //       );
+          //     },
+          //   ),
+          // ),
         ],
       ),
     );
