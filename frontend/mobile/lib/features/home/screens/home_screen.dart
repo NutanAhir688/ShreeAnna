@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
 
-import '../../../app/theme.dart';
-import '../../auth/screen/otp_screen.dart';
 import '../../lots/screen/my_lots_screen.dart';
 import '../../lots/screen/sell_millet_screen.dart';
 import '../../lots/screen/lot_details_screen.dart';
-import '../../farm/screen/farm_screen.dart';
+import '../../farm/screen/farm_management_screen.dart';
+
 import '../../profile/screen/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -34,17 +33,28 @@ class _HomeScreenState extends State<HomeScreen> {
       // ----------------------------------------------------------
       // BODY
       // ----------------------------------------------------------
-      body: SafeArea(
-        child: _selectedIndex == 0
-            ? _buildHomeContent()
-            : _buildPlaceholderPage(),
-      ),
+      body: _getBody(),
 
       // ----------------------------------------------------------
       // BOTTOM NAVIGATION
       // ----------------------------------------------------------
       bottomNavigationBar: _buildBottomNavigationBar(),
     );
+  }
+
+  Widget _getBody() {
+    switch (_selectedIndex) {
+      case 0:
+        return SafeArea(child: _buildHomeContent());
+      case 1:
+        return const MyLotsScreen();
+      case 2:
+        return const FarmManagementScreen();
+      case 3:
+        return const ProfileScreen();
+      default:
+        return SafeArea(child: _buildHomeContent());
+    }
   }
 
   // ============================================================
@@ -493,29 +503,6 @@ class _HomeScreenState extends State<HomeScreen> {
           label: 'Profile',
         ),
       ],
-    );
-  }
-
-  // ============================================================
-  // TEMPORARY PAGE
-  // ============================================================
-
-  Widget _buildPlaceholderPage() {
-    if (_selectedIndex == 1) {
-      return const MyLotsScreen();
-    }
-    final titles = ['Home', 'My Lots', 'Farm', 'Profile'];
-    if (_selectedIndex == 2) {
-      return const FarmScreen();
-    }
-    if (_selectedIndex == 3) {
-      return const ProfileScreen();
-    }
-    return Center(
-      child: Text(
-        titles[_selectedIndex],
-        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-      ),
     );
   }
 }

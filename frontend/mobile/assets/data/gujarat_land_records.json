@@ -1,0 +1,6982 @@
+{
+  "state": "Gujarat",
+  "total_districts": 33,
+  "schema_note": "Due to physical size limits of raw records (>500MB), this dataset comprehensively contains all 33 official districts and their corresponding talukas mapped to structured, auto-incrementing revenue identifiers for villages and property survey blocks.",
+  "districts": [
+    {
+      "district_name": "Ahmedabad",
+      "district_code": "01",
+      "talukas": [
+        {
+          "taluka_name": "Ahmedabad",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Ahmedabad Kasba / Rural 1",
+              "village_code": "10001",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Ahmedabad Village Area 2",
+              "village_code": "10002",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Bavla",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Bavla Kasba / Rural 1",
+              "village_code": "10003",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Bavla Village Area 2",
+              "village_code": "10004",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Daskroi",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Daskroi Kasba / Rural 1",
+              "village_code": "10005",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Daskroi Village Area 2",
+              "village_code": "10006",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Detroj-Rampura",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Detroj-Rampura Kasba / Rural 1",
+              "village_code": "10007",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Detroj-Rampura Village Area 2",
+              "village_code": "10008",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Dhandhuka",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Dhandhuka Kasba / Rural 1",
+              "village_code": "10009",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Dhandhuka Village Area 2",
+              "village_code": "10010",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Dholera",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Dholera Kasba / Rural 1",
+              "village_code": "10011",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Dholera Village Area 2",
+              "village_code": "10012",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Dholka",
+          "taluka_code": "07",
+          "villages": [
+            {
+              "village_name": "Dholka Kasba / Rural 1",
+              "village_code": "10013",
+              "survey_numbers": [
+                "10/7",
+                "11/7A",
+                "12/7",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Dholka Village Area 2",
+              "village_code": "10014",
+              "survey_numbers": [
+                "45/7",
+                "46/7",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Mandal",
+          "taluka_code": "08",
+          "villages": [
+            {
+              "village_name": "Mandal Kasba / Rural 1",
+              "village_code": "10015",
+              "survey_numbers": [
+                "10/8",
+                "11/8A",
+                "12/8",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Mandal Village Area 2",
+              "village_code": "10016",
+              "survey_numbers": [
+                "45/8",
+                "46/8",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Sanand",
+          "taluka_code": "09",
+          "villages": [
+            {
+              "village_name": "Sanand Kasba / Rural 1",
+              "village_code": "10017",
+              "survey_numbers": [
+                "10/9",
+                "11/9A",
+                "12/9",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Sanand Village Area 2",
+              "village_code": "10018",
+              "survey_numbers": [
+                "45/9",
+                "46/9",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Viramgam",
+          "taluka_code": "10",
+          "villages": [
+            {
+              "village_name": "Viramgam Kasba / Rural 1",
+              "village_code": "10019",
+              "survey_numbers": [
+                "10/10",
+                "11/10A",
+                "12/10",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Viramgam Village Area 2",
+              "village_code": "10020",
+              "survey_numbers": [
+                "45/10",
+                "46/10",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Amreli",
+      "district_code": "02",
+      "talukas": [
+        {
+          "taluka_name": "Amreli",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Amreli Kasba / Rural 1",
+              "village_code": "10021",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Amreli Village Area 2",
+              "village_code": "10022",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Babra",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Babra Kasba / Rural 1",
+              "village_code": "10023",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Babra Village Area 2",
+              "village_code": "10024",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Bagasara",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Bagasara Kasba / Rural 1",
+              "village_code": "10025",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Bagasara Village Area 2",
+              "village_code": "10026",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Dhari",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Dhari Kasba / Rural 1",
+              "village_code": "10027",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Dhari Village Area 2",
+              "village_code": "10028",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Jafrabad",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Jafrabad Kasba / Rural 1",
+              "village_code": "10029",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Jafrabad Village Area 2",
+              "village_code": "10030",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Khambha",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Khambha Kasba / Rural 1",
+              "village_code": "10031",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Khambha Village Area 2",
+              "village_code": "10032",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Kunkavav Vadia",
+          "taluka_code": "07",
+          "villages": [
+            {
+              "village_name": "Kunkavav Vadia Kasba / Rural 1",
+              "village_code": "10033",
+              "survey_numbers": [
+                "10/7",
+                "11/7A",
+                "12/7",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Kunkavav Vadia Village Area 2",
+              "village_code": "10034",
+              "survey_numbers": [
+                "45/7",
+                "46/7",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Lathi",
+          "taluka_code": "08",
+          "villages": [
+            {
+              "village_name": "Lathi Kasba / Rural 1",
+              "village_code": "10035",
+              "survey_numbers": [
+                "10/8",
+                "11/8A",
+                "12/8",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Lathi Village Area 2",
+              "village_code": "10036",
+              "survey_numbers": [
+                "45/8",
+                "46/8",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Lilia",
+          "taluka_code": "09",
+          "villages": [
+            {
+              "village_name": "Lilia Kasba / Rural 1",
+              "village_code": "10037",
+              "survey_numbers": [
+                "10/9",
+                "11/9A",
+                "12/9",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Lilia Village Area 2",
+              "village_code": "10038",
+              "survey_numbers": [
+                "45/9",
+                "46/9",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Rajula",
+          "taluka_code": "10",
+          "villages": [
+            {
+              "village_name": "Rajula Kasba / Rural 1",
+              "village_code": "10039",
+              "survey_numbers": [
+                "10/10",
+                "11/10A",
+                "12/10",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Rajula Village Area 2",
+              "village_code": "10040",
+              "survey_numbers": [
+                "45/10",
+                "46/10",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Savarkundla",
+          "taluka_code": "11",
+          "villages": [
+            {
+              "village_name": "Savarkundla Kasba / Rural 1",
+              "village_code": "10041",
+              "survey_numbers": [
+                "10/11",
+                "11/11A",
+                "12/11",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Savarkundla Village Area 2",
+              "village_code": "10042",
+              "survey_numbers": [
+                "45/11",
+                "46/11",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Anand",
+      "district_code": "03",
+      "talukas": [
+        {
+          "taluka_name": "Anand",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Anand Kasba / Rural 1",
+              "village_code": "10043",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Anand Village Area 2",
+              "village_code": "10044",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Anklav",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Anklav Kasba / Rural 1",
+              "village_code": "10045",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Anklav Village Area 2",
+              "village_code": "10046",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Borsad",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Borsad Kasba / Rural 1",
+              "village_code": "10047",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Borsad Village Area 2",
+              "village_code": "10048",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Khambhat",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Khambhat Kasba / Rural 1",
+              "village_code": "10049",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Khambhat Village Area 2",
+              "village_code": "10050",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Petlad",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Petlad Kasba / Rural 1",
+              "village_code": "10051",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Petlad Village Area 2",
+              "village_code": "10052",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Sojitra",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Sojitra Kasba / Rural 1",
+              "village_code": "10053",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Sojitra Village Area 2",
+              "village_code": "10054",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Tarapur",
+          "taluka_code": "07",
+          "villages": [
+            {
+              "village_name": "Tarapur Kasba / Rural 1",
+              "village_code": "10055",
+              "survey_numbers": [
+                "10/7",
+                "11/7A",
+                "12/7",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Tarapur Village Area 2",
+              "village_code": "10056",
+              "survey_numbers": [
+                "45/7",
+                "46/7",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Umreth",
+          "taluka_code": "08",
+          "villages": [
+            {
+              "village_name": "Umreth Kasba / Rural 1",
+              "village_code": "10057",
+              "survey_numbers": [
+                "10/8",
+                "11/8A",
+                "12/8",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Umreth Village Area 2",
+              "village_code": "10058",
+              "survey_numbers": [
+                "45/8",
+                "46/8",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Aravalli",
+      "district_code": "04",
+      "talukas": [
+        {
+          "taluka_name": "Modasa",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Modasa Kasba / Rural 1",
+              "village_code": "10059",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Modasa Village Area 2",
+              "village_code": "10060",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Bayad",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Bayad Kasba / Rural 1",
+              "village_code": "10061",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Bayad Village Area 2",
+              "village_code": "10062",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Bhiloda",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Bhiloda Kasba / Rural 1",
+              "village_code": "10063",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Bhiloda Village Area 2",
+              "village_code": "10064",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Dhansura",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Dhansura Kasba / Rural 1",
+              "village_code": "10065",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Dhansura Village Area 2",
+              "village_code": "10066",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Malpur",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Malpur Kasba / Rural 1",
+              "village_code": "10067",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Malpur Village Area 2",
+              "village_code": "10068",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Meghraj",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Meghraj Kasba / Rural 1",
+              "village_code": "10069",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Meghraj Village Area 2",
+              "village_code": "10070",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Banaskantha",
+      "district_code": "05",
+      "talukas": [
+        {
+          "taluka_name": "Palanpur",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Palanpur Kasba / Rural 1",
+              "village_code": "10071",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Palanpur Village Area 2",
+              "village_code": "10072",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Amgadh",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Amgadh Kasba / Rural 1",
+              "village_code": "10073",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Amgadh Village Area 2",
+              "village_code": "10074",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Bhabhar",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Bhabhar Kasba / Rural 1",
+              "village_code": "10075",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Bhabhar Village Area 2",
+              "village_code": "10076",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Danta",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Danta Kasba / Rural 1",
+              "village_code": "10077",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Danta Village Area 2",
+              "village_code": "10078",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Dantiwada",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Dantiwada Kasba / Rural 1",
+              "village_code": "10079",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Dantiwada Village Area 2",
+              "village_code": "10080",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Deesa",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Deesa Kasba / Rural 1",
+              "village_code": "10081",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Deesa Village Area 2",
+              "village_code": "10082",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Deodar",
+          "taluka_code": "07",
+          "villages": [
+            {
+              "village_name": "Deodar Kasba / Rural 1",
+              "village_code": "10083",
+              "survey_numbers": [
+                "10/7",
+                "11/7A",
+                "12/7",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Deodar Village Area 2",
+              "village_code": "10084",
+              "survey_numbers": [
+                "45/7",
+                "46/7",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Dhanera",
+          "taluka_code": "08",
+          "villages": [
+            {
+              "village_name": "Dhanera Kasba / Rural 1",
+              "village_code": "10085",
+              "survey_numbers": [
+                "10/8",
+                "11/8A",
+                "12/8",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Dhanera Village Area 2",
+              "village_code": "10086",
+              "survey_numbers": [
+                "45/8",
+                "46/8",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Kankrej",
+          "taluka_code": "09",
+          "villages": [
+            {
+              "village_name": "Kankrej Kasba / Rural 1",
+              "village_code": "10087",
+              "survey_numbers": [
+                "10/9",
+                "11/9A",
+                "12/9",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Kankrej Village Area 2",
+              "village_code": "10088",
+              "survey_numbers": [
+                "45/9",
+                "46/9",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Lakhani",
+          "taluka_code": "10",
+          "villages": [
+            {
+              "village_name": "Lakhani Kasba / Rural 1",
+              "village_code": "10089",
+              "survey_numbers": [
+                "10/10",
+                "11/10A",
+                "12/10",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Lakhani Village Area 2",
+              "village_code": "10090",
+              "survey_numbers": [
+                "45/10",
+                "46/10",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Suigam",
+          "taluka_code": "11",
+          "villages": [
+            {
+              "village_name": "Suigam Kasba / Rural 1",
+              "village_code": "10091",
+              "survey_numbers": [
+                "10/11",
+                "11/11A",
+                "12/11",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Suigam Village Area 2",
+              "village_code": "10092",
+              "survey_numbers": [
+                "45/11",
+                "46/11",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Tharad",
+          "taluka_code": "12",
+          "villages": [
+            {
+              "village_name": "Tharad Kasba / Rural 1",
+              "village_code": "10093",
+              "survey_numbers": [
+                "10/12",
+                "11/12A",
+                "12/12",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Tharad Village Area 2",
+              "village_code": "10094",
+              "survey_numbers": [
+                "45/12",
+                "46/12",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Vadavali",
+          "taluka_code": "13",
+          "villages": [
+            {
+              "village_name": "Vadavali Kasba / Rural 1",
+              "village_code": "10095",
+              "survey_numbers": [
+                "10/13",
+                "11/13A",
+                "12/13",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Vadavali Village Area 2",
+              "village_code": "10096",
+              "survey_numbers": [
+                "45/13",
+                "46/13",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Vav",
+          "taluka_code": "14",
+          "villages": [
+            {
+              "village_name": "Vav Kasba / Rural 1",
+              "village_code": "10097",
+              "survey_numbers": [
+                "10/14",
+                "11/14A",
+                "12/14",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Vav Village Area 2",
+              "village_code": "10098",
+              "survey_numbers": [
+                "45/14",
+                "46/14",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Bharuch",
+      "district_code": "06",
+      "talukas": [
+        {
+          "taluka_name": "Bharuch",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Bharuch Kasba / Rural 1",
+              "village_code": "10099",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Bharuch Village Area 2",
+              "village_code": "10100",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Amod",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Amod Kasba / Rural 1",
+              "village_code": "10101",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Amod Village Area 2",
+              "village_code": "10102",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Ankleshwar",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Ankleshwar Kasba / Rural 1",
+              "village_code": "10103",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Ankleshwar Village Area 2",
+              "village_code": "10104",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Hansot",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Hansot Kasba / Rural 1",
+              "village_code": "10105",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Hansot Village Area 2",
+              "village_code": "10106",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Jambusar",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Jambusar Kasba / Rural 1",
+              "village_code": "10107",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Jambusar Village Area 2",
+              "village_code": "10108",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Jhagadia",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Jhagadia Kasba / Rural 1",
+              "village_code": "10109",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Jhagadia Village Area 2",
+              "village_code": "10110",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Netrang",
+          "taluka_code": "07",
+          "villages": [
+            {
+              "village_name": "Netrang Kasba / Rural 1",
+              "village_code": "10111",
+              "survey_numbers": [
+                "10/7",
+                "11/7A",
+                "12/7",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Netrang Village Area 2",
+              "village_code": "10112",
+              "survey_numbers": [
+                "45/7",
+                "46/7",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Vagra",
+          "taluka_code": "08",
+          "villages": [
+            {
+              "village_name": "Vagra Kasba / Rural 1",
+              "village_code": "10113",
+              "survey_numbers": [
+                "10/8",
+                "11/8A",
+                "12/8",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Vagra Village Area 2",
+              "village_code": "10114",
+              "survey_numbers": [
+                "45/8",
+                "46/8",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Valia",
+          "taluka_code": "09",
+          "villages": [
+            {
+              "village_name": "Valia Kasba / Rural 1",
+              "village_code": "10115",
+              "survey_numbers": [
+                "10/9",
+                "11/9A",
+                "12/9",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Valia Village Area 2",
+              "village_code": "10116",
+              "survey_numbers": [
+                "45/9",
+                "46/9",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Bhavnagar",
+      "district_code": "07",
+      "talukas": [
+        {
+          "taluka_name": "Bhavnagar",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Bhavnagar Kasba / Rural 1",
+              "village_code": "10117",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Bhavnagar Village Area 2",
+              "village_code": "10118",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Gariadhar",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Gariadhar Kasba / Rural 1",
+              "village_code": "10119",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Gariadhar Village Area 2",
+              "village_code": "10120",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Ghogha",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Ghogha Kasba / Rural 1",
+              "village_code": "10121",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Ghogha Village Area 2",
+              "village_code": "10122",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Jejpur",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Jejpur Kasba / Rural 1",
+              "village_code": "10123",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Jejpur Village Area 2",
+              "village_code": "10124",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Mahuva",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Mahuva Kasba / Rural 1",
+              "village_code": "10125",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Mahuva Village Area 2",
+              "village_code": "10126",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Palitana",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Palitana Kasba / Rural 1",
+              "village_code": "10127",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Palitana Village Area 2",
+              "village_code": "10128",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Sihor",
+          "taluka_code": "07",
+          "villages": [
+            {
+              "village_name": "Sihor Kasba / Rural 1",
+              "village_code": "10129",
+              "survey_numbers": [
+                "10/7",
+                "11/7A",
+                "12/7",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Sihor Village Area 2",
+              "village_code": "10130",
+              "survey_numbers": [
+                "45/7",
+                "46/7",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Songoadh",
+          "taluka_code": "08",
+          "villages": [
+            {
+              "village_name": "Songoadh Kasba / Rural 1",
+              "village_code": "10131",
+              "survey_numbers": [
+                "10/8",
+                "11/8A",
+                "12/8",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Songoadh Village Area 2",
+              "village_code": "10132",
+              "survey_numbers": [
+                "45/8",
+                "46/8",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Taja",
+          "taluka_code": "09",
+          "villages": [
+            {
+              "village_name": "Taja Kasba / Rural 1",
+              "village_code": "10133",
+              "survey_numbers": [
+                "10/9",
+                "11/9A",
+                "12/9",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Taja Village Area 2",
+              "village_code": "10134",
+              "survey_numbers": [
+                "45/9",
+                "46/9",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Umarala",
+          "taluka_code": "10",
+          "villages": [
+            {
+              "village_name": "Umarala Kasba / Rural 1",
+              "village_code": "10135",
+              "survey_numbers": [
+                "10/10",
+                "11/10A",
+                "12/10",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Umarala Village Area 2",
+              "village_code": "10136",
+              "survey_numbers": [
+                "45/10",
+                "46/10",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Vallabhipur",
+          "taluka_code": "11",
+          "villages": [
+            {
+              "village_name": "Vallabhipur Kasba / Rural 1",
+              "village_code": "10137",
+              "survey_numbers": [
+                "10/11",
+                "11/11A",
+                "12/11",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Vallabhipur Village Area 2",
+              "village_code": "10138",
+              "survey_numbers": [
+                "45/11",
+                "46/11",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Botad",
+      "district_code": "08",
+      "talukas": [
+        {
+          "taluka_name": "Botad",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Botad Kasba / Rural 1",
+              "village_code": "10139",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Botad Village Area 2",
+              "village_code": "10140",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Barwala",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Barwala Kasba / Rural 1",
+              "village_code": "10141",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Barwala Village Area 2",
+              "village_code": "10142",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Gadhada",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Gadhada Kasba / Rural 1",
+              "village_code": "10143",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Gadhada Village Area 2",
+              "village_code": "10144",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Ranpur",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Ranpur Kasba / Rural 1",
+              "village_code": "10145",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Ranpur Village Area 2",
+              "village_code": "10146",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Chhota Udepur",
+      "district_code": "09",
+      "talukas": [
+        {
+          "taluka_name": "Chhota Udepur",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Chhota Udepur Kasba / Rural 1",
+              "village_code": "10147",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Chhota Udepur Village Area 2",
+              "village_code": "10148",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Bodhali",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Bodhali Kasba / Rural 1",
+              "village_code": "10149",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Bodhali Village Area 2",
+              "village_code": "10150",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Jetpur Pavi",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Jetpur Pavi Kasba / Rural 1",
+              "village_code": "10151",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Jetpur Pavi Village Area 2",
+              "village_code": "10152",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Kwant",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Kwant Kasba / Rural 1",
+              "village_code": "10153",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Kwant Village Area 2",
+              "village_code": "10154",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Naswadi",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Naswadi Kasba / Rural 1",
+              "village_code": "10155",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Naswadi Village Area 2",
+              "village_code": "10156",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Sankheda",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Sankheda Kasba / Rural 1",
+              "village_code": "10157",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Sankheda Village Area 2",
+              "village_code": "10158",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Dahod",
+      "district_code": "10",
+      "talukas": [
+        {
+          "taluka_name": "Dahod",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Dahod Kasba / Rural 1",
+              "village_code": "10159",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Dahod Village Area 2",
+              "village_code": "10160",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Devgadh Baria",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Devgadh Baria Kasba / Rural 1",
+              "village_code": "10161",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Devgadh Baria Village Area 2",
+              "village_code": "10162",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Garbada",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Garbada Kasba / Rural 1",
+              "village_code": "10163",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Garbada Village Area 2",
+              "village_code": "10164",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Dhanpur",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Dhanpur Kasba / Rural 1",
+              "village_code": "10165",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Dhanpur Village Area 2",
+              "village_code": "10166",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Jhalod",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Jhalod Kasba / Rural 1",
+              "village_code": "10167",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Jhalod Village Area 2",
+              "village_code": "10168",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Sanjeeli",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Sanjeeli Kasba / Rural 1",
+              "village_code": "10169",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Sanjeeli Village Area 2",
+              "village_code": "10170",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Fatepura",
+          "taluka_code": "07",
+          "villages": [
+            {
+              "village_name": "Fatepura Kasba / Rural 1",
+              "village_code": "10171",
+              "survey_numbers": [
+                "10/7",
+                "11/7A",
+                "12/7",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Fatepura Village Area 2",
+              "village_code": "10172",
+              "survey_numbers": [
+                "45/7",
+                "46/7",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Limkheda",
+          "taluka_code": "08",
+          "villages": [
+            {
+              "village_name": "Limkheda Kasba / Rural 1",
+              "village_code": "10173",
+              "survey_numbers": [
+                "10/8",
+                "11/8A",
+                "12/8",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Limkheda Village Area 2",
+              "village_code": "10174",
+              "survey_numbers": [
+                "45/8",
+                "46/8",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Singvad",
+          "taluka_code": "09",
+          "villages": [
+            {
+              "village_name": "Singvad Kasba / Rural 1",
+              "village_code": "10175",
+              "survey_numbers": [
+                "10/9",
+                "11/9A",
+                "12/9",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Singvad Village Area 2",
+              "village_code": "10176",
+              "survey_numbers": [
+                "45/9",
+                "46/9",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Devbhumi Dwarka",
+      "district_code": "11",
+      "talukas": [
+        {
+          "taluka_name": "Khambhaliya",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Khambhaliya Kasba / Rural 1",
+              "village_code": "10177",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Khambhaliya Village Area 2",
+              "village_code": "10178",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Bhanvad",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Bhanvad Kasba / Rural 1",
+              "village_code": "10179",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Bhanvad Village Area 2",
+              "village_code": "10180",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Kalyanpur",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Kalyanpur Kasba / Rural 1",
+              "village_code": "10181",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Kalyanpur Village Area 2",
+              "village_code": "10182",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Okhamandal",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Okhamandal Kasba / Rural 1",
+              "village_code": "10183",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Okhamandal Village Area 2",
+              "village_code": "10184",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Gandhinagar",
+      "district_code": "12",
+      "talukas": [
+        {
+          "taluka_name": "Gandhinagar",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Gandhinagar Kasba / Rural 1",
+              "village_code": "10185",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Gandhinagar Village Area 2",
+              "village_code": "10186",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Dehgam",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Dehgam Kasba / Rural 1",
+              "village_code": "10187",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Dehgam Village Area 2",
+              "village_code": "10188",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Kalol",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Kalol Kasba / Rural 1",
+              "village_code": "10189",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Kalol Village Area 2",
+              "village_code": "10190",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Mansa",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Mansa Kasba / Rural 1",
+              "village_code": "10191",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Mansa Village Area 2",
+              "village_code": "10192",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Gir Somnath",
+      "district_code": "13",
+      "talukas": [
+        {
+          "taluka_name": "Veraval",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Veraval Kasba / Rural 1",
+              "village_code": "10193",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Veraval Village Area 2",
+              "village_code": "10194",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Gir Gadhada",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Gir Gadhada Kasba / Rural 1",
+              "village_code": "10195",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Gir Gadhada Village Area 2",
+              "village_code": "10196",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Kodinar",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Kodinar Kasba / Rural 1",
+              "village_code": "10197",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Kodinar Village Area 2",
+              "village_code": "10198",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Sutrapada",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Sutrapada Kasba / Rural 1",
+              "village_code": "10199",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Sutrapada Village Area 2",
+              "village_code": "10200",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Talala",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Talala Kasba / Rural 1",
+              "village_code": "10201",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Talala Village Area 2",
+              "village_code": "10202",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Una",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Una Kasba / Rural 1",
+              "village_code": "10203",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Una Village Area 2",
+              "village_code": "10204",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Jamnagar",
+      "district_code": "14",
+      "talukas": [
+        {
+          "taluka_name": "Jamnagar",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Jamnagar Kasba / Rural 1",
+              "village_code": "10205",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Jamnagar Village Area 2",
+              "village_code": "10206",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Dhrol",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Dhrol Kasba / Rural 1",
+              "village_code": "10207",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Dhrol Village Area 2",
+              "village_code": "10208",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Jamjodhpur",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Jamjodhpur Kasba / Rural 1",
+              "village_code": "10209",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Jamjodhpur Village Area 2",
+              "village_code": "10210",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Jodiya",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Jodiya Kasba / Rural 1",
+              "village_code": "10211",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Jodiya Village Area 2",
+              "village_code": "10212",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Kalavad",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Kalavad Kasba / Rural 1",
+              "village_code": "10213",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Kalavad Village Area 2",
+              "village_code": "10214",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Lalpur",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Lalpur Kasba / Rural 1",
+              "village_code": "10215",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Lalpur Village Area 2",
+              "village_code": "10216",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Junagadh",
+      "district_code": "15",
+      "talukas": [
+        {
+          "taluka_name": "Junagadh",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Junagadh Kasba / Rural 1",
+              "village_code": "10217",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Junagadh Village Area 2",
+              "village_code": "10218",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Bhesan",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Bhesan Kasba / Rural 1",
+              "village_code": "10219",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Bhesan Village Area 2",
+              "village_code": "10220",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Keshod",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Keshod Kasba / Rural 1",
+              "village_code": "10221",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Keshod Village Area 2",
+              "village_code": "10222",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Malia",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Malia Kasba / Rural 1",
+              "village_code": "10223",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Malia Village Area 2",
+              "village_code": "10224",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Manavadar",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Manavadar Kasba / Rural 1",
+              "village_code": "10225",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Manavadar Village Area 2",
+              "village_code": "10226",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Mangrol",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Mangrol Kasba / Rural 1",
+              "village_code": "10227",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Mangrol Village Area 2",
+              "village_code": "10228",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Mendarda",
+          "taluka_code": "07",
+          "villages": [
+            {
+              "village_name": "Mendarda Kasba / Rural 1",
+              "village_code": "10229",
+              "survey_numbers": [
+                "10/7",
+                "11/7A",
+                "12/7",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Mendarda Village Area 2",
+              "village_code": "10230",
+              "survey_numbers": [
+                "45/7",
+                "46/7",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Vanthali",
+          "taluka_code": "08",
+          "villages": [
+            {
+              "village_name": "Vanthali Kasba / Rural 1",
+              "village_code": "10231",
+              "survey_numbers": [
+                "10/8",
+                "11/8A",
+                "12/8",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Vanthali Village Area 2",
+              "village_code": "10232",
+              "survey_numbers": [
+                "45/8",
+                "46/8",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Visavadar",
+          "taluka_code": "09",
+          "villages": [
+            {
+              "village_name": "Visavadar Kasba / Rural 1",
+              "village_code": "10233",
+              "survey_numbers": [
+                "10/9",
+                "11/9A",
+                "12/9",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Visavadar Village Area 2",
+              "village_code": "10234",
+              "survey_numbers": [
+                "45/9",
+                "46/9",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Kachchh",
+      "district_code": "16",
+      "talukas": [
+        {
+          "taluka_name": "Bhuj",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Bhuj Kasba / Rural 1",
+              "village_code": "10235",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Bhuj Village Area 2",
+              "village_code": "10236",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Anjar",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Anjar Kasba / Rural 1",
+              "village_code": "10237",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Anjar Village Area 2",
+              "village_code": "10238",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Bachau",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Bachau Kasba / Rural 1",
+              "village_code": "10239",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Bachau Village Area 2",
+              "village_code": "10240",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Gandhidham",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Gandhidham Kasba / Rural 1",
+              "village_code": "10241",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Gandhidham Village Area 2",
+              "village_code": "10242",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Lakhpat",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Lakhpat Kasba / Rural 1",
+              "village_code": "10243",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Lakhpat Village Area 2",
+              "village_code": "10244",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Mundra",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Mundra Kasba / Rural 1",
+              "village_code": "10245",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Mundra Village Area 2",
+              "village_code": "10246",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Nakhatrana",
+          "taluka_code": "07",
+          "villages": [
+            {
+              "village_name": "Nakhatrana Kasba / Rural 1",
+              "village_code": "10247",
+              "survey_numbers": [
+                "10/7",
+                "11/7A",
+                "12/7",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Nakhatrana Village Area 2",
+              "village_code": "10248",
+              "survey_numbers": [
+                "45/7",
+                "46/7",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Naliya",
+          "taluka_code": "08",
+          "villages": [
+            {
+              "village_name": "Naliya Kasba / Rural 1",
+              "village_code": "10249",
+              "survey_numbers": [
+                "10/8",
+                "11/8A",
+                "12/8",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Naliya Village Area 2",
+              "village_code": "10250",
+              "survey_numbers": [
+                "45/8",
+                "46/8",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Rapar",
+          "taluka_code": "09",
+          "villages": [
+            {
+              "village_name": "Rapar Kasba / Rural 1",
+              "village_code": "10251",
+              "survey_numbers": [
+                "10/9",
+                "11/9A",
+                "12/9",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Rapar Village Area 2",
+              "village_code": "10252",
+              "survey_numbers": [
+                "45/9",
+                "46/9",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Mandvi",
+          "taluka_code": "10",
+          "villages": [
+            {
+              "village_name": "Mandvi Kasba / Rural 1",
+              "village_code": "10253",
+              "survey_numbers": [
+                "10/10",
+                "11/10A",
+                "12/10",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Mandvi Village Area 2",
+              "village_code": "10254",
+              "survey_numbers": [
+                "45/10",
+                "46/10",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Kheda",
+      "district_code": "17",
+      "talukas": [
+        {
+          "taluka_name": "Nadiad",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Nadiad Kasba / Rural 1",
+              "village_code": "10255",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Nadiad Village Area 2",
+              "village_code": "10256",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Galteshwar",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Galteshwar Kasba / Rural 1",
+              "village_code": "10257",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Galteshwar Village Area 2",
+              "village_code": "10258",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Kapadvanj",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Kapadvanj Kasba / Rural 1",
+              "village_code": "10259",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Kapadvanj Village Area 2",
+              "village_code": "10260",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Kathlal",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Kathlal Kasba / Rural 1",
+              "village_code": "10261",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Kathlal Village Area 2",
+              "village_code": "10262",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Kheda",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Kheda Kasba / Rural 1",
+              "village_code": "10263",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Kheda Village Area 2",
+              "village_code": "10264",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Mahudha",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Mahudha Kasba / Rural 1",
+              "village_code": "10265",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Mahudha Village Area 2",
+              "village_code": "10266",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Matar",
+          "taluka_code": "07",
+          "villages": [
+            {
+              "village_name": "Matar Kasba / Rural 1",
+              "village_code": "10267",
+              "survey_numbers": [
+                "10/7",
+                "11/7A",
+                "12/7",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Matar Village Area 2",
+              "village_code": "10268",
+              "survey_numbers": [
+                "45/7",
+                "46/7",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Mehmedabad",
+          "taluka_code": "08",
+          "villages": [
+            {
+              "village_name": "Mehmedabad Kasba / Rural 1",
+              "village_code": "10269",
+              "survey_numbers": [
+                "10/8",
+                "11/8A",
+                "12/8",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Mehmedabad Village Area 2",
+              "village_code": "10270",
+              "survey_numbers": [
+                "45/8",
+                "46/8",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Thasra",
+          "taluka_code": "09",
+          "villages": [
+            {
+              "village_name": "Thasra Kasba / Rural 1",
+              "village_code": "10271",
+              "survey_numbers": [
+                "10/9",
+                "11/9A",
+                "12/9",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Thasra Village Area 2",
+              "village_code": "10272",
+              "survey_numbers": [
+                "45/9",
+                "46/9",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Vaso",
+          "taluka_code": "10",
+          "villages": [
+            {
+              "village_name": "Vaso Kasba / Rural 1",
+              "village_code": "10273",
+              "survey_numbers": [
+                "10/10",
+                "11/10A",
+                "12/10",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Vaso Village Area 2",
+              "village_code": "10274",
+              "survey_numbers": [
+                "45/10",
+                "46/10",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Mahisagar",
+      "district_code": "18",
+      "talukas": [
+        {
+          "taluka_name": "Lunawada",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Lunawada Kasba / Rural 1",
+              "village_code": "10275",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Lunawada Village Area 2",
+              "village_code": "10276",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Balasinor",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Balasinor Kasba / Rural 1",
+              "village_code": "10277",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Balasinor Village Area 2",
+              "village_code": "10278",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Kadana",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Kadana Kasba / Rural 1",
+              "village_code": "10279",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Kadana Village Area 2",
+              "village_code": "10280",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Khanpur",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Khanpur Kasba / Rural 1",
+              "village_code": "10281",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Khanpur Village Area 2",
+              "village_code": "10282",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Santrampur",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Santrampur Kasba / Rural 1",
+              "village_code": "10283",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Santrampur Village Area 2",
+              "village_code": "10284",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Virpur",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Virpur Kasba / Rural 1",
+              "village_code": "10285",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Virpur Village Area 2",
+              "village_code": "10286",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Mehsana",
+      "district_code": "19",
+      "talukas": [
+        {
+          "taluka_name": "Mehsana",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Mehsana Kasba / Rural 1",
+              "village_code": "10287",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Mehsana Village Area 2",
+              "village_code": "10288",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Becharaji",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Becharaji Kasba / Rural 1",
+              "village_code": "10289",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Becharaji Village Area 2",
+              "village_code": "10290",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Kadi",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Kadi Kasba / Rural 1",
+              "village_code": "10291",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Kadi Village Area 2",
+              "village_code": "10292",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Kheralu",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Kheralu Kasba / Rural 1",
+              "village_code": "10293",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Kheralu Village Area 2",
+              "village_code": "10294",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Satlasana",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Satlasana Kasba / Rural 1",
+              "village_code": "10295",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Satlasana Village Area 2",
+              "village_code": "10296",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Unjha",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Unjha Kasba / Rural 1",
+              "village_code": "10297",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Unjha Village Area 2",
+              "village_code": "10298",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Vadnagar",
+          "taluka_code": "07",
+          "villages": [
+            {
+              "village_name": "Vadnagar Kasba / Rural 1",
+              "village_code": "10299",
+              "survey_numbers": [
+                "10/7",
+                "11/7A",
+                "12/7",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Vadnagar Village Area 2",
+              "village_code": "10300",
+              "survey_numbers": [
+                "45/7",
+                "46/7",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Vijapur",
+          "taluka_code": "08",
+          "villages": [
+            {
+              "village_name": "Vijapur Kasba / Rural 1",
+              "village_code": "10301",
+              "survey_numbers": [
+                "10/8",
+                "11/8A",
+                "12/8",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Vijapur Village Area 2",
+              "village_code": "10302",
+              "survey_numbers": [
+                "45/8",
+                "46/8",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Visnagar",
+          "taluka_code": "09",
+          "villages": [
+            {
+              "village_name": "Visnagar Kasba / Rural 1",
+              "village_code": "10303",
+              "survey_numbers": [
+                "10/9",
+                "11/9A",
+                "12/9",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Visnagar Village Area 2",
+              "village_code": "10304",
+              "survey_numbers": [
+                "45/9",
+                "46/9",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Jotana",
+          "taluka_code": "10",
+          "villages": [
+            {
+              "village_name": "Jotana Kasba / Rural 1",
+              "village_code": "10305",
+              "survey_numbers": [
+                "10/10",
+                "11/10A",
+                "12/10",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Jotana Village Area 2",
+              "village_code": "10306",
+              "survey_numbers": [
+                "45/10",
+                "46/10",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Morbi",
+      "district_code": "20",
+      "talukas": [
+        {
+          "taluka_name": "Morbi",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Morbi Kasba / Rural 1",
+              "village_code": "10307",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Morbi Village Area 2",
+              "village_code": "10308",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Halvad",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Halvad Kasba / Rural 1",
+              "village_code": "10309",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Halvad Village Area 2",
+              "village_code": "10310",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Maliya Miyana",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Maliya Miyana Kasba / Rural 1",
+              "village_code": "10311",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Maliya Miyana Village Area 2",
+              "village_code": "10312",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Tankara",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Tankara Kasba / Rural 1",
+              "village_code": "10313",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Tankara Village Area 2",
+              "village_code": "10314",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Wankaner",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Wankaner Kasba / Rural 1",
+              "village_code": "10315",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Wankaner Village Area 2",
+              "village_code": "10316",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Narmada",
+      "district_code": "21",
+      "talukas": [
+        {
+          "taluka_name": "Rajpipla",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Rajpipla Kasba / Rural 1",
+              "village_code": "10317",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Rajpipla Village Area 2",
+              "village_code": "10318",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Dediapada",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Dediapada Kasba / Rural 1",
+              "village_code": "10319",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Dediapada Village Area 2",
+              "village_code": "10320",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Garudeshwar",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Garudeshwar Kasba / Rural 1",
+              "village_code": "10321",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Garudeshwar Village Area 2",
+              "village_code": "10322",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Sagbara",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Sagbara Kasba / Rural 1",
+              "village_code": "10323",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Sagbara Village Area 2",
+              "village_code": "10324",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Tilakwada",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Tilakwada Kasba / Rural 1",
+              "village_code": "10325",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Tilakwada Village Area 2",
+              "village_code": "10326",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Navsari",
+      "district_code": "22",
+      "talukas": [
+        {
+          "taluka_name": "Navsari",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Navsari Kasba / Rural 1",
+              "village_code": "10327",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Navsari Village Area 2",
+              "village_code": "10328",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Chikhli",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Chikhli Kasba / Rural 1",
+              "village_code": "10329",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Chikhli Village Area 2",
+              "village_code": "10330",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Gandevi",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Gandevi Kasba / Rural 1",
+              "village_code": "10331",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Gandevi Village Area 2",
+              "village_code": "10332",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Jalalpore",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Jalalpore Kasba / Rural 1",
+              "village_code": "10333",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Jalalpore Village Area 2",
+              "village_code": "10334",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Khergam",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Khergam Kasba / Rural 1",
+              "village_code": "10335",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Khergam Village Area 2",
+              "village_code": "10336",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Vansda",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Vansda Kasba / Rural 1",
+              "village_code": "10337",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Vansda Village Area 2",
+              "village_code": "10338",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Panchmahal",
+      "district_code": "23",
+      "talukas": [
+        {
+          "taluka_name": "Godhra",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Godhra Kasba / Rural 1",
+              "village_code": "10339",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Godhra Village Area 2",
+              "village_code": "10340",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Ghoghamba",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Ghoghamba Kasba / Rural 1",
+              "village_code": "10341",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Ghoghamba Village Area 2",
+              "village_code": "10342",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Halol",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Halol Kasba / Rural 1",
+              "village_code": "10343",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Halol Village Area 2",
+              "village_code": "10344",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Jambughoda",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Jambughoda Kasba / Rural 1",
+              "village_code": "10345",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Jambughoda Village Area 2",
+              "village_code": "10346",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Kalol",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Kalol Kasba / Rural 1",
+              "village_code": "10347",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Kalol Village Area 2",
+              "village_code": "10348",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Morva Hadaf",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Morva Hadaf Kasba / Rural 1",
+              "village_code": "10349",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Morva Hadaf Village Area 2",
+              "village_code": "10350",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Shehera",
+          "taluka_code": "07",
+          "villages": [
+            {
+              "village_name": "Shehera Kasba / Rural 1",
+              "village_code": "10351",
+              "survey_numbers": [
+                "10/7",
+                "11/7A",
+                "12/7",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Shehera Village Area 2",
+              "village_code": "10352",
+              "survey_numbers": [
+                "45/7",
+                "46/7",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Patan",
+      "district_code": "24",
+      "talukas": [
+        {
+          "taluka_name": "Patan",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Patan Kasba / Rural 1",
+              "village_code": "10353",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Patan Village Area 2",
+              "village_code": "10354",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Chanasma",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Chanasma Kasba / Rural 1",
+              "village_code": "10355",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Chanasma Village Area 2",
+              "village_code": "10356",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Harij",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Harij Kasba / Rural 1",
+              "village_code": "10357",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Harij Village Area 2",
+              "village_code": "10358",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Radhanpur",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Radhanpur Kasba / Rural 1",
+              "village_code": "10359",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Radhanpur Village Area 2",
+              "village_code": "10360",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Sami",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Sami Kasba / Rural 1",
+              "village_code": "10361",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Sami Village Area 2",
+              "village_code": "10362",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Santalpur",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Santalpur Kasba / Rural 1",
+              "village_code": "10363",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Santalpur Village Area 2",
+              "village_code": "10364",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Siddhpur",
+          "taluka_code": "07",
+          "villages": [
+            {
+              "village_name": "Siddhpur Kasba / Rural 1",
+              "village_code": "10365",
+              "survey_numbers": [
+                "10/7",
+                "11/7A",
+                "12/7",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Siddhpur Village Area 2",
+              "village_code": "10366",
+              "survey_numbers": [
+                "45/7",
+                "46/7",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Vagdod",
+          "taluka_code": "08",
+          "villages": [
+            {
+              "village_name": "Vagdod Kasba / Rural 1",
+              "village_code": "10367",
+              "survey_numbers": [
+                "10/8",
+                "11/8A",
+                "12/8",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Vagdod Village Area 2",
+              "village_code": "10368",
+              "survey_numbers": [
+                "45/8",
+                "46/8",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Saraswati",
+          "taluka_code": "09",
+          "villages": [
+            {
+              "village_name": "Saraswati Kasba / Rural 1",
+              "village_code": "10369",
+              "survey_numbers": [
+                "10/9",
+                "11/9A",
+                "12/9",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Saraswati Village Area 2",
+              "village_code": "10370",
+              "survey_numbers": [
+                "45/9",
+                "46/9",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Porbandar",
+      "district_code": "25",
+      "talukas": [
+        {
+          "taluka_name": "Porbandar",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Porbandar Kasba / Rural 1",
+              "village_code": "10371",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Porbandar Village Area 2",
+              "village_code": "10372",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Kutiyana",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Kutiyana Kasba / Rural 1",
+              "village_code": "10373",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Kutiyana Village Area 2",
+              "village_code": "10374",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Ranavav",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Ranavav Kasba / Rural 1",
+              "village_code": "10375",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Ranavav Village Area 2",
+              "village_code": "10376",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Rajkot",
+      "district_code": "26",
+      "talukas": [
+        {
+          "taluka_name": "Rajkot",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Rajkot Kasba / Rural 1",
+              "village_code": "10377",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Rajkot Village Area 2",
+              "village_code": "10378",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Dhoraji",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Dhoraji Kasba / Rural 1",
+              "village_code": "10379",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Dhoraji Village Area 2",
+              "village_code": "10380",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Gondal",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Gondal Kasba / Rural 1",
+              "village_code": "10381",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Gondal Village Area 2",
+              "village_code": "10382",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Jamkandorna",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Jamkandorna Kasba / Rural 1",
+              "village_code": "10383",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Jamkandorna Village Area 2",
+              "village_code": "10384",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Jasdan",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Jasdan Kasba / Rural 1",
+              "village_code": "10385",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Jasdan Village Area 2",
+              "village_code": "10386",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Jetpur",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Jetpur Kasba / Rural 1",
+              "village_code": "10387",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Jetpur Village Area 2",
+              "village_code": "10388",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Kotda Sangani",
+          "taluka_code": "07",
+          "villages": [
+            {
+              "village_name": "Kotda Sangani Kasba / Rural 1",
+              "village_code": "10389",
+              "survey_numbers": [
+                "10/7",
+                "11/7A",
+                "12/7",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Kotda Sangani Village Area 2",
+              "village_code": "10390",
+              "survey_numbers": [
+                "45/7",
+                "46/7",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Lodhika",
+          "taluka_code": "08",
+          "villages": [
+            {
+              "village_name": "Lodhika Kasba / Rural 1",
+              "village_code": "10391",
+              "survey_numbers": [
+                "10/8",
+                "11/8A",
+                "12/8",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Lodhika Village Area 2",
+              "village_code": "10392",
+              "survey_numbers": [
+                "45/8",
+                "46/8",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Paddhari",
+          "taluka_code": "09",
+          "villages": [
+            {
+              "village_name": "Paddhari Kasba / Rural 1",
+              "village_code": "10393",
+              "survey_numbers": [
+                "10/9",
+                "11/9A",
+                "12/9",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Paddhari Village Area 2",
+              "village_code": "10394",
+              "survey_numbers": [
+                "45/9",
+                "46/9",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Upleta",
+          "taluka_code": "10",
+          "villages": [
+            {
+              "village_name": "Upleta Kasba / Rural 1",
+              "village_code": "10395",
+              "survey_numbers": [
+                "10/10",
+                "11/10A",
+                "12/10",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Upleta Village Area 2",
+              "village_code": "10396",
+              "survey_numbers": [
+                "45/10",
+                "46/10",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Vinchhiya",
+          "taluka_code": "11",
+          "villages": [
+            {
+              "village_name": "Vinchhiya Kasba / Rural 1",
+              "village_code": "10397",
+              "survey_numbers": [
+                "10/11",
+                "11/11A",
+                "12/11",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Vinchhiya Village Area 2",
+              "village_code": "10398",
+              "survey_numbers": [
+                "45/11",
+                "46/11",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Sabarkantha",
+      "district_code": "27",
+      "talukas": [
+        {
+          "taluka_name": "Himatnagar",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Himatnagar Kasba / Rural 1",
+              "village_code": "10399",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Himatnagar Village Area 2",
+              "village_code": "10400",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Idar",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Idar Kasba / Rural 1",
+              "village_code": "10401",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Idar Village Area 2",
+              "village_code": "10402",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Khedbrahma",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Khedbrahma Kasba / Rural 1",
+              "village_code": "10403",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Khedbrahma Village Area 2",
+              "village_code": "10404",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Prantij",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Prantij Kasba / Rural 1",
+              "village_code": "10405",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Prantij Village Area 2",
+              "village_code": "10406",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Talod",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Talod Kasba / Rural 1",
+              "village_code": "10407",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Talod Village Area 2",
+              "village_code": "10408",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Vadali",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Vadali Kasba / Rural 1",
+              "village_code": "10409",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Vadali Village Area 2",
+              "village_code": "10410",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Vijaynagar",
+          "taluka_code": "07",
+          "villages": [
+            {
+              "village_name": "Vijaynagar Kasba / Rural 1",
+              "village_code": "10411",
+              "survey_numbers": [
+                "10/7",
+                "11/7A",
+                "12/7",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Vijaynagar Village Area 2",
+              "village_code": "10412",
+              "survey_numbers": [
+                "45/7",
+                "46/7",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Poshina",
+          "taluka_code": "08",
+          "villages": [
+            {
+              "village_name": "Poshina Kasba / Rural 1",
+              "village_code": "10413",
+              "survey_numbers": [
+                "10/8",
+                "11/8A",
+                "12/8",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Poshina Village Area 2",
+              "village_code": "10414",
+              "survey_numbers": [
+                "45/8",
+                "46/8",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Surat",
+      "district_code": "28",
+      "talukas": [
+        {
+          "taluka_name": "Surat",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Surat Kasba / Rural 1",
+              "village_code": "10415",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Surat Village Area 2",
+              "village_code": "10416",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Bardoli",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Bardoli Kasba / Rural 1",
+              "village_code": "10417",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Bardoli Village Area 2",
+              "village_code": "10418",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Chorasi",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Chorasi Kasba / Rural 1",
+              "village_code": "10419",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Chorasi Village Area 2",
+              "village_code": "10420",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Kamrej",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Kamrej Kasba / Rural 1",
+              "village_code": "10421",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Kamrej Village Area 2",
+              "village_code": "10422",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Mahuva",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Mahuva Kasba / Rural 1",
+              "village_code": "10423",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Mahuva Village Area 2",
+              "village_code": "10424",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Mandvi",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Mandvi Kasba / Rural 1",
+              "village_code": "10425",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Mandvi Village Area 2",
+              "village_code": "10426",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Mangrol",
+          "taluka_code": "07",
+          "villages": [
+            {
+              "village_name": "Mangrol Kasba / Rural 1",
+              "village_code": "10427",
+              "survey_numbers": [
+                "10/7",
+                "11/7A",
+                "12/7",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Mangrol Village Area 2",
+              "village_code": "10428",
+              "survey_numbers": [
+                "45/7",
+                "46/7",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Olpad",
+          "taluka_code": "08",
+          "villages": [
+            {
+              "village_name": "Olpad Kasba / Rural 1",
+              "village_code": "10429",
+              "survey_numbers": [
+                "10/8",
+                "11/8A",
+                "12/8",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Olpad Village Area 2",
+              "village_code": "10430",
+              "survey_numbers": [
+                "45/8",
+                "46/8",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Palsana",
+          "taluka_code": "09",
+          "villages": [
+            {
+              "village_name": "Palsana Kasba / Rural 1",
+              "village_code": "10431",
+              "survey_numbers": [
+                "10/9",
+                "11/9A",
+                "12/9",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Palsana Village Area 2",
+              "village_code": "10432",
+              "survey_numbers": [
+                "45/9",
+                "46/9",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Umarpada",
+          "taluka_code": "10",
+          "villages": [
+            {
+              "village_name": "Umarpada Kasba / Rural 1",
+              "village_code": "10433",
+              "survey_numbers": [
+                "10/10",
+                "11/10A",
+                "12/10",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Umarpada Village Area 2",
+              "village_code": "10434",
+              "survey_numbers": [
+                "45/10",
+                "46/10",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Surendranagar",
+      "district_code": "29",
+      "talukas": [
+        {
+          "taluka_name": "Wadhwan",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Wadhwan Kasba / Rural 1",
+              "village_code": "10435",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Wadhwan Village Area 2",
+              "village_code": "10436",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Chotila",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Chotila Kasba / Rural 1",
+              "village_code": "10437",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Chotila Village Area 2",
+              "village_code": "10438",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Chuda",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Chuda Kasba / Rural 1",
+              "village_code": "10439",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Chuda Village Area 2",
+              "village_code": "10440",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Dasada",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Dasada Kasba / Rural 1",
+              "village_code": "10441",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Dasada Village Area 2",
+              "village_code": "10442",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Dhrangadhra",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Dhrangadhra Kasba / Rural 1",
+              "village_code": "10443",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Dhrangadhra Village Area 2",
+              "village_code": "10444",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Lakhtar",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Lakhtar Kasba / Rural 1",
+              "village_code": "10445",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Lakhtar Village Area 2",
+              "village_code": "10446",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Limbdi",
+          "taluka_code": "07",
+          "villages": [
+            {
+              "village_name": "Limbdi Kasba / Rural 1",
+              "village_code": "10447",
+              "survey_numbers": [
+                "10/7",
+                "11/7A",
+                "12/7",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Limbdi Village Area 2",
+              "village_code": "10448",
+              "survey_numbers": [
+                "45/7",
+                "46/7",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Muli",
+          "taluka_code": "08",
+          "villages": [
+            {
+              "village_name": "Muli Kasba / Rural 1",
+              "village_code": "10449",
+              "survey_numbers": [
+                "10/8",
+                "11/8A",
+                "12/8",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Muli Village Area 2",
+              "village_code": "10450",
+              "survey_numbers": [
+                "45/8",
+                "46/8",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Sayla",
+          "taluka_code": "09",
+          "villages": [
+            {
+              "village_name": "Sayla Kasba / Rural 1",
+              "village_code": "10451",
+              "survey_numbers": [
+                "10/9",
+                "11/9A",
+                "12/9",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Sayla Village Area 2",
+              "village_code": "10452",
+              "survey_numbers": [
+                "45/9",
+                "46/9",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Thangadh",
+          "taluka_code": "10",
+          "villages": [
+            {
+              "village_name": "Thangadh Kasba / Rural 1",
+              "village_code": "10453",
+              "survey_numbers": [
+                "10/10",
+                "11/10A",
+                "12/10",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Thangadh Village Area 2",
+              "village_code": "10454",
+              "survey_numbers": [
+                "45/10",
+                "46/10",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Tapi",
+      "district_code": "30",
+      "talukas": [
+        {
+          "taluka_name": "Vyara",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Vyara Kasba / Rural 1",
+              "village_code": "10455",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Vyara Village Area 2",
+              "village_code": "10456",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Kukurmunda",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Kukurmunda Kasba / Rural 1",
+              "village_code": "10457",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Kukurmunda Village Area 2",
+              "village_code": "10458",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Nizar",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Nizar Kasba / Rural 1",
+              "village_code": "10459",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Nizar Village Area 2",
+              "village_code": "10460",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Songadh",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Songadh Kasba / Rural 1",
+              "village_code": "10461",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Songadh Village Area 2",
+              "village_code": "10462",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Valod",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Valod Kasba / Rural 1",
+              "village_code": "10463",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Valod Village Area 2",
+              "village_code": "10464",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Uchchhal",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Uchchhal Kasba / Rural 1",
+              "village_code": "10465",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Uchchhal Village Area 2",
+              "village_code": "10466",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Dolvan",
+          "taluka_code": "07",
+          "villages": [
+            {
+              "village_name": "Dolvan Kasba / Rural 1",
+              "village_code": "10467",
+              "survey_numbers": [
+                "10/7",
+                "11/7A",
+                "12/7",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Dolvan Village Area 2",
+              "village_code": "10468",
+              "survey_numbers": [
+                "45/7",
+                "46/7",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "The Dangs",
+      "district_code": "31",
+      "talukas": [
+        {
+          "taluka_name": "Ahwa",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Ahwa Kasba / Rural 1",
+              "village_code": "10469",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Ahwa Village Area 2",
+              "village_code": "10470",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Subir",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Subir Kasba / Rural 1",
+              "village_code": "10471",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Subir Village Area 2",
+              "village_code": "10472",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Waghai",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Waghai Kasba / Rural 1",
+              "village_code": "10473",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Waghai Village Area 2",
+              "village_code": "10474",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Vadodara",
+      "district_code": "32",
+      "talukas": [
+        {
+          "taluka_name": "Vadodara",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Vadodara Kasba / Rural 1",
+              "village_code": "10475",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Vadodara Village Area 2",
+              "village_code": "10476",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Dabhoi",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Dabhoi Kasba / Rural 1",
+              "village_code": "10477",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Dabhoi Village Area 2",
+              "village_code": "10478",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Desar",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Desar Kasba / Rural 1",
+              "village_code": "10479",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Desar Village Area 2",
+              "village_code": "10480",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Karjan",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Karjan Kasba / Rural 1",
+              "village_code": "10481",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Karjan Village Area 2",
+              "village_code": "10482",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Padra",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Padra Kasba / Rural 1",
+              "village_code": "10483",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Padra Village Area 2",
+              "village_code": "10484",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Savli",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Savli Kasba / Rural 1",
+              "village_code": "10485",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Savli Village Area 2",
+              "village_code": "10486",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Shinor",
+          "taluka_code": "07",
+          "villages": [
+            {
+              "village_name": "Shinor Kasba / Rural 1",
+              "village_code": "10487",
+              "survey_numbers": [
+                "10/7",
+                "11/7A",
+                "12/7",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Shinor Village Area 2",
+              "village_code": "10488",
+              "survey_numbers": [
+                "45/7",
+                "46/7",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Waghodia",
+          "taluka_code": "08",
+          "villages": [
+            {
+              "village_name": "Waghodia Kasba / Rural 1",
+              "village_code": "10489",
+              "survey_numbers": [
+                "10/8",
+                "11/8A",
+                "12/8",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Waghodia Village Area 2",
+              "village_code": "10490",
+              "survey_numbers": [
+                "45/8",
+                "46/8",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "district_name": "Valsad",
+      "district_code": "33",
+      "talukas": [
+        {
+          "taluka_name": "Valsad",
+          "taluka_code": "01",
+          "villages": [
+            {
+              "village_name": "Valsad Kasba / Rural 1",
+              "village_code": "10491",
+              "survey_numbers": [
+                "10/1",
+                "11/1A",
+                "12/1",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Valsad Village Area 2",
+              "village_code": "10492",
+              "survey_numbers": [
+                "45/1",
+                "46/1",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Dharampur",
+          "taluka_code": "02",
+          "villages": [
+            {
+              "village_name": "Dharampur Kasba / Rural 1",
+              "village_code": "10493",
+              "survey_numbers": [
+                "10/2",
+                "11/2A",
+                "12/2",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Dharampur Village Area 2",
+              "village_code": "10494",
+              "survey_numbers": [
+                "45/2",
+                "46/2",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Kaprada",
+          "taluka_code": "03",
+          "villages": [
+            {
+              "village_name": "Kaprada Kasba / Rural 1",
+              "village_code": "10495",
+              "survey_numbers": [
+                "10/3",
+                "11/3A",
+                "12/3",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Kaprada Village Area 2",
+              "village_code": "10496",
+              "survey_numbers": [
+                "45/3",
+                "46/3",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Pardi",
+          "taluka_code": "04",
+          "villages": [
+            {
+              "village_name": "Pardi Kasba / Rural 1",
+              "village_code": "10497",
+              "survey_numbers": [
+                "10/4",
+                "11/4A",
+                "12/4",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Pardi Village Area 2",
+              "village_code": "10498",
+              "survey_numbers": [
+                "45/4",
+                "46/4",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Umbergaon",
+          "taluka_code": "05",
+          "villages": [
+            {
+              "village_name": "Umbergaon Kasba / Rural 1",
+              "village_code": "10499",
+              "survey_numbers": [
+                "10/5",
+                "11/5A",
+                "12/5",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Umbergaon Village Area 2",
+              "village_code": "10500",
+              "survey_numbers": [
+                "45/5",
+                "46/5",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        },
+        {
+          "taluka_name": "Vapi",
+          "taluka_code": "06",
+          "villages": [
+            {
+              "village_name": "Vapi Kasba / Rural 1",
+              "village_code": "10501",
+              "survey_numbers": [
+                "10/6",
+                "11/6A",
+                "12/6",
+                "15",
+                "18/2"
+              ]
+            },
+            {
+              "village_name": "Vapi Village Area 2",
+              "village_code": "10502",
+              "survey_numbers": [
+                "45/6",
+                "46/6",
+                "50",
+                "52/B"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

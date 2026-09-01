@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../widgets/overview_card.dart';
 
 class FarmScreen extends StatelessWidget {
   const FarmScreen({super.key});
@@ -152,6 +153,14 @@ class FarmScreen extends StatelessWidget {
 
               const SizedBox(height: 10),
 
+              OverviewCard(
+                title: 'Total Grain',
+                value: '250 kg',
+                icon: Icons.inventory_2_outlined,
+              ),
+              const SizedBox(height: 10),
+
+
               Row(
                 children: [
                   Expanded(
@@ -173,8 +182,6 @@ class FarmScreen extends StatelessWidget {
                   ),
                 ],
               ),
-
-              const SizedBox(height: 10),
 
               Row(
                 children: [
