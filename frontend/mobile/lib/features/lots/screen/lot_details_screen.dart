@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import 'procurement_agreement_screen.dart';
+import 'quality_results_screen.dart';
+import 'quality_certificate_screen.dart';
+import 'pickup_delivery_screen.dart';
+import 'payment_status_screen.dart';
+import 'warehouse_receipt_screen.dart';
 
 class LotDetailsScreen extends StatelessWidget {
   const LotDetailsScreen({
@@ -148,49 +154,151 @@ class LotDetailsScreen extends StatelessWidget {
               _buildTimelineItem(
                 title: 'Quality Inspection',
                 subtitle: 'Quality inspection is currently in progress.',
-                isCompleted: false,
-                isCurrent: true,
+                isCompleted: true,
+                isCurrent: false,
                 isLast: false,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const QualityResultsScreen(),
+                    ),
+                  );
+                },
+                actionLabel: 'View Results',
+                actionOnTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const QualityResultsScreen(),
+                    ),
+                  );
+                },
               ),
 
               _buildTimelineItem(
                 title: 'Quality Certificate',
                 subtitle: 'Certificate will be issued after inspection.',
-                isCompleted: false,
+                isCompleted: true,
                 isCurrent: false,
                 isLast: false,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const QualityCertificateScreen(),
+                    ),
+                  );
+                },
+                actionLabel: 'View Certificate',
+                actionOnTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const QualityCertificateScreen(),
+                    ),
+                  );
+                },
               ),
 
               _buildTimelineItem(
                 title: 'Procurement Agreement',
                 subtitle: 'Agreement will be created after approval.',
-                isCompleted: false,
+                isCompleted: true,
                 isCurrent: false,
                 isLast: false,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ProcurementAgreementScreen(),
+                    ),
+                  );
+                },
+                actionLabel: 'View Agreement',
+                actionOnTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ProcurementAgreementScreen(),
+                    ),
+                  );
+                },
               ),
 
               _buildTimelineItem(
                 title: 'Pickup / Delivery',
                 subtitle: 'Pickup schedule will appear here.',
-                isCompleted: false,
+                isCompleted: true,
                 isCurrent: false,
                 isLast: false,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const PickupDeliveryScreen(),
+                    ),
+                  );
+                },
+                actionLabel: 'Track Details',
+                actionOnTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const PickupDeliveryScreen(),
+                    ),
+                  );
+                },
               ),
 
               _buildTimelineItem(
                 title: 'Warehouse Receipt',
                 subtitle: 'Warehouse receipt will be recorded here.',
-                isCompleted: false,
+                isCompleted: true,
                 isCurrent: false,
                 isLast: false,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const WarehouseReceiptScreen(),
+                    ),
+                  );
+                },
+                actionLabel: 'View Receipt',
+                actionOnTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const WarehouseReceiptScreen(),
+                    ),
+                  );
+                },
               ),
 
               _buildTimelineItem(
                 title: 'Payment',
                 subtitle: 'Payment status will appear here.',
-                isCompleted: false,
-                isCurrent: false,
+                isCompleted: true,
+                isCurrent: true,
                 isLast: true,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const PaymentStatusScreen(),
+                    ),
+                  );
+                },
+                actionLabel: 'View Payment',
+                actionOnTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const PaymentStatusScreen(),
+                    ),
+                  );
+                },
               ),
 
               const SizedBox(height: 16),
@@ -312,6 +420,9 @@ class LotDetailsScreen extends StatelessWidget {
     required bool isCompleted,
     required bool isCurrent,
     required bool isLast,
+    VoidCallback? onTap,
+    String? actionLabel,
+    VoidCallback? actionOnTap,
   }) {
     final Color circleColor;
 
@@ -323,7 +434,7 @@ class LotDetailsScreen extends StatelessWidget {
       circleColor = const Color(0xFFC7CEC7);
     }
 
-    return Row(
+    final content = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // --------------------------------------------------------
@@ -394,8 +505,29 @@ class LotDetailsScreen extends StatelessWidget {
             ),
           ),
         ),
+
+        // Optional contextual action button — only visible when this
+        // timeline step is current or already completed.
+        if ((isCurrent || isCompleted) && actionLabel != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 22, left: 8),
+            child: ElevatedButton(
+              onPressed: actionOnTap ?? onTap,
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(0, 34),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+              child: Text(actionLabel, style: const TextStyle(fontSize: 12)),
+            ),
+          ),
       ],
     );
+
+    if (onTap != null) {
+      return InkWell(onTap: onTap, child: content);
+    }
+
+    return content;
   }
 
   // ============================================================

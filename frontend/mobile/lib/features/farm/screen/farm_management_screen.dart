@@ -95,8 +95,9 @@ class FarmManagementScreen extends StatelessWidget {
                       backgroundColor: ShreeAnnaTheme.primaryGreen,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: BorderRadius.circular(10),
                       ),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), 
                     ),
                   ),
                 ],
