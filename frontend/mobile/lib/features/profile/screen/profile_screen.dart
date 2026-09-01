@@ -14,13 +14,7 @@ class ProfileScreen extends StatelessWidget {
         backgroundColor: ShreeAnnaTheme.background,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-
-        leading: IconButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF394139)),
-        ),
+        automaticallyImplyLeading: false,
 
         title: const Text(
           'ShreeAnna',
@@ -96,7 +90,7 @@ class ProfileScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Ramesh Patel',
+                            'Yogesh Parmar',
                             style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.bold,

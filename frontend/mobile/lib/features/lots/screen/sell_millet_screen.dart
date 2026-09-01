@@ -320,7 +320,7 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton.icon(
-                    onPressed: _submitLot,
+                    onPressed: () => _showSubmitLotConfirmation(context),
                     icon: const Icon(Icons.lock_outline, size: 16),
                     label: const Text(
                       'SUBMIT LOT',
@@ -419,5 +419,42 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
     final year = date.year.toString();
 
     return '$day/$month/$year';
+  }
+
+  void _showSubmitLotConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Confirm Submission'),
+
+          content: const Text(
+            'Are you sure you want to submit this lot for quality inspection?',
+          ),
+
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('Cancel'),
+            ),
+
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+
+                _submitLot();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ShreeAnnaTheme.primaryGreen,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Submit'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
