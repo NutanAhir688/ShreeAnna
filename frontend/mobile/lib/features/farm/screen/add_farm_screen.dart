@@ -8,6 +8,8 @@ import 'package:flutter/services.dart' show rootBundle, PlatformException;
 
 import '../../../app/theme.dart';
 import '../../../l10n/generated/app_localizations.dart';
+import '../../farmers/services/farmer_api.dart';
+import '../data/farm_api.dart';
 
 class AddFarmScreen extends StatefulWidget {
   const AddFarmScreen({super.key});
@@ -17,6 +19,9 @@ class AddFarmScreen extends StatefulWidget {
 }
 
 class _AddFarmScreenState extends State<AddFarmScreen> {
+  final FarmerApi _farmerApi = FarmerApi();
+  final FarmApi _farmApi = FarmApi();
+
   final _nameController = TextEditingController();
   final _areaController = TextEditingController();
 
@@ -35,6 +40,7 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
   File? _photo;
   Position? _position;
   String _soilType = 'Black Soil';
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -227,19 +233,83 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
     }
   }
 
-  void _save() {
-    final lat = _position?.latitude;
-    final lng = _position?.longitude;
+  Future<void> _save() async {
+    if (_isLoading) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Submitted ${_nameController.text} area:${_areaController.text} soil:$_soilType district:${_selectedDistrict ?? ''} taluka:${_selectedTaluka ?? ''} village:${_selectedVillage ?? ''} survey:${_selectedSurveyNumber ?? ''} status:Pending Verification lat:$lat lng:$lng photo:${_photo != null}',
+    var name = _nameController.text.trim();
+    final areaText = _areaController.text.trim();
+    var area = double.tryParse(areaText);
+
+    if (name.isEmpty) {
+      name = _selectedVillage != null
+          ? 'Farm - $_selectedVillage'
+          : (_selectedDistrict != null ? 'Farm - $_selectedDistrict' : 'My Farm');
+    }
+
+    if (area == null || area <= 0) {
+      area = 1.0;
+    }
+
+    if (_selectedDistrict == null ||
+        _selectedTaluka == null ||
+        _selectedVillage == null ||
+        _selectedSurveyNumber == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Please select district, taluka, village, and survey number',
+          ),
         ),
-      ),
-    );
+      );
+      return;
+    }
 
-    Navigator.pop(context);
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final farmer = await _farmerApi.getMe();
+      String imageUrl = '';
+
+      if (_photo != null) {
+        imageUrl = await _farmApi.uploadImage(_photo!);
+      }
+
+      await _farmApi.createFarm(
+        farmerId: farmer.id,
+        farmName: name,
+        areaInAcres: area,
+        soilType: _soilType,
+        milletType: _selectedMilletType ?? 'Pearl Millet',
+        surveyNumber: _selectedSurveyNumber!,
+        district: _selectedDistrict!,
+        taluka: _selectedTaluka!,
+        village: _selectedVillage!,
+        latitude: _position?.latitude ?? 0.0,
+        longitude: _position?.longitude ?? 0.0,
+        imageUrl: imageUrl,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Farm added successfully!')),
+      );
+
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to add farm: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -532,8 +602,17 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: _save,
-                      child: Text(l10n.save),
+                      onPressed: _isLoading ? null : _save,
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(l10n.save),
                     ),
                   ),
                 ],

@@ -1,0 +1,28 @@
+# Environment / secrets — NEVER commit these
+.env
+*.env
+!.env.example
+
+# Build outputs
+**/bin/
+**/obj/
+**/Debug/
+**/Release/
+
+# .NET user secrets
+**/appsettings.*.json
+!**/appsettings.json
+!**/appsettings.Development.json
+
+# Flutter / Dart
+**/.dart_tool/
+**/build/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/pubspec.lock
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.user

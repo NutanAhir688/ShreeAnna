@@ -1,4 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
+
+import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as p;
 
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_config.dart';
@@ -6,6 +10,61 @@ import '../model/farm.dart';
 
 class FarmApi {
   final ApiClient _apiClient = ApiClient();
+
+  /// Uploads [imageFile] directly to Azure Blob Storage using a short-lived
+  /// SAS URL obtained from the backend.  Returns the permanent public URL.
+  Future<String> uploadImage(File imageFile) async {
+    // Step 1 – ask the backend to generate a SAS write URL
+    final ext = p.extension(imageFile.path).replaceFirst('.', ''); // e.g. "jpg"
+    final sasEndpoint =
+        '${ApiConfig.uploadSasUrl}?ext=${Uri.encodeComponent(ext.isEmpty ? 'jpg' : ext)}';
+
+    final sasResponse = await _apiClient.get(sasEndpoint);
+
+    if (sasResponse.statusCode != 200) {
+      throw Exception(
+          'Failed to obtain upload SAS URL (${sasResponse.statusCode}): ${sasResponse.body}');
+    }
+
+    final sasJson = jsonDecode(sasResponse.body) as Map<String, dynamic>;
+    final sasUrl = sasJson['sasUrl'] as String;
+    final permanentUrl = sasJson['permanentUrl'] as String;
+
+    // Step 2 – PUT the raw bytes directly to Azure Blob Storage
+    final bytes = await imageFile.readAsBytes();
+    final mimeType = _mimeFromExt(ext);
+
+    final putResponse = await http.put(
+      Uri.parse(sasUrl),
+      headers: {
+        'x-ms-blob-type': 'BlockBlob',
+        'Content-Type': mimeType,
+      },
+      body: bytes,
+    );
+
+    if (putResponse.statusCode != 201 && putResponse.statusCode != 200) {
+      throw Exception(
+          'Failed to upload image to Azure Storage (${putResponse.statusCode}): ${putResponse.body}');
+    }
+
+    return permanentUrl;
+  }
+
+  String _mimeFromExt(String ext) {
+    switch (ext.toLowerCase()) {
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      case 'heic':
+        return 'image/heic';
+      default:
+        return 'image/jpeg';
+    }
+  }
 
   Future<List<Farm>> getMyFarms(String farmerId) async {
     final response = await _apiClient.get(ApiConfig.farmerFarms(farmerId));
@@ -105,12 +164,13 @@ class FarmApi {
       },
     );
 
-    if (response.statusCode == 201) {
-      return Farm.fromJson(jsonDecode(response.body));
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final decoded = jsonDecode(response.body);
+      return Farm.fromJson(_extractMap(decoded));
     }
 
     if (response.statusCode == 400) {
-      throw Exception('Please check the farm details.');
+      throw Exception('Please check the farm details: ${response.body}');
     }
 
     if (response.statusCode == 401) {
@@ -121,7 +181,7 @@ class FarmApi {
       throw Exception('You are not allowed to create this farm.');
     }
 
-    throw Exception('Failed to create farm.');
+    throw Exception('Failed to create farm: ${response.statusCode} ${response.body}');
   }
 
   // --------------------------------------------------

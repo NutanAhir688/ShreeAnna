@@ -21,4 +21,15 @@ class ApiConfig {
   static String registerFarmer = '$baseUrl/api/farmers/register';
 
   static String registerFarm = '$baseUrl/api/farms/register';
+
+  static const String uploadImage = '$baseUrl/api/upload';
+
+  /// Returns a signed SAS write URL for a given file extension.
+  /// Usage: GET [uploadSasUrl]?ext=jpg
+  static const String uploadSasUrl = '$baseUrl/api/upload/sas';
+
+  static const String azureBlobBaseUrl =
+      'https://shreeannafarmimages.blob.core.windows.net/farm-images';
+
+  static String azureSasToken = '';
 }

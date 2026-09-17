@@ -134,9 +134,32 @@ public class FarmerService : IFarmerService
 
     private async Task<string> GenerateFarmerCodeAsync()
     {
-        var count = await _context.Farmers.CountAsync();
+        var existingCodes = await _context.Farmers
+            .Select(x => x.FarmerCode)
+            .ToListAsync();
 
-        return $"FAR-{count + 1:D4}";
+        var maxNumber = 0;
+        foreach (var code in existingCodes)
+        {
+            if (code != null && code.StartsWith("FAR-") && int.TryParse(code.Substring(4), out var num))
+            {
+                if (num > maxNumber)
+                {
+                    maxNumber = num;
+                }
+            }
+        }
+
+        var nextNumber = maxNumber + 1;
+        var candidateCode = $"FAR-{nextNumber:D4}";
+
+        while (await _context.Farmers.AnyAsync(x => x.FarmerCode == candidateCode))
+        {
+            nextNumber++;
+            candidateCode = $"FAR-{nextNumber:D4}";
+        }
+
+        return candidateCode;
     }
 
     private static FarmerResponse MapToResponse(Farmer farmer)
