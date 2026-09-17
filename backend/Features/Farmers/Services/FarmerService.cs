@@ -58,7 +58,8 @@ public class FarmerService : IFarmerService
                 DateOfBirth = f.DateOfBirth,
                 Status = f.Status,
                 CreatedAt = f.CreatedAt,
-                FarmCount = f.Farms.Count
+                FarmCount = f.Farms.Count,
+                TotalLandInAcres = f.Farms.Sum(farm => farm.AreaInAcres)
             })
             .ToListAsync();
     }
@@ -82,7 +83,8 @@ public class FarmerService : IFarmerService
                 DateOfBirth = f.DateOfBirth,
                 Status = f.Status,
                 CreatedAt = f.CreatedAt,
-                FarmCount = f.Farms.Count
+                FarmCount = f.Farms.Count,
+                TotalLandInAcres = f.Farms.Sum(farm => farm.AreaInAcres)
             })
             .FirstOrDefaultAsync();
     }
@@ -178,7 +180,8 @@ public class FarmerService : IFarmerService
             DateOfBirth = farmer.DateOfBirth,
             Status = farmer.Status,
             CreatedAt = farmer.CreatedAt,
-            FarmCount = farmer.Farms.Count
+            FarmCount = farmer.Farms?.Count ?? 0,
+            TotalLandInAcres = farmer.Farms?.Sum(farm => farm.AreaInAcres) ?? 0
         };
     }
 }

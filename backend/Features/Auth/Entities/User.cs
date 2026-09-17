@@ -17,5 +17,9 @@ public class User
 
     public bool IsActive { get; set; } = true;
 
+    public string? RefreshToken { get; set; }
+
+    public DateTime? RefreshTokenExpiryTime { get; set; }
+
     public FpoMember? FpoMember { get; set; }
 }

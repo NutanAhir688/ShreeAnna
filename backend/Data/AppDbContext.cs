@@ -1,9 +1,12 @@
 using backend.Features.Auth.Entities;
 using backend.Features.Farmers.Entities;
 using backend.Features.Farms.Entities;
-
-
 using backend.Features.Fpo.Entities;
+using backend.Features.Procurement.Entities;
+using backend.Features.Quality.Entities;
+using backend.Features.Warehouses.Entities;
+using backend.Features.Inventory.Entities;
+using backend.Features.Logistics.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Data;
@@ -23,6 +26,13 @@ public class AppDbContext : DbContext
 
     public DbSet<Farm> Farms => Set<Farm>();
     public DbSet<FarmerOtp> FarmerOtps => Set<FarmerOtp>();
+    public DbSet<ProcurementLot> ProcurementLots => Set<ProcurementLot>();
+    public DbSet<Inspection> Inspections => Set<Inspection>();
+    public DbSet<QualityCertificate> QualityCertificates => Set<QualityCertificate>();
+    public DbSet<Warehouse> Warehouses => Set<Warehouse>();
+    public DbSet<InventoryBatch> InventoryBatches => Set<InventoryBatch>();
+    public DbSet<StockMovement> StockMovements => Set<StockMovement>();
+    public DbSet<Dispatch> Dispatches => Set<Dispatch>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -34,6 +44,7 @@ public class AppDbContext : DbContext
         ConfigureFarmer(modelBuilder);
         ConfigureFarm(modelBuilder);
         ConfigureFarmerOtp(modelBuilder);
+        ConfigureProcurementLot(modelBuilder);
     }
     private static void ConfigureFarmerOtp(ModelBuilder modelBuilder)
     {
@@ -88,6 +99,10 @@ public class AppDbContext : DbContext
                 .HasForeignKey<User>(x => x.FpoMemberId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            entity.Property(x => x.RefreshToken)
+                .HasMaxLength(250);
+
+            entity.Property(x => x.RefreshTokenExpiryTime);
         });
     }
 
@@ -216,6 +231,45 @@ public class AppDbContext : DbContext
                 .WithMany(x => x.Farms)
                 .HasForeignKey(x => x.FarmerId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureProcurementLot(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ProcurementLot>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.LotNumber)
+                .IsRequired()
+                .HasMaxLength(30);
+
+            entity.Property(x => x.MilletType)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(x => x.EstimatedQuantityKg)
+                .HasPrecision(10, 2);
+
+            entity.Property(x => x.ActualQuantityKg)
+                .HasPrecision(10, 2);
+
+            entity.Property(x => x.Status)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(x => x.Description)
+                .HasMaxLength(500);
+
+            entity.HasOne(x => x.Farmer)
+                .WithMany()
+                .HasForeignKey(x => x.FarmerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.Farm)
+                .WithMany()
+                .HasForeignKey(x => x.FarmId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

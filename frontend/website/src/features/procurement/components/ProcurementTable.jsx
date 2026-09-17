@@ -14,15 +14,18 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 function getStatusVariant(status) {
-  switch (status) {
-    case "Completed":
+  const normalized = (status || "").toLowerCase().replaceAll("_", " ");
+  switch (normalized) {
+    case "completed":
       return "default";
 
-    case "Ready for Payment":
+    case "ready for payment":
+    case "quality certified":
       return "secondary";
 
-    case "Quality Inspection":
-    case "Pending Inspection":
+    case "quality inspection":
+    case "pending inspection":
+    case "submitted":
       return "outline";
 
     default:
@@ -30,7 +33,7 @@ function getStatusVariant(status) {
   }
 }
 
-function ProcurementTable({ lots, onView }) {
+function ProcurementTable({ lots = [], onView }) {
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200/80 bg-white shadow-xs">
 
@@ -88,11 +91,11 @@ function ProcurementTable({ lots, onView }) {
                 <TableCell className="pl-6">
                   <div>
                     <p className="font-semibold text-sm">
-                      {lot.id}
+                      {lot.lotNumber || lot.id}
                     </p>
 
                     <p className="text-xs text-muted-foreground">
-                      {lot.procurementDate}
+                      {lot.procurementDate || lot.date || "—"}
                     </p>
                   </div>
                 </TableCell>
@@ -112,22 +115,22 @@ function ProcurementTable({ lots, onView }) {
 
 
                 <TableCell className="text-sm">
-                  {lot.millet}
+                  {lot.millet || "—"}
                 </TableCell>
 
 
                 <TableCell className="text-sm">
-                  {lot.quantity.toLocaleString("en-IN")} kg
+                  {lot.quantity != null ? `${lot.quantity.toLocaleString("en-IN")} kg` : "—"}
                 </TableCell>
 
 
                 <TableCell className="text-sm">
-                  ₹{lot.pricePerKg}/kg
+                  {lot.pricePerKg != null ? `₹${lot.pricePerKg}/kg` : "—"}
                 </TableCell>
 
 
                 <TableCell className="text-sm font-medium">
-                  ₹{lot.totalValue.toLocaleString("en-IN")}
+                  {lot.totalValue != null ? `₹${lot.totalValue.toLocaleString("en-IN")}` : "—"}
                 </TableCell>
 
 
@@ -135,7 +138,7 @@ function ProcurementTable({ lots, onView }) {
                   <Badge
                     variant={getStatusVariant(lot.status)}
                   >
-                    {lot.status}
+                    {(lot.status || "UNKNOWN").replaceAll("_", " ")}
                   </Badge>
                 </TableCell>
 

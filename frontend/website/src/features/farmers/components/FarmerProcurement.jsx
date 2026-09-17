@@ -17,6 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 function FarmerProcurement({ farmer }) {
+  const procurementHistory = farmer.procurementHistory ?? [];
   return (
     <Card className="border-slate-200/80 shadow-xs">
 
@@ -28,7 +29,7 @@ function FarmerProcurement({ farmer }) {
 
       <CardContent className="px-0">
 
-        {farmer.procurementHistory.length === 0 ? (
+        {procurementHistory.length === 0 ? (
           <div className="px-6 py-10 text-center text-sm text-muted-foreground">
             No procurement history available.
           </div>
@@ -67,7 +68,7 @@ function FarmerProcurement({ farmer }) {
 
             <TableBody>
 
-              {farmer.procurementHistory.map((item) => (
+              {procurementHistory.map((item) => (
                 <TableRow key={item.lotId}>
 
                   <TableCell className="pl-6 font-medium">

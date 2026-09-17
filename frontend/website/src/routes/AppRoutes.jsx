@@ -1,16 +1,20 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 
 import DashboardLayout from "../components/layout/DashboardLayout";
+import ProtectedRoute from "./ProtectedRoute";
 
+import Login from "../features/auth/pages/Login";
 import Dashboard from "../features/dashboard/pages/Dashboard";
 import Farmers from "@/features/farmers/pages/Farmers";
 import ProcurementLots from "../features/procurement/pages/ProcurementLots";
+import Agreements from "../features/procurement/pages/Agreements";
 import FarmerDetails from "../features/farmers/pages/FarmerDetails";
 import FarmVerification from "../features/farmers/pages/FarmVerification";
 import FarmVerificationList from "../features/farmers/pages/FarmVerificationList";
 import EditFarmer from "../features/farmers/pages/EditFarmer";
 import ProcurementLotDetails from "../features/procurement/pages/ProcurementLotDetails";
 import QualityInspection from "../features/quality/pages/QualityInspection";
+import QualityManagement from "../features/quality/pages/QualityManagement";
 import Certification from "../features/certification/pages/Certification";
 import PaymentProcessing from "../features/payments/pages/PaymentProcessing";
 import Marketplace from "../features/marketplace/pages/Marketplace";
@@ -35,158 +39,76 @@ import FPOMemberDetails from "@/features/fpo/pages/FPOMemberDetails";
 import Reports from "@/features/reports/pages/Reports";
 
 function AppRoutes() {
-    return (
-        <Routes>
+  return (
+    <Routes>
+      {/* Public Login Route */}
+      <Route path="/login" element={<Login />} />
 
-            {/* Default route */}
-            <Route
-                path="/"
-                element={<Navigate to="/dashboard" replace />}
-            />
+      {/* Default redirect to /dashboard */}
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-            {/* Dashboard layout */}
-            <Route element={<DashboardLayout />}>
+      {/* Protected Dashboard Layout */}
+      <Route element={<ProtectedRoute />}>
+        <Route element={<DashboardLayout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/farmers" element={<Farmers />} />
+          <Route path="/farmers/:id" element={<FarmerDetails />} />
+          <Route path="/farmers/:id/edit" element={<EditFarmer />} />
 
-                <Route
-                    path="/dashboard"
-                    element={<Dashboard />}
-                />
+          <Route path="/farm-verification" element={<FarmVerificationList />} />
+          <Route path="/farm-verification/:id" element={<FarmVerification />} />
 
-                <Route
-                    path="/farmers"
-                    element={<Farmers />}
-                />
-                <Route
-                    path="/farmers/:id"
-                    element={<FarmerDetails />}
-                />
+          <Route path="/procurement/lots" element={<ProcurementLots />} />
+          <Route path="/procurement-lots" element={<ProcurementLots />} />
+          <Route path="/procurement-lots/:id" element={<ProcurementLotDetails />} />
+          <Route path="/procurement-lots/:id/inspection" element={<QualityInspection />} />
+          <Route path="/procurement-lots/:id/certification" element={<Certification />} />
+          <Route path="/procurement-lots/:id/payment" element={<PaymentProcessing />} />
+          <Route path="/agreements" element={<Agreements />} />
 
-                <Route
-                    path="/procurement/lots"
-                    element={<ProcurementLots />}
-                />
-                <Route
-                    path="/farm-verification"
-                    element={<FarmVerificationList />}
-                />
+          <Route path="/quality" element={<QualityManagement />} />
+          <Route path="/quality/assigned" element={<QualityManagement defaultTab="assigned" />} />
+          <Route path="/quality/history" element={<QualityManagement defaultTab="history" />} />
+          <Route path="/quality/certifications" element={<QualityManagement defaultTab="certifications" />} />
 
-                <Route
-                    path="/farm-verification/:id"
-                    element={<FarmVerification />}
-                />
-                <Route
-                    path="/farmers/:id"
-                    element={<FarmerDetails />}
-                />
+          <Route path="/marketplace" element={<Marketplace />} />
+          <Route path="/marketplace/new" element={<CreateMarketplaceListing />} />
+          <Route path="/marketplace/:id" element={<MarketplaceListingDetails />} />
 
-                <Route
-                    path="/farmers/:id/edit"
-                    element={<EditFarmer />}
-                />
-                <Route
-                    path="/procurement-lots"
-                    element={<ProcurementLots />}
-                />
-                <Route
-                    path="/procurement-lots/:id"
-                    element={<ProcurementLotDetails />}
-                />
-                <Route
-                    path="/procurement-lots/:id/inspection"
-                    element={<QualityInspection />}
-                />
-                <Route
-                    path="/procurement-lots/:id/certification"
-                    element={<Certification />}
-                />
-                <Route
-                    path="/procurement-lots/:id/payment"
-                    element={<PaymentProcessing />}
-                />
-                <Route
-                    path="/marketplace"
-                    element={<Marketplace />}
-                />
-                <Route
-                    path="/marketplace/:id"
-                    element={<MarketplaceListingDetails />}
-                />
-                <Route
-                    path="/marketplace/new"
-                    element={<CreateMarketplaceListing />}
-                />
-                <Route
-                    path="/orders"
-                    element={<Orders />}
-                />
-                <Route
-                    path="/orders/:id"
-                    element={<OrderDetails />}
-                />
-                <Route path="/dispatches" element={<Dispatches />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/orders/:id" element={<OrderDetails />} />
 
-                <Route
-                    path="/dispatches/:id"
-                    element={<DispatchDetails />}
-                />
-                <Route
-                    path="/inventory"
-                    element={<Inventory />}
-                />
+          <Route path="/dispatches" element={<Dispatches />} />
+          <Route path="/dispatches/:id" element={<DispatchDetails />} />
 
-                <Route
-                    path="/inventory/:id"
-                    element={<InventoryDetails />}
-                />
-                <Route
-                    path="/inventory/movements"
-                    element={<StockMovements />}
-                />
-                <Route
-                    path="/warehouses"
-                    element={<Warehouses />}
-                />
+          <Route path="/inventory" element={<Inventory />} />
+          <Route path="/inventory/movements" element={<StockMovements />} />
+          <Route path="/inventory/:id" element={<InventoryDetails />} />
 
-                <Route
-                    path="/warehouses/:id"
-                    element={<WarehouseDetails />}
-                />
-                <Route
-                    path="/warehouses/lots"
-                    element={<WarehouseLotAllocation />}
-                />
-                <Route
-                    path="/settlements"
-                    element={<Settlements />}
-                />
+          <Route path="/warehouses" element={<Warehouses />} />
+          <Route path="/warehouses/lots" element={<WarehouseLotAllocation />} />
+          <Route path="/warehouses/:id" element={<WarehouseDetails />} />
 
-                <Route
-                    path="/settlements/:id"
-                    element={<SettlementDetails />}
-                />
-                <Route
-                    path="/buyers"
-                    element={<Buyers />}
-                />
+          <Route path="/settlements" element={<Settlements />} />
+          <Route path="/settlements/:id" element={<SettlementDetails />} />
+          <Route path="/finance" element={<Settlements />} />
 
-                <Route
-                    path="/buyers/:id"
-                    element={<BuyerDetails />}
-                />
-                <Route
-                    path="/fpo"
-                    element={<FPOManagement />}
-                />
+          <Route path="/buyers" element={<Buyers />} />
+          <Route path="/buyers/:id" element={<BuyerDetails />} />
 
-                <Route
-                    path="/fpo/members/:id"
-                    element={<FPOMemberDetails />}
-                />
-                <Route path="/reports" element={<Reports />} />
-            </Route>
+          <Route path="/fpo" element={<FPOManagement />} />
+          <Route path="/fpo/members/:id" element={<FPOMemberDetails />} />
 
-        </Routes>
-    );
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/settings" element={<Dashboard />} />
+          <Route path="/support" element={<Dashboard />} />
+        </Route>
+      </Route>
+
+      {/* Catch-all redirect */}
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
+  );
 }
 
 export default AppRoutes;

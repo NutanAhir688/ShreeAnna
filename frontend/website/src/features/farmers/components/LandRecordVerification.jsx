@@ -3,7 +3,6 @@ import {
   CheckCircle2,
   ExternalLink,
   FileSearch,
-  XCircle,
 } from "lucide-react";
 
 import {
@@ -243,15 +242,20 @@ function LandRecordVerification({ farm, onVerify, onReject }) {
         </div>
 
         {/* Actions */}
-        <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <Button variant="destructive" onClick={onReject}>
-            <XCircle className="mr-2 h-4 w-4" />
-            Reject Farm
-          </Button>
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <button
+            type="button"
+            onClick={onReject}
+            className="text-sm text-red-500 hover:text-red-700 underline underline-offset-2 transition-colors"
+          >
+            Reject this farm instead
+          </button>
 
           <Button
             onClick={onVerify}
-            className={allChecked ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}
+            className={allChecked
+              ? "bg-emerald-600 hover:bg-emerald-700 text-white px-8"
+              : "px-8"}
           >
             <CheckCircle2 className="mr-2 h-4 w-4" />
             Verify Farm

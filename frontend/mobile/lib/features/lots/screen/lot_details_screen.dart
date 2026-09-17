@@ -2,28 +2,110 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
 import '../../../l10n/generated/app_localizations.dart';
-import 'procurement_agreement_screen.dart';
-import 'quality_results_screen.dart';
-import 'quality_certificate_screen.dart';
-import 'pickup_delivery_screen.dart';
+import '../models/lot_model.dart';
+import '../services/lot_api.dart';
 import 'payment_status_screen.dart';
+import 'pickup_delivery_screen.dart';
+import 'procurement_agreement_screen.dart';
+import 'quality_certificate_screen.dart';
+import 'quality_results_screen.dart';
 import 'warehouse_receipt_screen.dart';
 
-class LotDetailsScreen extends StatelessWidget {
+class LotDetailsScreen extends StatefulWidget {
   const LotDetailsScreen({
     super.key,
+    this.lotId,
     required this.lotNumber,
     required this.milletName,
     required this.quantity,
     required this.submissionDate,
     required this.status,
+    this.farmName,
   });
 
+  final String? lotId;
   final String lotNumber;
   final String milletName;
   final String quantity;
   final String submissionDate;
   final String status;
+  final String? farmName;
+
+  @override
+  State<LotDetailsScreen> createState() => _LotDetailsScreenState();
+}
+
+class _LotDetailsScreenState extends State<LotDetailsScreen> {
+  final LotApi _lotApi = LotApi();
+  bool _isLoadingTimeline = false;
+  LotTimelineModel? _timeline;
+  String? _currentStatus;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentStatus = widget.status;
+    if (widget.lotId != null && widget.lotId!.isNotEmpty) {
+      _loadTimeline();
+    }
+  }
+
+  Future<void> _loadTimeline() async {
+    setState(() {
+      _isLoadingTimeline = true;
+    });
+
+    try {
+      final timeline = await _lotApi.getLotTimeline(widget.lotId!);
+      LotModel? lotDetails;
+      try {
+        lotDetails = await _lotApi.getLotById(widget.lotId!);
+      } catch (_) {}
+
+      setState(() {
+        _timeline = timeline;
+        if (lotDetails != null) {
+          _currentStatus = _formatStatusText(lotDetails.status);
+        }
+        _isLoadingTimeline = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingTimeline = false;
+      });
+      debugPrint('Error loading lot timeline: $e');
+    }
+  }
+
+  String _formatStatusText(String status) {
+    switch (status.toUpperCase()) {
+      case 'SUBMITTED':
+        return 'Submitted';
+      case 'QUALITY_INSPECTION':
+        return 'Inspection in Progress';
+      case 'QUALITY_CERTIFIED':
+      case 'QUALITY_PASSED':
+      case 'CERTIFIED':
+        return 'Certified';
+      case 'AGREEMENT_PENDING':
+        return 'Agreement Awaiting Approval';
+      case 'AGREEMENT_ACCEPTED':
+      case 'PROCUREMENT_AGREEMENT':
+        return 'Agreement Accepted';
+      case 'AGREEMENT_REJECTED':
+        return 'Agreement Rejected';
+      case 'PICKUP_SCHEDULED':
+      case 'PICKUP':
+        return 'Pickup Scheduled';
+      case 'PICKUP_COMPLETED':
+        return 'Pickup Completed';
+      case 'PAYMENT_COMPLETED':
+      case 'PAYMENT':
+        return 'Payment Completed';
+      default:
+        return status;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +144,6 @@ class LotDetailsScreen extends StatelessWidget {
               // ==================================================
               // LOT HEADER
               // ==================================================
-
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -75,7 +156,7 @@ class LotDetailsScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'LOT #$lotNumber',
+                      'LOT #${widget.lotNumber}',
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -86,7 +167,7 @@ class LotDetailsScreen extends StatelessWidget {
                     const SizedBox(height: 7),
 
                     Text(
-                      milletName,
+                      widget.milletName,
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -98,9 +179,9 @@ class LotDetailsScreen extends StatelessWidget {
 
                     Row(
                       children: [
-                        Expanded(child: _buildInfo(l10n.quantity, quantity)),
+                        Expanded(child: _buildInfo(l10n.quantity, widget.quantity)),
                         Expanded(
-                          child: _buildInfo(l10n.submitted, submissionDate),
+                          child: _buildInfo(l10n.submitted, widget.submissionDate),
                         ),
                       ],
                     ),
@@ -117,7 +198,7 @@ class LotDetailsScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        status,
+                        _currentStatus ?? widget.status,
                         style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -145,163 +226,142 @@ class LotDetailsScreen extends StatelessWidget {
 
               const SizedBox(height: 14),
 
-              _buildTimelineItem(
-                title: l10n.lotSubmitted,
-                subtitle: l10n.lotSubmittedSubtitle,
-                isCompleted: true,
-                isCurrent: false,
-                isLast: false,
-              ),
+              if (_isLoadingTimeline)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: ShreeAnnaTheme.primaryGreen,
+                    ),
+                  ),
+                )
+              else if (_timeline != null)
+                Column(
+                  children: _timeline!.steps.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final step = entry.value;
+                    final isCompleted = step.status == 'COMPLETED';
+                    final isCurrent = step.status == 'IN_PROGRESS';
+                    final isLast = index == _timeline!.steps.length - 1;
 
-              _buildTimelineItem(
-                title: l10n.qualityInspection,
-                subtitle: l10n.qualityInspectionSubtitle,
-                isCompleted: true,
-                isCurrent: false,
-                isLast: false,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const QualityResultsScreen(),
+                    return _buildTimelineItemFromModel(
+                      step: step,
+                      isCompleted: isCompleted,
+                      isCurrent: isCurrent,
+                      isLast: isLast,
+                      context: context,
+                      l10n: l10n,
+                    );
+                  }).toList(),
+                )
+              else
+                Column(
+                  children: [
+                    _buildTimelineItem(
+                      title: l10n.lotSubmitted,
+                      subtitle: l10n.lotSubmittedSubtitle,
+                      isCompleted: true,
+                      isCurrent: false,
+                      isLast: false,
                     ),
-                  );
-                },
-                actionLabel: l10n.viewResults,
-                actionOnTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const QualityResultsScreen(),
+                    _buildTimelineItem(
+                      title: l10n.qualityInspection,
+                      subtitle: l10n.qualityInspectionSubtitle,
+                      isCompleted: true,
+                      isCurrent: false,
+                      isLast: false,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => QualityResultsScreen(lotId: widget.lotId),
+                          ),
+                        );
+                      },
+                      actionLabel: l10n.viewResults,
                     ),
-                  );
-                },
-              ),
-
-              _buildTimelineItem(
-                title: l10n.qualityCertificate,
-                subtitle: l10n.qualityCertificateSubtitle,
-                isCompleted: true,
-                isCurrent: false,
-                isLast: false,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const QualityCertificateScreen(),
+                    _buildTimelineItem(
+                      title: l10n.qualityCertificate,
+                      subtitle: l10n.qualityCertificateSubtitle,
+                      isCompleted: true,
+                      isCurrent: false,
+                      isLast: false,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => QualityCertificateScreen(lotId: widget.lotId),
+                          ),
+                        );
+                      },
+                      actionLabel: l10n.viewCertificate,
                     ),
-                  );
-                },
-                actionLabel: l10n.viewCertificate,
-                actionOnTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const QualityCertificateScreen(),
+                    _buildTimelineItem(
+                      title: l10n.procurementAgreement,
+                      subtitle: l10n.procurementAgreementSubtitle,
+                      isCompleted: true,
+                      isCurrent: false,
+                      isLast: false,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ProcurementAgreementScreen(),
+                          ),
+                        );
+                      },
+                      actionLabel: l10n.viewAgreement,
                     ),
-                  );
-                },
-              ),
-
-              _buildTimelineItem(
-                title: l10n.procurementAgreement,
-                subtitle: l10n.procurementAgreementSubtitle,
-                isCompleted: true,
-                isCurrent: false,
-                isLast: false,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ProcurementAgreementScreen(),
+                    _buildTimelineItem(
+                      title: l10n.pickupDelivery,
+                      subtitle: l10n.pickupDeliverySubtitle,
+                      isCompleted: true,
+                      isCurrent: false,
+                      isLast: false,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const PickupDeliveryScreen(),
+                          ),
+                        );
+                      },
+                      actionLabel: l10n.trackDetails,
                     ),
-                  );
-                },
-                actionLabel: l10n.viewAgreement,
-                actionOnTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ProcurementAgreementScreen(),
+                    _buildTimelineItem(
+                      title: l10n.warehouseReceipt,
+                      subtitle: l10n.warehouseReceiptSubtitle,
+                      isCompleted: true,
+                      isCurrent: false,
+                      isLast: false,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const WarehouseReceiptScreen(),
+                          ),
+                        );
+                      },
+                      actionLabel: l10n.viewReceipt,
                     ),
-                  );
-                },
-              ),
-
-              _buildTimelineItem(
-                title: l10n.pickupDelivery,
-                subtitle: l10n.pickupDeliverySubtitle,
-                isCompleted: true,
-                isCurrent: false,
-                isLast: false,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const PickupDeliveryScreen(),
+                    _buildTimelineItem(
+                      title: l10n.payment,
+                      subtitle: l10n.paymentSubtitle,
+                      isCompleted: true,
+                      isCurrent: true,
+                      isLast: true,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const PaymentStatusScreen(),
+                          ),
+                        );
+                      },
+                      actionLabel: l10n.viewPayment,
                     ),
-                  );
-                },
-                actionLabel: l10n.trackDetails,
-                actionOnTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const PickupDeliveryScreen(),
-                    ),
-                  );
-                },
-              ),
-
-              _buildTimelineItem(
-                title: l10n.warehouseReceipt,
-                subtitle: l10n.warehouseReceiptSubtitle,
-                isCompleted: true,
-                isCurrent: false,
-                isLast: false,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const WarehouseReceiptScreen(),
-                    ),
-                  );
-                },
-                actionLabel: l10n.viewReceipt,
-                actionOnTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const WarehouseReceiptScreen(),
-                    ),
-                  );
-                },
-              ),
-
-              _buildTimelineItem(
-                title: l10n.payment,
-                subtitle: l10n.paymentSubtitle,
-                isCompleted: true,
-                isCurrent: true,
-                isLast: true,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const PaymentStatusScreen(),
-                    ),
-                  );
-                },
-                actionLabel: l10n.viewPayment,
-                actionOnTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const PaymentStatusScreen(),
-                    ),
-                  );
-                },
-              ),
+                  ],
+                ),
 
               const SizedBox(height: 16),
 
@@ -329,13 +389,13 @@ class LotDetailsScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    _buildDetailRow(l10n.milletType, milletName),
+                    _buildDetailRow(l10n.milletType, widget.milletName),
                     _buildDivider(),
-                    _buildDetailRow(l10n.estimatedQuantity, quantity),
+                    _buildDetailRow(l10n.estimatedQuantity, widget.quantity),
                     _buildDivider(),
-                    _buildDetailRow(l10n.harvestDate, '20/08/2026'),
+                    _buildDetailRow(l10n.harvestDate, widget.submissionDate),
                     _buildDivider(),
-                    _buildDetailRow(l10n.farmLabel, 'Green Hill Farm'),
+                    _buildDetailRow(l10n.farmLabel, widget.farmName ?? 'Green Hill Farm'),
                     _buildDivider(),
                     _buildDetailRow(l10n.fpo, 'Green Valley Cooperative'),
                   ],
@@ -385,9 +445,93 @@ class LotDetailsScreen extends StatelessWidget {
     );
   }
 
-  // ============================================================
-  // INFO
-  // ============================================================
+  Widget _buildTimelineItemFromModel({
+    required LotTimelineStepModel step,
+    required bool isCompleted,
+    required bool isCurrent,
+    required bool isLast,
+    required BuildContext context,
+    required AppLocalizations l10n,
+  }) {
+    String title = step.step;
+    String subtitle = '';
+    VoidCallback? onTap;
+    String? actionLabel;
+
+    final bool canInteract = isCompleted || isCurrent;
+
+    switch (step.step) {
+      case 'SUBMITTED':
+        title = l10n.lotSubmitted;
+        subtitle = l10n.lotSubmittedSubtitle;
+        break;
+      case 'QUALITY_INSPECTION':
+        title = l10n.qualityInspection;
+        subtitle = l10n.qualityInspectionSubtitle;
+        if (canInteract) {
+          actionLabel = l10n.viewResults;
+          onTap = () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => QualityResultsScreen(lotId: widget.lotId)),
+              );
+        }
+        break;
+      case 'QUALITY_CERTIFICATE':
+        title = l10n.qualityCertificate;
+        subtitle = l10n.qualityCertificateSubtitle;
+        if (canInteract) {
+          actionLabel = l10n.viewCertificate;
+          onTap = () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => QualityCertificateScreen(lotId: widget.lotId)),
+              );
+        }
+        break;
+      case 'PROCUREMENT_AGREEMENT':
+        title = l10n.procurementAgreement;
+        subtitle = l10n.procurementAgreementSubtitle;
+        if (canInteract) {
+          actionLabel = l10n.viewAgreement;
+          onTap = () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProcurementAgreementScreen()),
+              );
+        }
+        break;
+      case 'PICKUP':
+        title = l10n.pickupDelivery;
+        subtitle = l10n.pickupDeliverySubtitle;
+        if (canInteract) {
+          actionLabel = l10n.trackDetails;
+          onTap = () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PickupDeliveryScreen()),
+              );
+        }
+        break;
+      case 'PAYMENT':
+        title = l10n.payment;
+        subtitle = l10n.paymentSubtitle;
+        if (canInteract) {
+          actionLabel = l10n.viewPayment;
+          onTap = () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PaymentStatusScreen()),
+              );
+        }
+        break;
+    }
+
+    return _buildTimelineItem(
+      title: title,
+      subtitle: subtitle,
+      isCompleted: isCompleted,
+      isCurrent: isCurrent,
+      isLast: isLast,
+      onTap: onTap,
+      actionLabel: actionLabel,
+    );
+  }
 
   Widget _buildInfo(String label, String value) {
     return Column(
@@ -412,10 +556,6 @@ class LotDetailsScreen extends StatelessWidget {
     );
   }
 
-  // ============================================================
-  // TIMELINE ITEM
-  // ============================================================
-
   Widget _buildTimelineItem({
     required String title,
     required String subtitle,
@@ -439,10 +579,6 @@ class LotDetailsScreen extends StatelessWidget {
     final content = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // --------------------------------------------------------
-        // TIMELINE
-        // --------------------------------------------------------
-
         SizedBox(
           width: 28,
           child: Column(
@@ -473,9 +609,6 @@ class LotDetailsScreen extends StatelessWidget {
 
         const SizedBox(width: 10),
 
-        // --------------------------------------------------------
-        // CONTENT
-        // --------------------------------------------------------
         Expanded(
           child: Padding(
             padding: const EdgeInsets.only(bottom: 22),
@@ -508,8 +641,6 @@ class LotDetailsScreen extends StatelessWidget {
           ),
         ),
 
-        // Optional contextual action button — only visible when this
-        // timeline step is current or already completed.
         if ((isCurrent || isCompleted) && actionLabel != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 22, left: 8),
@@ -531,10 +662,6 @@ class LotDetailsScreen extends StatelessWidget {
 
     return content;
   }
-
-  // ============================================================
-  // DETAIL ROW
-  // ============================================================
 
   Widget _buildDetailRow(String label, String value) {
     return Padding(

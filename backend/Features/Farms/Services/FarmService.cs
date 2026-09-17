@@ -70,6 +70,14 @@ public class FarmService : IFarmService
             .ToListAsync();
     }
 
+    public async Task<List<FarmResponse>> GetAllAsync()
+    {
+        return await _context.Farms
+            .AsNoTracking()
+            .Select(x => MapToResponseExpression(x))
+            .ToListAsync();
+    }
+
     public async Task<FarmResponse?> GetByIdAsync(Guid farmId)
     {
         var farm = await _context.Farms
@@ -152,6 +160,31 @@ public class FarmService : IFarmService
         await _context.SaveChangesAsync();
 
         return true;
+    }
+
+    public async Task<FarmResponse?> UpdateStatusAsync(Guid farmId, string status, string? verifiedBy = null)
+    {
+        var farm = await _context.Farms
+            .FirstOrDefaultAsync(x => x.Id == farmId);
+
+        if (farm is null)
+        {
+            return null;
+        }
+
+        farm.Status = status;
+        if (status == "Verified")
+        {
+            farm.VerifiedAt = DateTime.UtcNow;
+            if (Guid.TryParse(verifiedBy, out var parsedVerifiedBy))
+            {
+                farm.VerifiedBy = parsedVerifiedBy;
+            }
+        }
+
+        await _context.SaveChangesAsync();
+
+        return MapToResponse(farm);
     }
 
     private async Task<string> GenerateFarmCodeAsync()

@@ -26,20 +26,15 @@ public class AuthService : IAuthService
         _httpContextAccessor = httpContextAccessor;
     }
 
-    public async Task<LoginResponse?> LoginAsync(LoginRequest request)
+    public async Task<(LoginResponse? Response, string? RefreshToken)> LoginAsync(LoginRequest request)
     {
         var user = await _db.Users
             .Include(x => x.FpoMember)
             .FirstOrDefaultAsync(x => x.Email == request.Email);
 
-        if (user is null)
+        if (user is null || !user.IsActive)
         {
-            return null;
-        }
-
-        if (!user.IsActive)
-        {
-            return null;
+            return (null, null);
         }
 
         var passwordValid = BCrypt.Net.BCrypt.Verify(
@@ -49,23 +44,92 @@ public class AuthService : IAuthService
 
         if (!passwordValid)
         {
-            return null;
+            return (null, null);
         }
 
         var expiresAt = DateTime.UtcNow
             .AddMinutes(_jwtOptions.ExpirationMinutes);
 
-        var token = GenerateToken(user, expiresAt);
+        var accessToken = GenerateToken(user, expiresAt);
+        var refreshToken = GenerateRefreshTokenString();
 
-        return new LoginResponse
+        user.RefreshToken = refreshToken;
+        user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+        await _db.SaveChangesAsync();
+
+        var response = new LoginResponse
         {
-            AccessToken = token,
+            AccessToken = accessToken,
             ExpiresAt = expiresAt,
             UserId = user.Id,
             Email = user.Email,
             Role = user.Role,
             MemberName = user.FpoMember?.Name
         };
+
+        return (response, refreshToken);
+    }
+
+    public async Task<(LoginResponse? Response, string? RefreshToken)> RefreshAsync(string refreshToken)
+    {
+        if (string.IsNullOrWhiteSpace(refreshToken))
+        {
+            return (null, null);
+        }
+
+        var user = await _db.Users
+            .Include(x => x.FpoMember)
+            .FirstOrDefaultAsync(x => x.RefreshToken == refreshToken && x.RefreshTokenExpiryTime > DateTime.UtcNow);
+
+        if (user is null || !user.IsActive)
+        {
+            return (null, null);
+        }
+
+        var expiresAt = DateTime.UtcNow
+            .AddMinutes(_jwtOptions.ExpirationMinutes);
+
+        var newAccessToken = GenerateToken(user, expiresAt);
+        var newRefreshToken = GenerateRefreshTokenString();
+
+        user.RefreshToken = newRefreshToken;
+        user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+        await _db.SaveChangesAsync();
+
+        var response = new LoginResponse
+        {
+            AccessToken = newAccessToken,
+            ExpiresAt = expiresAt,
+            UserId = user.Id,
+            Email = user.Email,
+            Role = user.Role,
+            MemberName = user.FpoMember?.Name
+        };
+
+        return (response, newRefreshToken);
+    }
+
+    public async Task RevokeRefreshTokenAsync(string refreshToken)
+    {
+        if (string.IsNullOrWhiteSpace(refreshToken)) return;
+
+        var user = await _db.Users
+            .FirstOrDefaultAsync(x => x.RefreshToken == refreshToken);
+
+        if (user is not null)
+        {
+            user.RefreshToken = null;
+            user.RefreshTokenExpiryTime = null;
+            await _db.SaveChangesAsync();
+        }
+    }
+
+    private static string GenerateRefreshTokenString()
+    {
+        var randomNumber = new byte[64];
+        using var rng = System.Security.Cryptography.RandomNumberGenerator.Create();
+        rng.GetBytes(randomNumber);
+        return Convert.ToBase64String(randomNumber);
     }
 
     public CurrentUserResponse? GetCurrentUser()

@@ -27,4 +27,6 @@ public class FarmerResponse
     public DateTime CreatedAt { get; set; }
 
     public int FarmCount { get; set; }
+
+    public decimal TotalLandInAcres { get; set; }
 }

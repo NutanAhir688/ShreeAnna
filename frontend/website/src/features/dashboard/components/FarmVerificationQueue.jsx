@@ -1,4 +1,5 @@
-import { ChevronRight, MoreHorizontal } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronRight, MoreHorizontal, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -19,18 +20,45 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import { farmVerifications } from "@/features/farmers/data/farmVerifications";
+import { farmsApi, farmersApi } from "@/services/api";
 
 function FarmVerificationQueue() {
   const navigate = useNavigate();
+  const [farms, setFarms] = useState([]);
+  const [farmersMap, setFarmersMap] = useState({});
+  const [loading, setLoading] = useState(true);
 
-  const queueItems = farmVerifications
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [farmsData, farmersData] = await Promise.all([
+          farmsApi.getAll().catch(() => []),
+          farmersApi.getAll().catch(() => []),
+        ]);
+
+        const map = {};
+        if (Array.isArray(farmersData)) {
+          farmersData.forEach((f) => {
+            map[f.id] = f.fullName || f.name;
+          });
+        }
+        setFarmersMap(map);
+        setFarms(Array.isArray(farmsData) ? farmsData : []);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  const queueItems = farms
     .filter(
       (farm) =>
         farm.status === "Pending Verification" ||
-        farm.status === "Under Review"
+        farm.status === "Under Review" ||
+        farm.status === "Pending"
     )
-    .slice(0, 4);
+    .slice(0, 5);
 
   return (
     <Card className="shadow-xs border-slate-200/80 bg-white">
@@ -91,7 +119,14 @@ function FarmVerificationQueue() {
           </TableHeader>
 
           <TableBody>
-            {queueItems.map((item) => (
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={7} className="h-24 text-center text-sm text-slate-500">
+                  <Loader2 className="h-5 w-5 animate-spin mx-auto text-emerald-600" />
+                  <p className="mt-1">Loading farms...</p>
+                </TableCell>
+              </TableRow>
+            ) : queueItems.map((item) => (
               <TableRow
                 key={item.id}
                 className="border-slate-100 hover:bg-slate-50/80 transition-colors"
@@ -101,11 +136,11 @@ function FarmVerificationQueue() {
                 </TableCell>
 
                 <TableCell className="text-xs font-medium text-slate-700">
-                  {item.farmerName}
+                  {farmersMap[item.farmerId] || item.farmerName || "Farmer"}
                 </TableCell>
 
                 <TableCell className="text-xs text-slate-600">
-                  {item.village}
+                  {item.village || item.district || "-"}
                 </TableCell>
 
                 <TableCell className="text-xs text-slate-600 font-mono">
@@ -113,7 +148,7 @@ function FarmVerificationQueue() {
                 </TableCell>
 
                 <TableCell className="text-xs text-slate-600">
-                  {item.submittedAt}
+                  {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : item.submittedAt || "-"}
                 </TableCell>
 
                 <TableCell>

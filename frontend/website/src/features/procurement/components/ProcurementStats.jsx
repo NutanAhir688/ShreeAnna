@@ -10,24 +10,29 @@ import {
   CardContent,
 } from "@/components/ui/card";
 
-function ProcurementStats({ lots }) {
+function ProcurementStats({ lots = [] }) {
   const totalQuantity = lots.reduce(
-    (total, lot) => total + lot.quantity,
+    (total, lot) => total + (lot.quantity || 0),
     0
   );
 
   const completedLots = lots.filter(
-    (lot) => lot.status === "Completed"
+    (lot) =>
+      lot.status === "Completed" ||
+      lot.status === "COMPLETED" ||
+      lot.status === "QUALITY_CERTIFIED"
   ).length;
 
   const pendingLots = lots.filter(
     (lot) =>
       lot.status === "Pending Inspection" ||
-      lot.status === "Quality Inspection"
+      lot.status === "Quality Inspection" ||
+      lot.status === "SUBMITTED" ||
+      lot.status === "QUALITY_INSPECTION"
   ).length;
 
   const totalValue = lots.reduce(
-    (total, lot) => total + lot.totalValue,
+    (total, lot) => total + (lot.totalValue || 0),
     0
   );
 
@@ -49,7 +54,7 @@ function ProcurementStats({ lots }) {
     },
     {
       title: "Procurement Value",
-      value: `₹${totalValue.toLocaleString("en-IN")}`,
+      value: totalValue > 0 ? `₹${totalValue.toLocaleString("en-IN")}` : "—",
       icon: IndianRupee,
     },
   ];

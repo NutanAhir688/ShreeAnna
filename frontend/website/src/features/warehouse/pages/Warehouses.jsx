@@ -1,19 +1,45 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import WarehouseStats from "../components/WarehouseStats";
 import WarehouseFilters from "../components/WarehouseFilters";
 import WarehouseTable from "../components/WarehouseTable";
 
-import { warehouses as warehouseData } from "../data/warehouses";
+import { warehouses as initialMockWarehouses } from "../data/warehouses";
+import { warehousesApi } from "@/services/api";
 
 function Warehouses() {
+  const [warehouseList, setWarehouseList] = useState(initialMockWarehouses);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
+
+  useEffect(() => {
+    async function loadWarehouses() {
+      try {
+        const data = await warehousesApi.getAll();
+        if (data && data.length > 0) {
+          const mapped = data.map((w) => ({
+            id: w.id,
+            code: w.warehouseCode,
+            name: w.name,
+            location: w.location,
+            manager: w.managerName,
+            capacity: `${w.capacityInTons} Tons`,
+            utilized: `${w.utilizedCapacityTons} Tons`,
+            status: w.status === "ACTIVE" ? "Active" : w.status,
+          }));
+          setWarehouseList(mapped);
+        }
+      } catch (err) {
+        console.warn("Using local warehouse mock data:", err.message);
+      }
+    }
+    loadWarehouses();
+  }, []);
 
   const filteredWarehouses = useMemo(() => {
     const query = search.toLowerCase();
 
-    return warehouseData.filter((warehouse) => {
+    return warehouseList.filter((warehouse) => {
       const matchesSearch =
         warehouse.name.toLowerCase().includes(query) ||
         warehouse.location.toLowerCase().includes(query) ||
@@ -22,11 +48,11 @@ function Warehouses() {
 
       const matchesStatus =
         status === "All" ||
-        warehouse.status === status;
+        warehouse.status.toLowerCase() === status.toLowerCase();
 
       return matchesSearch && matchesStatus;
     });
-  }, [search, status]);
+  }, [warehouseList, search, status]);
 
   return (
     <div className="space-y-6">

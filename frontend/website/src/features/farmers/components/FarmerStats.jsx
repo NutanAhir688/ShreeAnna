@@ -12,6 +12,10 @@ function FarmerStats({ farmer, farmers }) {
   // Mode 1: Single farmer details page
   if (farmer) {
     const farmsList = farmer.farms || [];
+    const farmCount = farmsList.length || farmer.farmCount || 0;
+    const totalLand = farmsList.reduce((sum, f) => sum + (f.area || f.areaInAcres || 0), 0)
+      || farmer.totalLand
+      || 0;
     const verifiedFarms = farmsList.filter((farm) => farm.status === "Verified").length;
     const pendingFarms = farmsList.filter(
       (farm) =>
@@ -23,13 +27,13 @@ function FarmerStats({ farmer, farmers }) {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat
           title="Total Farms"
-          value={farmsList.length}
+          value={farmCount}
           icon={LandPlot}
         />
 
         <Stat
           title="Total Land"
-          value={`${farmer.totalLand || 0} acres`}
+          value={totalLand > 0 ? `${totalLand} acres` : `${farmCount} farm${farmCount !== 1 ? "s" : ""}`}
           icon={LandPlot}
         />
 
@@ -53,12 +57,17 @@ function FarmerStats({ farmer, farmers }) {
   const totalFarmers = farmerList.length;
   const activeFarmers = farmerList.filter((f) => f.status === "Active").length;
 
-  const allFarms = farmerList.flatMap((f) => f.farms || []);
-  const verifiedFarms = allFarms.filter((farm) => farm.status === "Verified").length;
-  const pendingFarms = allFarms.filter(
-    (farm) =>
-      farm.status === "Pending Verification" ||
-      farm.status === "Under Review"
+  // The list endpoint returns farmCount (int) per farmer, not farms[].
+  // Sum farmCount directly; fall back to farms[] length for detail-loaded data.
+  const totalFarms = farmerList.reduce(
+    (sum, f) => sum + (f.farmCount ?? f.farms?.length ?? 0),
+    0
+  );
+  const verifiedFarms = farmerList.flatMap((f) => f.farms || []).filter(
+    (farm) => farm.status === "Verified"
+  ).length;
+  const pendingFarms = farmerList.flatMap((f) => f.farms || []).filter(
+    (farm) => farm.status === "Pending Verification" || farm.status === "Under Review"
   ).length;
 
   return (
@@ -76,9 +85,9 @@ function FarmerStats({ farmer, farmers }) {
       />
 
       <Stat
-        title="Verified Farms"
-        value={verifiedFarms}
-        icon={CheckCircle2}
+        title="Total Farms"
+        value={totalFarms}
+        icon={LandPlot}
       />
 
       <Stat
