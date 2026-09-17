@@ -1,11 +1,38 @@
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { farmsApi } from "@/services/api";
 
 function VerificationStatusChart() {
+  const [counts, setCounts] = useState({
+    verified: 0,
+    pending: 0,
+    review: 0,
+    rejected: 0,
+  });
+
+  useEffect(() => {
+    async function loadFarms() {
+      try {
+        const farms = await farmsApi.getAll();
+        if (Array.isArray(farms)) {
+          const v = farms.filter((f) => f.status === "Verified").length;
+          const p = farms.filter((f) => f.status === "Pending Verification" || f.status === "Pending").length;
+          const r = farms.filter((f) => f.status === "Under Review").length;
+          const x = farms.filter((f) => f.status === "Rejected").length;
+          setCounts({ verified: v, pending: p, review: r, rejected: x });
+        }
+      } catch (err) {
+        console.warn("Chart data load error:", err);
+      }
+    }
+    loadFarms();
+  }, []);
+
   const data = [
-    { label: "Verified", count: 982, color: "#10b981", dotClass: "bg-emerald-500" },
-    { label: "Pending", count: 37, color: "#f59e0b", dotClass: "bg-amber-500" },
-    { label: "Under Review", count: 12, color: "#3b82f6", dotClass: "bg-blue-500" },
-    { label: "Rejected", count: 8, color: "#ef4444", dotClass: "bg-red-500" },
+    { label: "Verified", count: counts.verified, color: "#10b981", dotClass: "bg-emerald-500" },
+    { label: "Pending", count: counts.pending, color: "#f59e0b", dotClass: "bg-amber-500" },
+    { label: "Under Review", count: counts.review, color: "#3b82f6", dotClass: "bg-blue-500" },
+    { label: "Rejected", count: counts.rejected, color: "#ef4444", dotClass: "bg-red-500" },
   ];
 
   const totalFarms = data.reduce((acc, item) => acc + item.count, 0);
@@ -15,17 +42,14 @@ function VerificationStatusChart() {
   const strokeWidth = 18;
   const circumference = 2 * Math.PI * radius;
 
-  // Compute stroke dash offsets for continuous donut ring with small gaps
   let accumulatedAngle = 0;
-  const gapAngle = 2; // degrees gap between segments
 
   const segments = data.map((item) => {
-    const percentage = item.count / totalFarms;
-    const arcLength = Math.max(percentage * circumference - 2, 2);
+    const percentage = totalFarms > 0 ? item.count / totalFarms : 0;
+    const arcLength = Math.max(percentage * circumference, 0);
     const strokeDasharray = `${arcLength} ${circumference - arcLength}`;
     const strokeDashoffset = -accumulatedAngle * (circumference / 360);
     
-    // Increment accumulated angle
     accumulatedAngle += percentage * 360;
 
     return {

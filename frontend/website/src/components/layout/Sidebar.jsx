@@ -1,168 +1,85 @@
 import { useState } from "react";
-import { useLocation } from "react-router-dom";
-
-import {
-  LayoutDashboard,
-  Users,
-  Package,
-  ClipboardCheck,
-  FileText,
-  Truck,
-  Warehouse,
-  Factory,
-  ShoppingCart,
-  Wallet,
-  BarChart3,
-  Settings,
-  HelpCircle,
-  FileCheck,
-  ChevronDown,
-  CircleDollarSign,
-  Building2,
-  UsersRound,
-} from "lucide-react";
-
-import { NavLink } from "react-router-dom";
+import { useLocation, NavLink } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
+import { ROLE_CONFIGS, COMMON_SYSTEM_SECTION } from "@/config/rolePermissions";
+import { ChevronDown, Shield } from "lucide-react";
 
 function Sidebar() {
+  const { user } = useAuth();
+  const userRole = user?.role || "FpoManager";
+  const roleConfig = ROLE_CONFIGS[userRole] || ROLE_CONFIGS.FpoManager;
+
+  const sectionsToRender = [...roleConfig.sections, COMMON_SYSTEM_SECTION];
+
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r bg-card">
+    <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r bg-card shadow-xs">
       <div className="flex h-full flex-col">
 
-        {/* Logo */}
-        <div className="flex h-16 items-center border-b px-6">
+        {/* Brand Header */}
+        <div className="flex h-16 items-center border-b px-6 justify-between bg-slate-900 text-white">
           <div>
-            <h1 className="text-xl font-bold">
+            <h1 className="text-xl font-bold tracking-tight text-emerald-400">
               ShreeAnna
             </h1>
-
-            <p className="text-xs text-muted-foreground">
-              FPO Portal
+            <p className="text-xs font-semibold text-slate-300">
+              {roleConfig.portalTitle}
             </p>
           </div>
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${roleConfig.badgeColor || "bg-emerald-100 text-emerald-800"}`}>
+            {roleConfig.roleName.split(" ")[0]}
+          </span>
         </div>
 
-
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto p-4">
+        <nav className="flex-1 overflow-y-auto p-4 space-y-4">
+          {sectionsToRender.map((section, idx) => (
+            <div key={section.title || `sec-${idx}`}>
+              {section.title && (
+                <p className="mb-2 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  {section.title}
+                </p>
+              )}
 
-          {/* Dashboard */}
-          <NavItem
-            to="/dashboard"
-            icon={LayoutDashboard}
-            label="Dashboard"
-          />
+              <div className="space-y-1">
+                {section.items.map((item, itemIdx) => {
+                  if (item.type === "dropdown") {
+                    return (
+                      <DropdownNavItem
+                        key={item.label}
+                        label={item.label}
+                        icon={item.icon}
+                        items={item.items}
+                      />
+                    );
+                  }
 
-
-          {/* Operations */}
-          <NavSection title="Operations">
-
-            <NavItem
-              to="/farmers"
-              icon={Users}
-              label="Farmers"
-            />
-            <NavItem
-              to="/farm-verification"
-              icon={FileCheck}
-              label="Farm Verification"
-              badgeCount={2}
-            />
-
-            <NavItem
-              to="/procurement/lots"
-              icon={Package}
-              label="Procurement Lots"
-            />
-
-
-            <NavItem
-              to="/agreements"
-              icon={FileText}
-              label="Agreements"
-            />
-
-        </NavSection>
-
-        <NavSection title="Logistics & Inventory">
-
-            <NavItem
-              to="/dispatches"
-              icon={Truck}
-              label="Dispatch & Logistics"
-            />
-
-            <InventoryDropdown />
-
-          </NavSection>
-
-
-          {/* Business */}
-          <NavSection title="Business">
-
-            <NavItem
-              to="/marketplace"
-              icon={ShoppingCart}
-              label="Marketplace"
-            />
-
-            <NavItem
-              to="/orders"
-              icon={ClipboardCheck}
-              label="Orders"
-            />
-            <NavItem
-              to="/settlements"
-              icon={CircleDollarSign}
-              label="Settlements & Payments"
-            />
-
-            <NavItem
-              to="/finance"
-              icon={Wallet}
-              label="Finance"
-            />
-
-            <NavItem
-              to="/reports"
-              icon={BarChart3}
-              label="Reports & Analytics"
-            />
-
-          </NavSection>
-          <NavSection title="Buyers Management">
-            <NavItem
-              to="/buyers"
-              icon={Building2}
-              label="Buyers"
-            />
-          </NavSection>
-          <NavSection title="FPO Management">
-            <NavItem
-              to="/fpo"
-              icon={UsersRound}
-              label="FPO Members"
-            />
-          </NavSection>
-
+                  return (
+                    <NavItem
+                      key={`${item.to}-${item.label}-${itemIdx}`}
+                      to={item.to}
+                      icon={item.icon}
+                      label={item.label}
+                      badgeCount={item.badgeCount}
+                      end={item.end}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
-
-        {/* Bottom navigation */}
-        <div className="border-t p-4">
-
-          <NavItem
-            to="/settings"
-            icon={Settings}
-            label="Settings"
-          />
-
-          <NavItem
-            to="/support"
-            icon={HelpCircle}
-            label="Support"
-          />
-
+        {/* Bottom User Info */}
+        <div className="border-t p-3 bg-slate-50/50 flex items-center justify-between text-xs text-slate-600">
+          <div className="flex items-center gap-2 truncate">
+            <Shield className="h-4 w-4 text-emerald-600 shrink-0" />
+            <span className="font-semibold text-slate-700 truncate">
+              {user?.memberName || user?.email || "User"}
+            </span>
+          </div>
+          <span className="text-[10px] bg-slate-200 px-1.5 py-0.5 rounded text-slate-700 font-medium shrink-0">
+            {roleConfig.roleName}
+          </span>
         </div>
 
       </div>
@@ -170,63 +87,39 @@ function Sidebar() {
   );
 }
 
-
-function NavSection({ title, children }) {
-  return (
-    <div className="mt-6">
-      <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        {title}
-      </p>
-
-      <div className="space-y-1">
-        {children}
-      </div>
-    </div>
-  );
-}
-
-
-function InventoryDropdown() {
+function DropdownNavItem({ label, icon: Icon, items }) {
   const location = useLocation();
-  const [open, setOpen] = useState(
-    location.pathname === "/inventory" ||
-      location.pathname.startsWith("/inventory/"),
+  const isChildActive = items.some((item) =>
+    location.pathname === item.to || (item.to !== "/inventory" && location.pathname.startsWith(item.to))
   );
+
+  const [open, setOpen] = useState(isChildActive);
 
   return (
     <div className="rounded-lg border border-slate-200 bg-slate-50/60">
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900"
+        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900"
       >
-        <Warehouse className="h-4 w-4 shrink-0" />
-
-        <span className="flex-1">Warehouse & Inventory</span>
-
+        <Icon className="h-4 w-4 shrink-0 text-slate-500" />
+        <span className="flex-1">{label}</span>
         <ChevronDown
-          className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`h-3.5 w-3.5 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
 
       {open && (
-        <div className="space-y-1 border-t border-slate-200 px-2 pb-2 pt-2">
-          <NavItem to="/inventory" icon={Warehouse} label="Inventory" end />
-          <NavItem
-            to="/inventory/movements"
-            icon={Factory}
-            label="Stock Movements"
-          />
-          <NavItem
-            to="/warehouses"
-            icon={Warehouse}
-            label="Warehouses"
-           end />
-          <NavItem
-            to="/warehouses/lots"
-            icon={Package}
-            label="Lot Allocation"
-          />
+        <div className="space-y-1 border-t border-slate-200 px-2 pb-2 pt-1">
+          {items.map((subItem) => (
+            <NavItem
+              key={subItem.to + subItem.label}
+              to={subItem.to}
+              icon={subItem.icon}
+              label={subItem.label}
+              end={subItem.end}
+            />
+          ))}
         </div>
       )}
     </div>
@@ -234,27 +127,51 @@ function InventoryDropdown() {
 }
 
 function NavItem({ to, icon: Icon, label, badgeCount, end = false }) {
+  const location = useLocation();
+
+  const [targetPath, targetSearch] = to.split("?");
+
+  let isActive = false;
+  if (targetSearch) {
+    const targetParams = new URLSearchParams(targetSearch);
+    const currentParams = new URLSearchParams(location.search);
+
+    const matchesPath = location.pathname === targetPath;
+    const targetTab = targetParams.get("tab");
+    const currentTab = currentParams.get("tab") || "assigned";
+
+    if (targetTab) {
+      isActive = matchesPath && currentTab === targetTab;
+    } else {
+      isActive = matchesPath && location.search === `?${targetSearch}`;
+    }
+  } else {
+    if (end) {
+      isActive = location.pathname === targetPath && !location.search;
+    } else {
+      isActive =
+        location.pathname === targetPath ||
+        (targetPath !== "/" && location.pathname.startsWith(targetPath + "/"));
+    }
+  }
+
   return (
     <NavLink
       to={to}
-      end={end}
-      className={({ isActive }) =>
-        `
-        flex items-center gap-3 rounded-lg px-3 py-2.5
-        text-sm font-medium transition-colors
+      className={`
+        flex items-center gap-3 rounded-lg px-3 py-2
+        text-xs font-semibold transition-all
         ${isActive
           ? "bg-slate-900 text-white shadow-xs"
           : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
         }
-        `
-      }
+      `}
     >
       <Icon className="h-4 w-4 shrink-0" />
-
-      <span className="flex-1">{label}</span>
+      <span className="flex-1 truncate">{label}</span>
 
       {badgeCount !== undefined && badgeCount !== null && (
-        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold text-white shadow-xs">
+        <span className="flex h-4 min-w-[18px] items-center justify-center rounded-full bg-emerald-600 px-1 text-[10px] font-bold text-white">
           {badgeCount}
         </span>
       )}

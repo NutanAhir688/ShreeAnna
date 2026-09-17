@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
 import '../../../l10n/generated/app_localizations.dart';
+import '../../farm/data/farm_api.dart';
+import '../../farm/model/farm.dart';
+import '../../farmers/services/farmer_api.dart';
+import '../services/lot_api.dart';
 
 class SellMilletScreen extends StatefulWidget {
   const SellMilletScreen({super.key});
@@ -11,52 +15,67 @@ class SellMilletScreen extends StatefulWidget {
 }
 
 class _SellMilletScreenState extends State<SellMilletScreen> {
-  // ============================================================
-  // FORM
-  // ============================================================
-
   final _formKey = GlobalKey<FormState>();
-
-  // ============================================================
-  // CONTROLLERS
-  // ============================================================
 
   final _quantityController = TextEditingController();
   final _descriptionController = TextEditingController();
 
-  // ============================================================
-  // DROPDOWN VALUES
-  // ============================================================
+  final FarmApi _farmApi = FarmApi();
+  final FarmerApi _farmerApi = FarmerApi();
+  final LotApi _lotApi = LotApi();
 
-  String? _selectedFarm;
+  bool _isLoadingFarms = true;
+  bool _isSubmitting = false;
+
+  String? _farmerId;
+  List<Farm> _farms = [];
+  Farm? _selectedFarmObj;
   String? _selectedMillet;
 
   DateTime? _harvestDate;
-
-  final List<String> _farms = ['Green Hill Farm', 'North Farm'];
 
   final List<String> _milletTypes = [
     'Pearl Millet (Bajra)',
     'Finger Millet (Ragi)',
     'Foxtail Millet',
     'Sorghum (Jowar)',
+    'Kodo Millet',
+    'Little Millet',
+    'Barnyard Millet',
   ];
 
-  // ============================================================
-  // DISPOSE
-  // ============================================================
+  @override
+  void initState() {
+    super.initState();
+    _loadFarms();
+  }
+
+  Future<void> _loadFarms() async {
+    try {
+      final farmer = await _farmerApi.getMe();
+      _farmerId = farmer.id;
+      final farms = await _farmApi.getMyFarms(farmer.id);
+      setState(() {
+        _farms = farms;
+        _isLoadingFarms = false;
+        if (farms.isNotEmpty) {
+          _selectedFarmObj = farms.first;
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingFarms = false;
+      });
+      debugPrint('Error loading farms: $e');
+    }
+  }
 
   @override
   void dispose() {
     _quantityController.dispose();
     _descriptionController.dispose();
-
     super.dispose();
   }
-
-  // ============================================================
-  // DATE PICKER
-  // ============================================================
 
   Future<void> _selectHarvestDate() async {
     final now = DateTime.now();
@@ -68,21 +87,16 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
       lastDate: now,
     );
 
-    if (pickedDate == null) {
-      return;
-    }
+    if (pickedDate == null) return;
 
     setState(() {
       _harvestDate = pickedDate;
     });
   }
 
-  // ============================================================
-  // SUBMIT LOT
-  // ============================================================
-
-  void _submitLot() {
+  Future<void> _submitLot() async {
     final l10n = AppLocalizations.of(context)!;
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -91,29 +105,57 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.pleaseSelectHarvestDate)),
       );
-
       return;
     }
 
-    final farm = _selectedFarm!;
-    final millet = _selectedMillet!;
-    final quantity = _quantityController.text.trim();
-    final description = _descriptionController.text.trim();
+    if (_selectedFarmObj == null || _farmerId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a valid farm.')),
+      );
+      return;
+    }
 
-    debugPrint('Farm: $farm');
-    debugPrint('Millet: $millet');
-    debugPrint('Quantity: $quantity kg');
-    debugPrint('Harvest Date: $_harvestDate');
-    debugPrint('Description: $description');
+    setState(() {
+      _isSubmitting = true;
+    });
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(l10n.lotSubmittedSuccessfully)));
+    try {
+      final quantityStr = _quantityController.text.trim();
+      final quantityKg = double.parse(quantityStr);
+      final description = _descriptionController.text.trim();
+
+      await _lotApi.createLot(
+        farmerId: _farmerId!,
+        farmId: _selectedFarmObj!.id,
+        milletType: _selectedMillet!,
+        estimatedQuantityKg: quantityKg,
+        harvestDate: _harvestDate!,
+        description: description,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.lotSubmittedSuccessfully)),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to submit lot: ${e.toString().replaceFirst('Exception: ', '')}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
   }
-
-  // ============================================================
-  // BUILD
-  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -121,9 +163,6 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
     return Scaffold(
       backgroundColor: ShreeAnnaTheme.background,
 
-      // ========================================================
-      // APP BAR
-      // ========================================================
       appBar: AppBar(
         backgroundColor: ShreeAnnaTheme.background,
         elevation: 0,
@@ -146,9 +185,6 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
         ),
       ),
 
-      // ========================================================
-      // BODY
-      // ========================================================
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(26, 18, 26, 30),
@@ -159,10 +195,6 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ------------------------------------------------
-                // INTRO
-                // ------------------------------------------------
-
                 Text(
                   l10n.sellMilletSubtitle,
                   style: const TextStyle(fontSize: 11, color: Color(0xFF687068)),
@@ -171,34 +203,56 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
                 const SizedBox(height: 24),
 
                 // ------------------------------------------------
-                // FARM
+                // FARM SELECTOR
                 // ------------------------------------------------
                 _buildLabel(l10n.selectFarm),
 
                 const SizedBox(height: 7),
 
-                DropdownButtonFormField<String>(
-                  initialValue: _selectedFarm,
-                  decoration: _inputDecoration(
-                    hintText: l10n.chooseFarm,
-                    icon: Icons.agriculture_outlined,
+                if (_isLoadingFarms)
+                  const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: CircularProgressIndicator(color: ShreeAnnaTheme.primaryGreen),
+                  )
+                else if (_farms.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.amber),
+                      borderRadius: BorderRadius.circular(4),
+                      color: Colors.amber.shade50,
+                    ),
+                    child: const Text(
+                      'No registered farms found. Please add a farm first before submitting a lot.',
+                      style: TextStyle(fontSize: 12, color: Colors.black87),
+                    ),
+                  )
+                else
+                  DropdownButtonFormField<Farm>(
+                    initialValue: _selectedFarmObj,
+                    decoration: _inputDecoration(
+                      hintText: l10n.chooseFarm,
+                      icon: Icons.agriculture_outlined,
+                    ),
+                    items: _farms.map((farm) {
+                      return DropdownMenuItem<Farm>(
+                        value: farm,
+                        child: Text(farm.farmName),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedFarmObj = value;
+                      });
+                    },
+                    validator: (value) {
+                      if (value == null) {
+                        return l10n.pleaseSelectFarm;
+                      }
+                      return null;
+                    },
                   ),
-                  items: _farms.map((farm) {
-                    return DropdownMenuItem(value: farm, child: Text(farm));
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedFarm = value;
-                    });
-                  },
-                  validator: (value) {
-                    if (value == null) {
-                      return l10n.pleaseSelectFarm;
-                    }
-
-                    return null;
-                  },
-                ),
 
                 const SizedBox(height: 18),
 
@@ -323,8 +377,14 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton.icon(
-                    onPressed: () => _showSubmitLotConfirmation(context),
-                    icon: const Icon(Icons.lock_outline, size: 16),
+                    onPressed: _isSubmitting ? null : () => _showSubmitLotConfirmation(context),
+                    icon: _isSubmitting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
+                        : const Icon(Icons.lock_outline, size: 16),
                     label: Text(
                       l10n.submitLot,
                       style: const TextStyle(
@@ -350,10 +410,6 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
     );
   }
 
-  // ============================================================
-  // LABEL
-  // ============================================================
-
   Widget _buildLabel(String text) {
     return Text(
       text,
@@ -364,10 +420,6 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
       ),
     );
   }
-
-  // ============================================================
-  // INPUT DECORATION
-  // ============================================================
 
   InputDecoration _inputDecoration({
     required String hintText,
@@ -411,10 +463,6 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
       ),
     );
   }
-
-  // ============================================================
-  // DATE FORMAT
-  // ============================================================
 
   String _formatDate(DateTime date) {
     final day = date.day.toString().padLeft(2, '0');

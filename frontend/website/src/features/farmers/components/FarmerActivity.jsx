@@ -6,6 +6,7 @@ import {
 } from "@/components/ui/card";
 
 function FarmerActivity({ farmer }) {
+  const activity = farmer.activity ?? [];
   return (
     <Card className="border-slate-200/80 shadow-xs">
 
@@ -17,14 +18,14 @@ function FarmerActivity({ farmer }) {
 
       <CardContent>
 
-        {farmer.activity.length === 0 ? (
+        {activity.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">
             No recent activity.
           </p>
         ) : (
           <div className="space-y-5">
 
-            {farmer.activity.map((activity, index) => (
+            {activity.map((activity, index) => (
               <div
                 key={index}
                 className="flex gap-3"

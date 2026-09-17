@@ -31,37 +31,54 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
-import { MoreHorizontal } from "lucide-react";
-
+import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import FarmVerificationStatus from "../components/FarmVerificationStatus";
-
-import { farmVerifications } from "../data/farmVerifications";
-
+import { farmsApi, farmersApi } from "@/services/api";
 
 function FarmVerificationList() {
   const navigate = useNavigate();
 
+  const [farms, setFarms] = useState([]);
+  const [farmersMap, setFarmersMap] = useState({});
+  const [loading, setLoading] = useState(true);
+
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
 
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [farmsData, farmersData] = await Promise.all([
+          farmsApi.getAll().catch(() => []),
+          farmersApi.getAll().catch(() => []),
+        ]);
+
+        const map = {};
+        if (Array.isArray(farmersData)) {
+          farmersData.forEach((f) => {
+            map[f.id] = f.fullName || f.name;
+          });
+        }
+        setFarmersMap(map);
+        setFarms(Array.isArray(farmsData) ? farmsData : []);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
 
   const filteredFarms = useMemo(() => {
-    return farmVerifications.filter((farm) => {
-
+    return farms.filter((farm) => {
       const searchText = search.toLowerCase();
+      const farmerName = farmersMap[farm.farmerId] || farm.farmerName || "";
 
       const matchesSearch =
-        farm.farmerName.toLowerCase().includes(searchText) ||
-        farm.farmName.toLowerCase().includes(searchText) ||
-        farm.surveyNumber.toLowerCase().includes(searchText) ||
-        farm.id.toLowerCase().includes(searchText);
+        farmerName.toLowerCase().includes(searchText) ||
+        (farm.farmName || "").toLowerCase().includes(searchText) ||
+        (farm.surveyNumber || "").toLowerCase().includes(searchText) ||
+        (farm.farmCode || farm.id || "").toLowerCase().includes(searchText);
 
       const matchesStatus =
         status === "all" ||
@@ -69,22 +86,21 @@ function FarmVerificationList() {
 
       return matchesSearch && matchesStatus;
     });
-  }, [search, status]);
+  }, [farms, farmersMap, search, status]);
 
-
-  const pendingCount = farmVerifications.filter(
-    (farm) => farm.status === "Pending Verification"
+  const pendingCount = farms.filter(
+    (farm) => farm.status === "Pending Verification" || farm.status === "Pending"
   ).length;
 
-  const reviewCount = farmVerifications.filter(
+  const reviewCount = farms.filter(
     (farm) => farm.status === "Under Review"
   ).length;
 
-  const verifiedCount = farmVerifications.filter(
+  const verifiedCount = farms.filter(
     (farm) => farm.status === "Verified"
   ).length;
 
-  const rejectedCount = farmVerifications.filter(
+  const rejectedCount = farms.filter(
     (farm) => farm.status === "Rejected"
   ).length;
 
@@ -238,64 +254,59 @@ function FarmVerificationList() {
 
 
             <TableBody>
-
-              {filteredFarms.length > 0 ? (
-
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="h-32 text-center">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-emerald-600 mb-2" />
+                    <p className="text-sm text-muted-foreground">Loading farms from server...</p>
+                  </TableCell>
+                </TableRow>
+              ) : filteredFarms.length > 0 ? (
                 filteredFarms.map((farm) => (
-
                   <TableRow key={farm.id}>
-
                     {/* Farm */}
                     <TableCell>
                       <div>
                         <p className="font-medium">
                           {farm.farmName}
                         </p>
-
-                        <p className="text-xs text-muted-foreground">
-                          {farm.id}
+                        <p className="text-xs text-muted-foreground font-mono">
+                          {farm.farmCode || farm.id}
                         </p>
                       </div>
                     </TableCell>
-
 
                     {/* Farmer */}
                     <TableCell>
                       <div>
                         <p className="font-medium">
-                          {farm.farmerName}
+                          {farmersMap[farm.farmerId] || farm.farmerName || "Farmer"}
                         </p>
-
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground font-mono">
                           {farm.farmerId}
                         </p>
                       </div>
                     </TableCell>
 
-
                     {/* Location */}
                     <TableCell>
                       <div>
-                        <p>{farm.village}</p>
-
+                        <p>{farm.village || "-"}</p>
                         <p className="text-xs text-muted-foreground">
-                          {farm.district}
+                          {farm.district || "-"}
                         </p>
                       </div>
                     </TableCell>
-
 
                     {/* Survey */}
                     <TableCell className="font-medium">
                       {farm.surveyNumber}
                     </TableCell>
 
-
                     {/* Area */}
                     <TableCell>
-                      {farm.area} acres
+                      {farm.areaInAcres || farm.area} acres
                     </TableCell>
-
 
                     {/* Status */}
                     <TableCell>
@@ -304,54 +315,22 @@ function FarmVerificationList() {
                       />
                     </TableCell>
 
-
                     {/* Submitted */}
-                    <TableCell className="text-muted-foreground">
-                      {farm.submittedAt}
+                    <TableCell className="text-muted-foreground text-xs">
+                      {farm.createdAt ? new Date(farm.createdAt).toLocaleDateString() : farm.submittedAt || "-"}
                     </TableCell>
-
 
                     {/* Actions */}
                     <TableCell>
-
-                      <DropdownMenu>
-
-                        <DropdownMenuTrigger asChild>
-
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-
-                        </DropdownMenuTrigger>
-
-
-                        <DropdownMenuContent align="end">
-
-                          <DropdownMenuItem
-                            onClick={() =>
-                              navigate(
-                                `/farm-verification/${farm.id}`
-                              )
-                            }
-                          >
-                            Review Farm
-                          </DropdownMenuItem>
-
-                          <DropdownMenuItem>
-                            View Farmer
-                          </DropdownMenuItem>
-
-                        </DropdownMenuContent>
-
-                      </DropdownMenu>
-
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/farm-verification/${farm.id}`)}
+                      >
+                        Review Farm
+                      </Button>
                     </TableCell>
-
                   </TableRow>
-
                 ))
 
               ) : (

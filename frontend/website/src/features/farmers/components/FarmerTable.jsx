@@ -79,12 +79,14 @@ function FarmerTable({ farmers }) {
 
               {/* Farms count */}
               <TableCell>
-                {Array.isArray(farmer.farms) ? farmer.farms.length : (farmer.farms || 0)}
+                {farmer.farmCount ?? (Array.isArray(farmer.farms) ? farmer.farms.length : 0)}
               </TableCell>
 
               {/* Total Land */}
               <TableCell>
-                {farmer.totalLand ?? farmer.acres ?? 0} acres
+                {farmer.totalLand > 0
+                  ? `${Number(farmer.totalLand).toFixed(1)} acres`
+                  : "—"}
               </TableCell>
 
               {/* Status */}

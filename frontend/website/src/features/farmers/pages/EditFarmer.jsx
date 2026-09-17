@@ -1,10 +1,11 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 import {
   ArrowLeft,
   Save,
   Camera,
   Trash2,
+  Loader2,
 } from "lucide-react";
 
 import {
@@ -38,28 +39,58 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { farmers } from "../data/farmers";
+import { farmersApi } from "@/services/api";
 
 function EditFarmer() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const farmer = farmers.find(
-    (item) => item.id === id
-  );
+  const [farmer, setFarmer] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const data = await farmersApi.getById(id);
+        if (data) {
+          // Normalise API shape to the shape the form expects
+          setFarmer({
+            id: data.id,
+            name: data.fullName || data.name || "",
+            phone: data.phone || "",
+            email: data.email || "",
+            photoUrl: data.photoUrl || "",
+            preferredLanguage: data.preferredLanguage || "Gujarati (ગુજરાતી)",
+            district: data.district || "",
+            taluka: data.taluka || "",
+            village: data.village || "",
+            address: data.address || "",
+            status: data.status || "Active",
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load farmer for editing:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    if (id) load();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex h-64 flex-col items-center justify-center space-y-3">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+        <p className="text-sm text-slate-500">Loading farmer...</p>
+      </div>
+    );
+  }
 
   if (!farmer) {
     return (
       <div className="space-y-4">
-
-        <h1 className="text-2xl font-bold">
-          Farmer not found
-        </h1>
-
-        <Button onClick={() => navigate("/farmers")}>
-          Back to Farmers
-        </Button>
-
+        <h1 className="text-2xl font-bold">Farmer not found</h1>
+        <Button onClick={() => navigate("/farmers")}>Back to Farmers</Button>
       </div>
     );
   }
@@ -119,15 +150,30 @@ function EditFarmerForm({
       .slice(0, 2);
   };
 
-  const handleSubmit = (event) => {
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
-
-    console.log("Updated farmer:", {
-      id: farmer.id,
-      ...form,
-    });
-
-    onSave();
+    setSaveError("");
+    setSaving(true);
+    try {
+      await farmersApi.update(farmer.id, {
+        fullName: form.name,
+        phone: form.phone,
+        email: form.email,
+        preferredLanguage: form.preferredLanguage,
+        district: form.district,
+        taluka: form.taluka,
+        village: form.village,
+        address: form.address,
+        status: form.status,
+      });
+      onSave();
+    } catch (err) {
+      setSaveError(err.message || "Failed to save changes.");
+      setSaving(false);
+    }
   };
 
   return (
@@ -173,15 +219,24 @@ function EditFarmerForm({
             Cancel
           </Button>
 
-          <Button type="submit">
-            <Save className="mr-2 h-4 w-4" />
-            Save Changes
+          <Button type="submit" disabled={saving}>
+            {saving ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
+            {saving ? "Saving..." : "Save Changes"}
           </Button>
 
         </div>
 
       </div>
 
+      {saveError && (
+        <div className="rounded-lg bg-red-500/10 border border-red-500/30 p-3 text-sm text-red-500">
+          {saveError}
+        </div>
+      )}
 
       {/* Profile Photo */}
       <Card className="border-slate-200/80 shadow-xs">

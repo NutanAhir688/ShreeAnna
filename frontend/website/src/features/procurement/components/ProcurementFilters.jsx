@@ -57,19 +57,23 @@ function ProcurementFilters({
               All Status
             </SelectItem>
 
-            <SelectItem value="Pending Inspection">
-              Pending Inspection
+            <SelectItem value="SUBMITTED">
+              Submitted
             </SelectItem>
 
-            <SelectItem value="Quality Inspection">
+            <SelectItem value="QUALITY_INSPECTION">
               Quality Inspection
             </SelectItem>
 
-            <SelectItem value="Ready for Payment">
-              Ready for Payment
+            <SelectItem value="QUALITY_CERTIFIED">
+              Quality Certified
             </SelectItem>
 
-            <SelectItem value="Completed">
+            <SelectItem value="REJECTED">
+              Rejected
+            </SelectItem>
+
+            <SelectItem value="COMPLETED">
               Completed
             </SelectItem>
           </SelectContent>
