@@ -9,6 +9,13 @@ using backend.Features.Auth.Services;
 using backend.Infrastructure.Authentication;
 using backend.Features.Farmers.Services;
 using backend.Features.Farms.Services;
+
+// Load .env file (if present) into environment variables before configuration is built.
+// ASP.NET Core's config system reads environment variables automatically,
+// and the double-underscore (__) maps to nested JSON keys, e.g.
+//   AzureStorage__ConnectionString  →  AzureStorage:ConnectionString
+DotNetEnv.Env.Load(Path.Combine(Directory.GetCurrentDirectory(), ".env"));
+
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.UseUrls("http://0.0.0.0:5066");
 // --------------------------------------------------
@@ -65,6 +72,10 @@ builder.Services.AddAuthorization();
 // Services
 // --------------------------------------------------
 
+builder.Services.Configure<backend.Infrastructure.Storage.AzureStorageOptions>(
+    builder.Configuration.GetSection("AzureStorage")
+);
+
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
@@ -72,6 +83,7 @@ builder.Services.AddScoped<IOtpService, OtpService>();
 builder.Services.AddScoped<IFarmerService, FarmerService>();
 builder.Services.AddScoped<IFarmerAuthService, FarmerAuthService>();
 builder.Services.AddScoped<IFarmService, FarmService>();
+builder.Services.AddScoped<backend.Infrastructure.Storage.IBlobStorageService, backend.Infrastructure.Storage.AzureBlobStorageService>();
 
 // --------------------------------------------------
 // Controllers & Swagger
@@ -133,11 +145,11 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
-// 3. SECURITY MIDDLEWARE
+// 3. SECURITY & STATIC FILES MIDDLEWARE
+app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// 3. SECURITY MIDDLEWARE
 app.MapControllers();
 
 
