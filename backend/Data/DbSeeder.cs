@@ -1,8 +1,11 @@
 using backend.Features.Farmers.Entities;
 using backend.Features.Farms.Entities;
+using backend.Features.Procurement.Entities;
 using Microsoft.EntityFrameworkCore;
 using backend.Features.Fpo.Entities;
 using backend.Features.Auth.Entities;
+using backend.Features.Auth;
+
 namespace backend.Data;
 
 public static class DbSeeder
@@ -14,36 +17,42 @@ public static class DbSeeder
         await SeedFarmersAsync(context);
         await SeedFarmsAsync(context);
         await SeedUsersAsync(context);
+        await SeedProcurementLotsAsync(context);
     }
 
     private static async Task SeedUsersAsync(AppDbContext context)
     {
-        if (await context.Users.AnyAsync())
-        {
-            return;
-        }
+        var passwordHash = BCrypt.Net.BCrypt.HashPassword("Password123!");
 
-        var users = new List<User>
+        var seedAccounts = new (string Email, string Role, string MemberName)[]
         {
-            new User
-            {
-                Id = Guid.Parse("99999999-9999-9999-9999-999999999999"),
-                Email = "user1@example.com",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("password1"),
-                Role = "Admin",
-                CreatedAt = DateTime.UtcNow
-            },
-            new User
-            {
-                Id = Guid.Parse("88888888-8888-8888-8888-888888888888"),
-                Email = "user2@example.com",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("password2"),
-                Role = "User",
-                CreatedAt = DateTime.UtcNow
-            }
+            ("fpo@shreeanna.com", Roles.FpoManager, "Rajesh Patel (FPO Manager)"),
+            ("procurement@shreeanna.com", Roles.ProcurementOfficer, "Vikram Singh (Procurement Officer)"),
+            ("quality@shreeanna.com", Roles.QualityInspector, "Ananya Roy (Quality Inspector)"),
+            ("warehouse@shreeanna.com", Roles.WarehouseManager, "Suresh Kumar (Warehouse Manager)"),
+            ("logistics@shreeanna.com", Roles.LogisticsCoordinator, "Ramesh Verma (Logistics Coordinator)"),
+            ("accountant@shreeanna.com", Roles.Accountant, "Priya Sharma (Accountant)")
         };
 
-        await context.Users.AddRangeAsync(users);
+        foreach (var acc in seedAccounts)
+        {
+            var existing = await context.Users.FirstOrDefaultAsync(u => u.Email == acc.Email);
+            if (existing == null)
+            {
+                var user = new User
+                {
+                    Id = Guid.NewGuid(),
+                    Email = acc.Email,
+                    PasswordHash = passwordHash,
+                    Role = acc.Role,
+                    CreatedAt = DateTime.UtcNow,
+                    IsActive = true
+                };
+
+                context.Users.Add(user);
+            }
+        }
+
         await context.SaveChangesAsync();
     }
 
@@ -188,6 +197,74 @@ public static class DbSeeder
         };
 
         await context.Farms.AddRangeAsync(farms);
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task SeedProcurementLotsAsync(AppDbContext context)
+    {
+        if (await context.ProcurementLots.AnyAsync())
+        {
+            return;
+        }
+
+        var farm = await context.Farms.FirstOrDefaultAsync();
+        if (farm == null)
+        {
+            return;
+        }
+
+        var secondFarm = await context.Farms.Skip(1).FirstOrDefaultAsync() ?? farm;
+
+        var lots = new List<ProcurementLot>
+        {
+            new ProcurementLot
+            {
+                Id = Guid.NewGuid(),
+                LotNumber = "1042-A",
+                FarmerId = farm.FarmerId,
+                FarmId = farm.Id,
+                MilletType = "Finger Millet (Ragi)",
+                EstimatedQuantityKg = 450,
+                HarvestDate = DateTime.SpecifyKind(new DateTime(2026, 10, 12), DateTimeKind.Utc),
+                SubmissionDate = DateTime.SpecifyKind(new DateTime(2026, 10, 12), DateTimeKind.Utc),
+                Status = "SUBMITTED",
+                Description = "High quality organic ragi",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            },
+            new ProcurementLot
+            {
+                Id = Guid.NewGuid(),
+                LotNumber = "8472-B",
+                FarmerId = farm.FarmerId,
+                FarmId = farm.Id,
+                MilletType = "Pearl Millet (Bajra)",
+                EstimatedQuantityKg = 1200,
+                HarvestDate = DateTime.SpecifyKind(new DateTime(2026, 8, 10), DateTimeKind.Utc),
+                SubmissionDate = DateTime.SpecifyKind(new DateTime(2026, 8, 10), DateTimeKind.Utc),
+                Status = "QUALITY_INSPECTION",
+                Description = "Fresh harvest bajra lot",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            },
+            new ProcurementLot
+            {
+                Id = Guid.NewGuid(),
+                LotNumber = "1038-C",
+                FarmerId = secondFarm.FarmerId,
+                FarmId = secondFarm.Id,
+                MilletType = "Foxtail Millet",
+                EstimatedQuantityKg = 850,
+                HarvestDate = DateTime.SpecifyKind(new DateTime(2026, 9, 28), DateTimeKind.Utc),
+                SubmissionDate = DateTime.SpecifyKind(new DateTime(2026, 9, 28), DateTimeKind.Utc),
+                Status = "QUALITY_CERTIFIED",
+                Description = "Foxtail millet ready for procurement",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            }
+        };
+
+        await context.ProcurementLots.AddRangeAsync(lots);
         await context.SaveChangesAsync();
     }
 }

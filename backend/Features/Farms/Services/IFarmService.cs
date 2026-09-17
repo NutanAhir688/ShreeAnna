@@ -11,6 +11,8 @@ public interface IFarmService
     Task<List<FarmResponse>> GetByFarmerIdAsync(
         Guid farmerId);
 
+    Task<List<FarmResponse>> GetAllAsync();
+
     Task<FarmResponse?> GetByIdAsync(
         Guid farmId);
 
@@ -23,4 +25,9 @@ public interface IFarmService
 
     Task<bool> ArchiveAsync(
         Guid farmId);
+
+    Task<FarmResponse?> UpdateStatusAsync(
+        Guid farmId,
+        string status,
+        string? verifiedBy = null);
 }

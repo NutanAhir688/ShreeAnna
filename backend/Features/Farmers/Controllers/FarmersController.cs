@@ -70,10 +70,7 @@ public class FarmersController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Roles =
-    Roles.FpoManager + "," +
-    Roles.ProcurementOfficer + "," +
-    Roles.QualityInspector)]
+    [Authorize]
     public async Task<ActionResult<List<FarmerResponse>>> GetAll()
     {
         var farmers = await _farmerService.GetAllAsync();

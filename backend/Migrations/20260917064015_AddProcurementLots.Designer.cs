@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.Data;
@@ -11,9 +12,11 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260917064015_AddProcurementLots")]
+    partial class AddProcurementLots
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -309,136 +312,6 @@ namespace backend.Migrations
                     b.ToTable("FpoMembers");
                 });
 
-            modelBuilder.Entity("backend.Features.Inventory.Entities.InventoryBatch", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("BatchCode")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Grade")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid?>("LotId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("MilletType")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<decimal>("QuantityInKg")
-                        .HasColumnType("numeric");
-
-                    b.Property<DateTime>("ReceivedDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("WarehouseId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("LotId");
-
-                    b.HasIndex("WarehouseId");
-
-                    b.ToTable("InventoryBatches");
-                });
-
-            modelBuilder.Entity("backend.Features.Inventory.Entities.StockMovement", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("BatchId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("FromLocation")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("MovementCode")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("MovementDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("MovementType")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<decimal>("QuantityKg")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("ToLocation")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BatchId");
-
-                    b.ToTable("StockMovements");
-                });
-
-            modelBuilder.Entity("backend.Features.Logistics.Entities.Dispatch", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeliveredDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DestinationAddress")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("DispatchCode")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("DriverName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("DriverPhone")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("ScheduledDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<decimal>("TotalQuantityKg")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("VehicleNumber")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("WarehouseId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("WarehouseId");
-
-                    b.ToTable("Dispatches");
-                });
-
             modelBuilder.Entity("backend.Features.Procurement.Entities.ProcurementLot", b =>
                 {
                     b.Property<Guid>("Id")
@@ -499,121 +372,6 @@ namespace backend.Migrations
                     b.ToTable("ProcurementLots");
                 });
 
-            modelBuilder.Entity("backend.Features.Quality.Entities.Inspection", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Grade")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("InspectionDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("InspectorName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("LotId")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("MoisturePercentage")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("Notes")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<decimal>("PurityPercentage")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("LotId");
-
-                    b.ToTable("Inspections");
-                });
-
-            modelBuilder.Entity("backend.Features.Quality.Entities.QualityCertificate", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("CertificateNumber")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Grade")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("IssueDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("IssuedBy")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("LotId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("ValidUntil")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("LotId");
-
-                    b.ToTable("QualityCertificates");
-                });
-
-            modelBuilder.Entity("backend.Features.Warehouses.Entities.Warehouse", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("CapacityInTons")
-                        .HasColumnType("numeric");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Location")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("ManagerName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<decimal>("UtilizedCapacityTons")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("WarehouseCode")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Warehouses");
-                });
-
             modelBuilder.Entity("backend.Features.Auth.Entities.User", b =>
                 {
                     b.HasOne("backend.Features.Fpo.Entities.FpoMember", "FpoMember")
@@ -635,45 +393,6 @@ namespace backend.Migrations
                     b.Navigation("Farmer");
                 });
 
-            modelBuilder.Entity("backend.Features.Inventory.Entities.InventoryBatch", b =>
-                {
-                    b.HasOne("backend.Features.Procurement.Entities.ProcurementLot", "Lot")
-                        .WithMany()
-                        .HasForeignKey("LotId");
-
-                    b.HasOne("backend.Features.Warehouses.Entities.Warehouse", "Warehouse")
-                        .WithMany()
-                        .HasForeignKey("WarehouseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Lot");
-
-                    b.Navigation("Warehouse");
-                });
-
-            modelBuilder.Entity("backend.Features.Inventory.Entities.StockMovement", b =>
-                {
-                    b.HasOne("backend.Features.Inventory.Entities.InventoryBatch", "Batch")
-                        .WithMany()
-                        .HasForeignKey("BatchId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Batch");
-                });
-
-            modelBuilder.Entity("backend.Features.Logistics.Entities.Dispatch", b =>
-                {
-                    b.HasOne("backend.Features.Warehouses.Entities.Warehouse", "Warehouse")
-                        .WithMany()
-                        .HasForeignKey("WarehouseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Warehouse");
-                });
-
             modelBuilder.Entity("backend.Features.Procurement.Entities.ProcurementLot", b =>
                 {
                     b.HasOne("backend.Features.Farms.Entities.Farm", "Farm")
@@ -691,28 +410,6 @@ namespace backend.Migrations
                     b.Navigation("Farm");
 
                     b.Navigation("Farmer");
-                });
-
-            modelBuilder.Entity("backend.Features.Quality.Entities.Inspection", b =>
-                {
-                    b.HasOne("backend.Features.Procurement.Entities.ProcurementLot", "Lot")
-                        .WithMany()
-                        .HasForeignKey("LotId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Lot");
-                });
-
-            modelBuilder.Entity("backend.Features.Quality.Entities.QualityCertificate", b =>
-                {
-                    b.HasOne("backend.Features.Procurement.Entities.ProcurementLot", "Lot")
-                        .WithMany()
-                        .HasForeignKey("LotId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Lot");
                 });
 
             modelBuilder.Entity("backend.Features.Farmers.Entities.Farmer", b =>

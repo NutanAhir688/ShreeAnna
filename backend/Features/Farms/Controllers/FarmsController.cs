@@ -19,6 +19,13 @@ public class FarmsController : ControllerBase
         _farmService = farmService;
     }
 
+    [HttpGet("farms")]
+    public async Task<ActionResult<List<FarmResponse>>> GetAllFarms()
+    {
+        var farms = await _farmService.GetAllAsync();
+        return Ok(farms);
+    }
+
     [HttpGet("farmers/{farmerId}/farms")]
     public async Task<ActionResult<List<FarmResponse>>> GetFarmerFarms(
         Guid farmerId)
@@ -181,6 +188,21 @@ public class FarmsController : ControllerBase
         return archived
             ? Ok(new { message = "Farm archived successfully." })
             : NotFound();
+    }
+
+    [HttpPatch("farms/{id}/status")]
+    public async Task<ActionResult<FarmResponse>> UpdateStatus(
+        Guid id,
+        [FromBody] UpdateFarmStatusRequest request)
+    {
+        var updated = await _farmService.UpdateStatusAsync(id, request.Status, User.Identity?.Name);
+
+        if (updated is null)
+        {
+            return NotFound(new { message = "Farm not found." });
+        }
+
+        return Ok(updated);
     }
 
     private Guid GetLoggedInFarmerId()

@@ -9,6 +9,11 @@ using backend.Features.Auth.Services;
 using backend.Infrastructure.Authentication;
 using backend.Features.Farmers.Services;
 using backend.Features.Farms.Services;
+using backend.Features.Procurement.Services;
+using backend.Features.Quality.Services;
+using backend.Features.Warehouses.Services;
+using backend.Features.Inventory.Services;
+using backend.Features.Logistics.Services;
 
 // Load .env file (if present) into environment variables before configuration is built.
 // ASP.NET Core's config system reads environment variables automatically,
@@ -68,6 +73,22 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+
+var myAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: myAllowSpecificOrigins,
+                      policy =>
+                      {
+                          policy.SetIsOriginAllowed(_ => true)
+                                .AllowAnyHeader()
+                                .AllowAnyMethod()
+                                .AllowCredentials();
+                      });
+});
+
+
 // --------------------------------------------------
 // Services
 // --------------------------------------------------
@@ -83,6 +104,11 @@ builder.Services.AddScoped<IOtpService, OtpService>();
 builder.Services.AddScoped<IFarmerService, FarmerService>();
 builder.Services.AddScoped<IFarmerAuthService, FarmerAuthService>();
 builder.Services.AddScoped<IFarmService, FarmService>();
+builder.Services.AddScoped<ILotService, LotService>();
+builder.Services.AddScoped<IQualityService, QualityService>();
+builder.Services.AddScoped<IWarehouseService, WarehouseService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
+builder.Services.AddScoped<ILogisticsService, LogisticsService>();
 builder.Services.AddScoped<backend.Infrastructure.Storage.IBlobStorageService, backend.Infrastructure.Storage.AzureBlobStorageService>();
 
 // --------------------------------------------------
@@ -144,6 +170,9 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
+
+app.UseCors(myAllowSpecificOrigins); // Apply the named policy globally
+
 
 // 3. SECURITY & STATIC FILES MIDDLEWARE
 app.UseStaticFiles();

@@ -34,6 +34,13 @@ public class AzureBlobStorageService : IBlobStorageService
         _environment = environment;
         _logger = logger;
     }
+    private static readonly HashSet<string> AllowedExtensions =
+    [
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".webp"
+    ];
 
     public async Task<string> UploadFarmImageAsync(IFormFile file, string farmerId)
     {
@@ -42,15 +49,39 @@ public class AzureBlobStorageService : IBlobStorageService
             throw new ArgumentException("No file provided for upload.");
         }
 
-        var ext = Path.GetExtension(file.FileName);
+        const long maxFileSize = 5 * 1024 * 1024;
+
+        if (file.Length > maxFileSize)
+        {
+            throw new ArgumentException("Image size cannot exceed 5 MB.");
+        }
+
+        if (string.IsNullOrWhiteSpace(file.ContentType) ||
+            !file.ContentType.StartsWith(
+                "image/",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException("Only image files are allowed.");
+        }
+
+        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+
         if (string.IsNullOrEmpty(ext))
         {
             ext = ".jpg";
         }
-        var blobFileName = $"{Guid.NewGuid()}{ext}";
-        var blobRelativePath = string.IsNullOrEmpty(farmerId)
+
+        if (!AllowedExtensions.Contains(ext))
+        {
+            throw new ArgumentException("Unsupported image format.");
+        }
+
+        var blobFileName = $"{Guid.NewGuid():N}{ext}";
+
+        var blobRelativePath = string.IsNullOrWhiteSpace(farmerId)
             ? $"farms/{blobFileName}"
             : $"farms/{farmerId}/{blobFileName}";
+            
 
         var connectionString = _options.ConnectionString;
         if (string.IsNullOrWhiteSpace(connectionString))
@@ -66,7 +97,8 @@ public class AzureBlobStorageService : IBlobStorageService
         try
         {
             var containerClient = new BlobContainerClient(connectionString, _options.ContainerName);
-            await containerClient.CreateIfNotExistsAsync(PublicAccessType.Blob);
+            // await containerClient.CreateIfNotExistsAsync(PublicAccessType.Blob);
+            await containerClient.CreateIfNotExistsAsync(PublicAccessType.None);
 
             var blobClient = containerClient.GetBlobClient(blobRelativePath);
             var blobHttpHeaders = new BlobHttpHeaders
@@ -93,30 +125,59 @@ public class AzureBlobStorageService : IBlobStorageService
     }
 
     public (string sasUrl, string permanentUrl) GenerateFarmImageSasUrl(
-        string farmerId, string extension, int expiryMinutes = 10)
+        string farmerId,
+        string extension,
+        int expiryMinutes = 10)
     {
-        var ext = string.IsNullOrWhiteSpace(extension) ? ".jpg" : extension;
-        if (!ext.StartsWith('.')) ext = "." + ext;
+        var ext = extension.Trim().ToLowerInvariant();
 
-        var blobFileName = $"{Guid.NewGuid()}{ext}";
-        var blobRelativePath = string.IsNullOrEmpty(farmerId)
+        if (!ext.StartsWith('.'))
+        {
+            ext = "." + ext;
+        }
+
+        var allowedExtensions = new HashSet<string>
+        {
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".webp"
+        };
+
+        if (!allowedExtensions.Contains(ext))
+        {
+            throw new ArgumentException("Unsupported image format.");
+        }
+
+        if (expiryMinutes <= 0 || expiryMinutes > 30)
+        {
+            throw new ArgumentException("Expiry must be between 1 and 30 minutes.");
+        }
+
+        var blobFileName = $"{Guid.NewGuid():N}{ext}";
+
+        var blobRelativePath = string.IsNullOrWhiteSpace(farmerId)
             ? $"farms/{blobFileName}"
             : $"farms/{farmerId}/{blobFileName}";
 
         var connectionString = _options.ConnectionString;
+
         if (string.IsNullOrWhiteSpace(connectionString))
         {
-            connectionString = Environment.GetEnvironmentVariable("AZURE_STORAGE_CONNECTION_STRING") ?? string.Empty;
+            connectionString = Environment.GetEnvironmentVariable(
+                "AZURE_STORAGE_CONNECTION_STRING");
         }
 
         if (string.IsNullOrWhiteSpace(connectionString))
         {
             throw new InvalidOperationException(
-                "Azure Storage connection string is not configured. " +
-                "Cannot generate SAS URLs without a storage account.");
+                "Azure Storage connection string is not configured.");
         }
 
-        var containerClient = new BlobContainerClient(connectionString, _options.ContainerName);
+        var containerClient = new BlobContainerClient(
+            connectionString,
+            _options.ContainerName);
+
         var blobClient = containerClient.GetBlobClient(blobRelativePath);
 
         var sasBuilder = new BlobSasBuilder
@@ -124,16 +185,24 @@ public class AzureBlobStorageService : IBlobStorageService
             BlobContainerName = _options.ContainerName,
             BlobName = blobRelativePath,
             Resource = "b",
+            StartsOn = DateTimeOffset.UtcNow.AddMinutes(-1),
             ExpiresOn = DateTimeOffset.UtcNow.AddMinutes(expiryMinutes),
+            ContentType = "image/" + ext.TrimStart('.')
         };
-        sasBuilder.SetPermissions(BlobSasPermissions.Write | BlobSasPermissions.Create);
+
+        sasBuilder.SetPermissions(
+            BlobSasPermissions.Create |
+            BlobSasPermissions.Write);
 
         var sasUri = blobClient.GenerateSasUri(sasBuilder);
-        var permanentUrl = blobClient.Uri.ToString();
+
+        // Front Door URL, not direct Blob Storage URL.
+        var permanentUrl =
+            $"{_options.CdnBaseUrl.TrimEnd('/')}/{blobRelativePath}";
 
         _logger.LogInformation(
-            "Generated SAS URL for blob {BlobPath}, expires in {Minutes} minutes",
-            blobRelativePath, expiryMinutes);
+            "Generated upload SAS for blob {BlobPath}",
+            blobRelativePath);
 
         return (sasUri.ToString(), permanentUrl);
     }
@@ -154,7 +223,9 @@ public class AzureBlobStorageService : IBlobStorageService
             await file.CopyToAsync(stream);
         }
 
-        var publicUrl = _options.CdnBaseUrl.TrimEnd('/') + "/" + blobRelativePath;
+        // var publicUrl = _options.CdnBaseUrl.TrimEnd('/') + "/" + blobRelativePath;
+        var publicUrl =
+    $"{_options.CdnBaseUrl.TrimEnd('/')}/uploads/{blobRelativePath}";
 
         _logger.LogInformation("Saved farm image locally at {Path} and exposed it as {Url}", localFilePath, publicUrl);
 
