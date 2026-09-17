@@ -1,5 +1,4 @@
-Yes. Based on everything we've built/discussed so far, here is the **current ShreeAnna completion checklist**, separated into **Mobile, Website, and Backend**.
-
+# ShreeAnna
 > **Legend:** ✅ Completed · 🟡 Partially completed / prototype · ⬜ Not started
 
 # 🌾 ShreeAnna Overall Status
@@ -8,9 +7,9 @@ Yes. Based on everything we've built/discussed so far, here is the **current Shr
 | -------------------------------------- | ------------------------------------------ | ------: |
 | 📱 Farmer Mobile App                   | 🟡 Prototype / API integration in progress |    ~70% |
 | 💻 FPO Web Dashboard                   | 🟢 UI/modules largely completed            |    ~90% |
-| ⚙️ .NET 10 Backend                     | 🟡 Foundation started                      |    ~15% |
-| 🔗 Frontend ↔ Backend Integration      | 🟡 Some APIs connected                     |    ~20% |
-| 🧪 Production-level validation/testing | ⬜ Not started                              |     ~5% |
+| ⚙️ .NET 10 Backend                     | 🟡 Foundation started                      |    ~40% |
+| 🔗 Frontend ↔ Backend Integration      | 🟡 Some APIs connected                     |    ~30% |
+| 🧪 Production-level validation/testing | ⬜ Not started                              |     ~30% |
 
 These percentages are **rough project-progress estimates**, not formal measurements.
 
@@ -27,7 +26,7 @@ These percentages are **rough project-progress estimates**, not formal measureme
 | OTP generation/verification backend | ✅ Backend implemented/discussed |
 | Forgot password                     | 🟡                               |
 | Change password                     | ⬜                                |
-| Logout                              | 🟡                               |
+| Logout                              | ✅                               |
 | Session/token handling              | ✅                               |
 
 ---
@@ -39,8 +38,8 @@ These percentages are **rough project-progress estimates**, not formal measureme
 | Farmer profile screen | ✅      |
 | View profile          | ✅      |
 | Edit profile          | ✅     |
-| Farmer details API    | 🟡     |
-| Profile update API    | 🟡     |
+| Farmer details API    | ✅     |
+| Profile update API    | ✅     |
 | Change password       | ⬜      |
 
 ---
@@ -459,10 +458,10 @@ Just completed on the frontend.
 ```text
 Dashboard              ✅
 Farmers                ✅
-Farm Verification     🟡
-Procurement            🟡
-Quality                🟡
-Certification          🟡
+Farm Verification     ✅
+Procurement            ✅
+Quality                ✅
+Certification          ✅
 Payments               🟡
 Marketplace            🟡
 Orders                 🟡
@@ -471,10 +470,10 @@ Warehouse              🟡
 Logistics              🟡
 Settlements            🟡
 Buyers                 🟡
-FPO Management         🟡
+FPO Management         ✅
 Reports                ✅
-Authentication         ⬜
-API Integration        ⬜
+Authentication         ✅
+API Integration        ✅
 ```
 
 ### Estimated frontend website UI completion: **~90%**
@@ -744,13 +743,13 @@ Payments             ⬜
 So:
 
 ```text
-Dashboard              ⬜
-Farmers                ⬜
-Farm Verification      ⬜
-Procurement            ⬜
-Quality                ⬜
-Certification          ⬜
-Payments               ⬜
+Dashboard              ✅
+Farmers                ✅
+Farm Verification      ✅
+Procurement            ✅
+Quality                ✅
+Certification          ✅
+Payments               ✅
 Marketplace            ⬜
 Orders                 ⬜
 Inventory              ⬜
@@ -758,7 +757,7 @@ Warehouse              ⬜
 Logistics              ⬜
 Settlements            ⬜
 Buyers                 ⬜
-FPO                    ⬜
+FPO                    ✅
 Reports                ⬜
 ```
 
