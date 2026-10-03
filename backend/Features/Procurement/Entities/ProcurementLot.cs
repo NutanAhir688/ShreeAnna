@@ -47,6 +47,13 @@ public class ProcurementLot
 
     public DateTime? InspectorLastUpdated { get; set; }
 
+    public decimal? OfferedPricePerKg { get; set; }
+    public decimal? AgreedQuantityKg { get; set; }
+    public string? AgreementVersion { get; set; } = "v1.0";
+    public decimal? LogisticsCost { get; set; }
+    public decimal? OtherAdjustments { get; set; }
+    public string? NegotiationRemarks { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

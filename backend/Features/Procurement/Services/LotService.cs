@@ -260,6 +260,60 @@ public class LotService : ILotService
         return MapToResponse(lot);
     }
 
+    public async Task<bool> CreateAgreementAsync(Guid lotId, FormulateAgreementRequest? request)
+    {
+        var lot = await _context.ProcurementLots.FindAsync(lotId);
+        if (lot is null) return false;
+
+        // Dynamic version incrementing logic
+        if (lot.Status == "AGREEMENT_REJECTED" || lot.Status.Contains("REJECTED"))
+        {
+            if (string.IsNullOrEmpty(lot.AgreementVersion) || lot.AgreementVersion == "v1.0")
+            {
+                lot.AgreementVersion = "v2.0";
+            }
+            else if (lot.AgreementVersion == "v2.0")
+            {
+                lot.AgreementVersion = "v3.0";
+            }
+            else if (lot.AgreementVersion.StartsWith("v"))
+            {
+                var numStr = lot.AgreementVersion.Substring(1).Split('.')[0];
+                if (int.TryParse(numStr, out int currentNum))
+                {
+                    lot.AgreementVersion = $"v{currentNum + 1}.0";
+                }
+                else
+                {
+                    lot.AgreementVersion = "v2.0";
+                }
+            }
+            else
+            {
+                lot.AgreementVersion = "v2.0";
+            }
+        }
+        else if (string.IsNullOrEmpty(lot.AgreementVersion))
+        {
+            lot.AgreementVersion = "v1.0";
+        }
+
+        if (request != null)
+        {
+            if (request.UnitPrice > 0) lot.OfferedPricePerKg = request.UnitPrice;
+            if (request.AgreedQuantityKg > 0) lot.AgreedQuantityKg = request.AgreedQuantityKg;
+            if (request.LogisticsCost.HasValue) lot.LogisticsCost = request.LogisticsCost.Value;
+            if (request.OtherAdjustments.HasValue) lot.OtherAdjustments = request.OtherAdjustments.Value;
+            if (!string.IsNullOrEmpty(request.Remarks)) lot.NegotiationRemarks = request.Remarks;
+        }
+
+        lot.Status = "AGREEMENT_PENDING";
+        lot.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
     public async Task<bool> AcceptAgreementAsync(Guid lotId)
     {
         var lot = await _context.ProcurementLots.FindAsync(lotId);
@@ -324,7 +378,6 @@ public class LotService : ILotService
             result.Add(new InspectorResponse(u.Id, name, phone, string.IsNullOrWhiteSpace(u.Role) ? "Inspector" : u.Role, u.Email));
         }
 
-
         foreach (var def in defaultInspectors)
         {
             if (!result.Any(r => r.Name.Equals(def.Name, StringComparison.OrdinalIgnoreCase)))
@@ -335,7 +388,6 @@ public class LotService : ILotService
 
         return result;
     }
-
 
     private static LotResponse MapToResponse(ProcurementLot lot)
     {
@@ -363,7 +415,13 @@ public class LotService : ILotService
             lot.Farm?.Latitude,
             lot.Farm?.Longitude,
             lot.Farmer?.Phone,
-            lot.Farmer?.Address
+            lot.Farmer?.Address,
+            lot.OfferedPricePerKg,
+            lot.AgreedQuantityKg,
+            lot.AgreementVersion ?? "v1.0",
+            lot.LogisticsCost,
+            lot.OtherAdjustments,
+            lot.NegotiationRemarks
         );
     }
 }

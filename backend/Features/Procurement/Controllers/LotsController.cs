@@ -129,6 +129,18 @@ public class LotsController : ControllerBase
         return Ok(timeline);
     }
 
+    [HttpPost("lots/{id:guid}/agreement/create")]
+    public async Task<IActionResult> CreateAgreement(Guid id, [FromBody] FormulateAgreementRequest? request)
+    {
+        var result = await _lotService.CreateAgreementAsync(id, request);
+        if (!result)
+        {
+            return NotFound(new { message = "Lot not found." });
+        }
+
+        return Ok(new { message = "Agreement created and sent to farmer for consent." });
+    }
+
     [HttpPost("lots/{id:guid}/agreement/accept")]
     public async Task<IActionResult> AcceptAgreement(Guid id)
     {
