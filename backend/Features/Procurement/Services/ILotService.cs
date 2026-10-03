@@ -11,6 +11,7 @@ public interface ILotService
     Task<LotResponse?> AssignInspectorAsync(Guid lotId, AssignInspectorRequest request);
     Task<LotResponse?> UpdateInspectorLocationAsync(Guid lotId, UpdateInspectorLocationRequest request);
     Task<LotTimelineResponse?> GetTimelineAsync(Guid lotId);
+    Task<bool> CreateAgreementAsync(Guid lotId, FormulateAgreementRequest? request);
     Task<bool> AcceptAgreementAsync(Guid lotId);
     Task<bool> RejectAgreementAsync(Guid lotId, RejectAgreementRequest request);
     Task<bool> ReschedulePickupAsync(Guid lotId, ReschedulePickupRequest request);

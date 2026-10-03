@@ -88,6 +88,16 @@ class LotApi {
     throw Exception('Failed to load lot timeline.');
   }
 
+  Future<void> acceptAgreement(String lotId) async {
+    final response = await _apiClient.post(
+      ApiConfig.acceptAgreement(lotId),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to accept agreement.');
+    }
+  }
+
   Future<void> rejectAgreement(
     String lotId, {
     required String reason,

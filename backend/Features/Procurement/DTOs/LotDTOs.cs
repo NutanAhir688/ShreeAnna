@@ -45,7 +45,22 @@ public record LotResponse(
     decimal? FarmLatitude,
     decimal? FarmLongitude,
     string? FarmerPhone,
-    string? FarmerAddress
+    string? FarmerAddress,
+    decimal? OfferedPricePerKg,
+    decimal? AgreedQuantityKg,
+    string? AgreementVersion,
+    decimal? LogisticsCost,
+    decimal? OtherAdjustments,
+    string? NegotiationRemarks
+);
+
+public record FormulateAgreementRequest(
+    decimal AgreedQuantityKg,
+    decimal UnitPrice,
+    string? LogisticsType,
+    decimal? LogisticsCost,
+    decimal? OtherAdjustments,
+    string? Remarks
 );
 
 public record LotTimelineStepResponse(

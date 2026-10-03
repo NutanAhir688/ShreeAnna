@@ -8,6 +8,7 @@ import Dashboard from "../features/dashboard/pages/Dashboard";
 import Farmers from "@/features/farmers/pages/Farmers";
 import ProcurementLots from "../features/procurement/pages/ProcurementLots";
 import Agreements from "../features/procurement/pages/Agreements";
+import CreateAgreement from "../features/procurement/pages/CreateAgreement";
 import FarmerDetails from "../features/farmers/pages/FarmerDetails";
 import FarmVerification from "../features/farmers/pages/FarmVerification";
 import FarmVerificationList from "../features/farmers/pages/FarmVerificationList";
@@ -70,6 +71,9 @@ function AppRoutes() {
           <Route path="/procurement-lots/:id/certification" element={<Certification />} />
           <Route path="/procurement-lots/:id/payment" element={<PaymentProcessing />} />
           <Route path="/agreements" element={<Agreements />} />
+          <Route path="/agreements/new" element={<CreateAgreement />} />
+          <Route path="/agreements/new/:lotId" element={<CreateAgreement />} />
+          <Route path="/procurement-lots/:id/agreement" element={<CreateAgreement />} />
 
           <Route path="/quality" element={<QualityManagement />} />
           <Route path="/quality/assigned" element={<QualityManagement defaultTab="assigned" />} />

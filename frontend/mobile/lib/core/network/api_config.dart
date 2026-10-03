@@ -26,6 +26,7 @@ class ApiConfig {
   static String farmerLots(String farmerId) => '$baseUrl/api/farmers/$farmerId/lots';
   static String lotById(String lotId) => '$baseUrl/api/lots/$lotId';
   static String lotTimeline(String lotId) => '$baseUrl/api/lots/$lotId/timeline';
+  static String acceptAgreement(String lotId) => '$baseUrl/api/lots/$lotId/agreement/accept';
   static String rejectAgreement(String lotId) => '$baseUrl/api/lots/$lotId/agreement/reject';
   static String reschedulePickup(String lotId) => '$baseUrl/api/lots/$lotId/pickup/reschedule';
 

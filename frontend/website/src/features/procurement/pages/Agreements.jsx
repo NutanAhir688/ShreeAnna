@@ -5,6 +5,7 @@ import {
   Search,
   RotateCcw,
   Plus,
+  Edit,
   Loader2,
   AlertCircle,
   CheckCircle2,
@@ -107,9 +108,9 @@ function Agreements() {
   // Compute Agreements list from lots
   const agreements = useMemo(() => {
     return lots.map((l) => {
-      const msp = MSP_RATES[l.milletType] || 38.50;
-      const qty = l.estimatedQuantityKg || 0;
-      const totalVal = Math.round(qty * msp);
+      const unitPrice = l.offeredPricePerKg || MSP_RATES[l.milletType] || 38.50;
+      const qty = l.agreedQuantityKg || l.actualQuantityKg || l.estimatedQuantityKg || 0;
+      const totalVal = Math.round(qty * unitPrice);
       const statusUpper = (l.status || "").toUpperCase();
 
       // Check if agreement has been generated
@@ -123,6 +124,11 @@ function Agreements() {
         "COMPLETED",
       ].includes(statusUpper);
 
+      const logisticsCost = l.logisticsCost || 0;
+      const otherAdjustments = l.otherAdjustments || 0;
+      const netPayable = totalVal + logisticsCost + otherAdjustments;
+      const logisticsType = logisticsCost > 0 ? "FPO Pickup" : "Farmer Delivery";
+
       return {
         id: l.id,
         agreementCode: isGenerated
@@ -135,8 +141,15 @@ function Agreements() {
         farmName: l.farmName || "Registered Farm",
         milletType: l.milletType || "Finger Millet (Ragi)",
         quantityKg: qty,
-        mspRate: msp,
+        unitPrice: unitPrice,
+        mspRate: unitPrice,
         totalValue: totalVal,
+        logisticsCost: logisticsCost,
+        otherAdjustments: otherAdjustments,
+        netPayable: netPayable,
+        logisticsType: logisticsType,
+        negotiationRemarks: l.negotiationRemarks || "",
+        agreementVersion: l.agreementVersion || "v1.0",
         status: l.status || "SUBMITTED",
         isGenerated: isGenerated,
         date: l.submissionDate
@@ -190,11 +203,11 @@ function Agreements() {
   // Open formulation modal for a lot
   const openFormulationForLot = (agr) => {
     setFormulationLot(agr);
-    const msp = agr?.mspRate || MSP_RATES[agr?.milletType] || 28.50;
-    setFormAgreedQty(agr?.quantityKg || 1250);
+    const msp = agr?.mspRate || MSP_RATES[agr?.milletType] || 38.50;
+    setFormAgreedQty(agr?.quantityKg || 500);
     setFormUnitPrice(msp);
     setFormLogisticsType("pickup");
-    setFormLogisticsCost(1250);
+    setFormLogisticsCost(0);
     setFormOtherAdjustments(0);
     setFormRemarks("");
     setShowFormulationModal(true);
@@ -232,7 +245,7 @@ function Agreements() {
     if (!formulationLot) return;
     setActionLoading(true);
     try {
-      await agreementsApi.accept(formulationLot.id);
+      await agreementsApi.create(formulationLot.id);
       await loadAgreements();
       setShowFormulationModal(false);
       setFormulationLot(null);
@@ -263,12 +276,7 @@ function Agreements() {
           </p>
         </div>
 
-        <Button
-          onClick={() => {
-            const firstPendingLot = agreements.find((a) => !a.isGenerated) || agreements[0];
-            openFormulationForLot(firstPendingLot);
-          }}
-        >
+        <Button onClick={() => navigate("/agreements/new")}>
           <Plus className="mr-2 h-4 w-4" />
           Create Procurement Agreement
         </Button>
@@ -472,26 +480,40 @@ function Agreements() {
                         )}
                       </TableCell>
 
-                      <TableCell className="pr-6 text-right space-x-2">
-                        {agr.isGenerated ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedAgreement(agr)}
-                          >
-                            <FileText className="mr-1.5 h-3.5 w-3.5 text-blue-600" />
-                            View Document
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
-                            onClick={() => openFormulationForLot(agr)}
-                          >
-                            <Plus className="mr-1.5 h-3.5 w-3.5" />
-                            Create Agreement
-                          </Button>
-                        )}
+                      <TableCell className="pr-6 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {agr.isGenerated ? (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => navigate(`/agreements/new/${agr.id}`)}
+                                className="border-slate-300 hover:bg-slate-50 text-slate-700"
+                              >
+                                <Edit className="mr-1.5 h-3.5 w-3.5 text-amber-600" />
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSelectedAgreement(agr)}
+                                className="border-slate-300 hover:bg-slate-50 text-slate-700 font-medium"
+                              >
+                                <FileText className="mr-1.5 h-3.5 w-3.5 text-blue-600" />
+                                View Document
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              size="sm"
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+                              onClick={() => navigate(`/agreements/new/${agr.id}`)}
+                            >
+                              <Plus className="mr-1.5 h-3.5 w-3.5" />
+                              Create Agreement
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -577,7 +599,7 @@ function Agreements() {
                       <th className="p-2.5">Produce Description</th>
                       <th className="p-2.5">Quantity</th>
                       <th className="p-2.5">Agreed Rate (MSP)</th>
-                      <th className="p-2.5 text-right">Contract Consideration</th>
+                      <th className="p-2.5 text-right">Gross Produce Value</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -592,6 +614,44 @@ function Agreements() {
                   </tbody>
                 </table>
               </div>
+
+              {/* Commercial Financial Breakdown & Transportation Details */}
+              <div className="rounded-md border border-slate-200 bg-white p-3.5 space-y-2 text-xs">
+                <p className="font-bold text-slate-800 uppercase tracking-wider text-[11px] flex items-center justify-between">
+                  <span>Financial Breakdown & Logistics Schedule</span>
+                  <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-mono border border-emerald-200">
+                    Version {selectedAgreement.agreementVersion}
+                  </span>
+                </p>
+                <div className="space-y-1 text-slate-600 pt-1">
+                  <div className="flex justify-between">
+                    <span>Gross Produce Value ({selectedAgreement.quantityKg} kg × ₹{selectedAgreement.unitPrice.toFixed(2)}/kg):</span>
+                    <span className="font-semibold text-slate-800">₹{selectedAgreement.totalValue.toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Transportation / Logistics Allowance ({selectedAgreement.logisticsType}):</span>
+                    <span className="font-semibold text-slate-800">+ ₹{selectedAgreement.logisticsCost.toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Cleaning & Bagging Incentive:</span>
+                    <span className="font-semibold text-slate-800">+ ₹{selectedAgreement.otherAdjustments.toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-slate-200 pt-2 font-bold text-sm text-slate-900">
+                    <span>Net Farmer Payable:</span>
+                    <span className="text-emerald-700 text-base font-extrabold">₹{selectedAgreement.netPayable.toLocaleString("en-IN")}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Negotiation Remarks */}
+              {selectedAgreement.negotiationRemarks && (
+                <div className="rounded-md border border-amber-200 bg-amber-50/90 p-3 text-xs text-amber-900 space-y-1">
+                  <p className="font-bold uppercase text-[10px] text-amber-800 tracking-wider">
+                    Negotiation & Commercial Remarks
+                  </p>
+                  <p className="italic font-medium">"{selectedAgreement.negotiationRemarks}"</p>
+                </div>
+              )}
 
               {/* Terms & Conditions */}
               <div className="space-y-1.5 text-xs text-slate-600 pt-1">
@@ -651,347 +711,6 @@ function Agreements() {
                 <Button variant="secondary" size="sm" onClick={() => setSelectedAgreement(null)}>
                   Close
                 </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* FARMER PURCHASE AGREEMENT FORMULATION MODAL */}
-      {showFormulationModal && (
-        <Dialog open={showFormulationModal} onOpenChange={setShowFormulationModal}>
-          <DialogContent className="max-w-4xl bg-white p-0 overflow-hidden border-slate-300 max-h-[92vh] flex flex-col">
-            {/* Header */}
-            <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-slate-800">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
-                  Procurement Negotiation & Agreements
-                </p>
-                <h2 className="text-xl font-bold text-white">
-                  Farmer Purchase Agreement Formulation
-                </h2>
-                <p className="text-xs text-slate-400">
-                  Define commercial terms and generate binding procurement contract.
-                </p>
-              </div>
-              <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/40 text-xs px-3 py-1 font-mono">
-                DRAFT: V3 (DRAFTING)
-              </Badge>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-6 bg-slate-100 overflow-y-auto flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 text-slate-900">
-              {/* Left Column: Commercial Terms (2 cols) */}
-              <div className="lg:col-span-2 space-y-6">
-                <Card className="border-slate-200 bg-white shadow-xs">
-                  <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-100">
-                    <div className="flex items-center gap-2">
-                      <FileSpreadsheet className="h-5 w-5 text-emerald-700" />
-                      <CardTitle className="text-base font-bold">Commercial Terms</CardTitle>
-                    </div>
-                    <Badge variant="secondary" className="text-xs bg-slate-100 text-slate-600">
-                      Drafting
-                    </Badge>
-                  </CardHeader>
-                  <CardContent className="pt-4 space-y-4">
-                    {/* Lot Selection */}
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 mb-1.5 block">
-                        SELECT PROCUREMENT LOT
-                      </label>
-                      <Select
-                        value={formulationLot?.id || ""}
-                        onValueChange={(val) => {
-                          const selected = agreements.find((a) => a.id === val);
-                          if (selected) openFormulationForLot(selected);
-                        }}
-                      >
-                        <SelectTrigger className="w-full bg-white">
-                          <SelectValue placeholder="Choose a lot..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {agreements.map((a) => (
-                            <SelectItem key={a.id} value={a.id}>
-                              Lot #{a.lotNumber} - {a.farmerName} ({a.milletType})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Quantity & Unit Price */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5 block">
-                          AGREED QUANTITY (KG)
-                        </label>
-                        <div className="relative">
-                          <Input
-                            type="number"
-                            value={formAgreedQty}
-                            onChange={(e) => setFormAgreedQty(e.target.value)}
-                            className="pr-20 font-bold bg-white"
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-medium">
-                            / {formulationLot?.quantityKg?.toLocaleString("en-IN") || 1500} Max
-                          </span>
-                        </div>
-                        {Number(formAgreedQty) > (formulationLot?.quantityKg || 1500) && (
-                          <p className="text-[11px] text-red-600 mt-1">
-                            Agreed quantity exceeds farmer's proposed quantity of {formulationLot?.quantityKg} kg.
-                          </p>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5 block">
-                          UNIT PRICE (₹ / KG)
-                        </label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">₹</span>
-                          <Input
-                            type="number"
-                            step="0.5"
-                            value={formUnitPrice}
-                            onChange={(e) => setFormUnitPrice(e.target.value)}
-                            className="pl-7 font-bold bg-white"
-                          />
-                        </div>
-                        <p className="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
-                          <TrendingUp className="h-3 w-3 text-emerald-600" />
-                          Govt MSP: ₹{formulationLot?.mspRate || 25.00}/kg (+14% premium)
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Logistics Responsibility */}
-                    <div>
-                      <label className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5 block">
-                        LOGISTICS RESPONSIBILITY
-                      </label>
-                      <div className="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-lg border border-slate-200">
-                        <button
-                          type="button"
-                          onClick={() => setFormLogisticsType("pickup")}
-                          className={`py-2 px-3 text-xs font-bold rounded-md transition ${
-                            formLogisticsType === "pickup"
-                              ? "bg-white text-emerald-800 shadow-xs border border-slate-200"
-                              : "text-slate-600 hover:text-slate-900"
-                          }`}
-                        >
-                          FPO Pickup
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setFormLogisticsType("delivery")}
-                          className={`py-2 px-3 text-xs font-bold rounded-md transition ${
-                            formLogisticsType === "delivery"
-                              ? "bg-white text-emerald-800 shadow-xs border border-slate-200"
-                              : "text-slate-600 hover:text-slate-900"
-                          }`}
-                        >
-                          Farmer Delivery
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Logistics Cost & Other Adjustments */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5 block">
-                          LOGISTICS COST
-                        </label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">₹</span>
-                          <Input
-                            type="number"
-                            value={formLogisticsCost}
-                            onChange={(e) => setFormLogisticsCost(e.target.value)}
-                            disabled={formLogisticsType !== "pickup"}
-                            className="pl-7 bg-white font-medium disabled:bg-slate-100"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5 block">
-                          OTHER ADJUSTMENTS (CLEANING/BAGGING)
-                        </label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">₹</span>
-                          <Input
-                            type="number"
-                            value={formOtherAdjustments}
-                            onChange={(e) => setFormOtherAdjustments(e.target.value)}
-                            className="pl-7 bg-white font-medium"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Negotiation Remarks */}
-                    <div>
-                      <label className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5 block">
-                        NEGOTIATION REMARKS (INTERNAL)
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={formRemarks}
-                        onChange={(e) => setFormRemarks(e.target.value)}
-                        placeholder="Enter justification for pricing deviation..."
-                        className="w-full rounded-md border border-slate-300 bg-white p-2.5 text-xs outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Net Payable Banner */}
-                <div className="rounded-xl bg-[#064e3b] p-5 text-white shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4 border border-emerald-800">
-                  <div className="space-y-1 text-xs">
-                    <p className="text-emerald-200">
-                      Subtotal ({formAgreedQty} kg × ₹{formUnitPrice}) ={" "}
-                      <span className="font-semibold text-white">
-                        ₹{subtotal.toLocaleString("en-IN")}
-                      </span>
-                    </p>
-                    <p className="text-emerald-200">
-                      Logistics Cost:{" "}
-                      <span className="font-semibold text-white">
-                        + ₹{logisticsCost.toLocaleString("en-IN")}
-                      </span>
-                    </p>
-                    <p className="text-emerald-200">
-                      Other Adjustments:{" "}
-                      <span className="font-semibold text-white">
-                        ₹{otherAdjustments.toLocaleString("en-IN")}
-                      </span>
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="text-[10px] uppercase font-bold text-emerald-300 tracking-wider">
-                        NET FARMER PAYABLE AMOUNT
-                      </p>
-                      <p className="text-2xl font-black text-white">
-                        ₹{netPayable.toLocaleString("en-IN")}
-                      </p>
-                    </div>
-
-                    <Button
-                      size="lg"
-                      disabled={actionLoading || !formulationLot}
-                      onClick={handleCreateAgreementSubmit}
-                      className="bg-white text-emerald-950 hover:bg-emerald-50 font-bold shadow-md h-12 px-5"
-                    >
-                      {actionLoading ? (
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      ) : (
-                        <FileCheck className="mr-2 h-5 w-5 text-emerald-800" />
-                      )}
-                      CREATE PROCUREMENT AGREEMENT
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column: Entity Context & History (1 col) */}
-              <div className="space-y-6">
-                {/* Entity Context Card */}
-                <Card className="border-slate-200 bg-white shadow-xs">
-                  <CardHeader className="pb-3 border-b border-slate-100">
-                    <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
-                      <User className="h-4 w-4 text-slate-400" /> Entity Context
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-4 space-y-4">
-                    <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50 border border-slate-200/80">
-                      <div className="p-2 bg-emerald-100 text-emerald-700 rounded-md">
-                        <User className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-900 text-sm">
-                          {formulationLot?.farmerName || "Rameshwar Patil"}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          F-ID: #{formulationLot?.farmerId || "99281"} • Solapur Dist.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                        LOT IDENTIFIER
-                      </p>
-                      <div className="p-2.5 rounded-md bg-slate-100 font-mono font-bold text-xs text-slate-800 border border-slate-200">
-                        {formulationLot?.lotNumber || "L-8492"} ({formulationLot?.milletType || "Pearl Millet"})
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs">
-                      <div>
-                        <p className="text-slate-400 text-[10px] uppercase font-bold">QUALITY GRADE</p>
-                        <p className="font-bold text-emerald-700 flex items-center gap-1 mt-0.5">
-                          <CheckCircle2 className="h-3.5 w-3.5" /> Grade A
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-slate-400 text-[10px] uppercase font-bold">MOISTURE</p>
-                        <p className="font-bold text-slate-800 mt-0.5">11.2%</p>
-                      </div>
-                      <div>
-                        <p className="text-slate-400 text-[10px] uppercase font-bold">FM COUNT</p>
-                        <p className="font-bold text-slate-800 mt-0.5">0.8%</p>
-                      </div>
-                      <div>
-                        <p className="text-slate-400 text-[10px] uppercase font-bold">GOVT MSP</p>
-                        <p className="font-bold text-slate-800 mt-0.5">
-                          ₹{formulationLot?.mspRate || 25.00}/kg
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Negotiation History Card */}
-                <Card className="border-slate-200 bg-white shadow-xs">
-                  <CardHeader className="pb-3 border-b border-slate-100">
-                    <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-slate-400" /> Negotiation History
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-4 space-y-4">
-                    <div className="relative pl-6 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
-                      <div className="relative">
-                        <span className="absolute -left-6 top-1 h-2.5 w-2.5 rounded-full bg-emerald-600 ring-4 ring-emerald-100" />
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs font-bold text-slate-900">Draft V3 (Current)</p>
-                          <span className="text-[10px] text-slate-400">Just now</span>
-                        </div>
-                        <p className="text-xs text-slate-600 mt-0.5">
-                          Modifying terms based on counter-offer.
-                        </p>
-                      </div>
-
-                      <div className="relative">
-                        <span className="absolute -left-6 top-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-4 ring-red-100" />
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs font-bold text-slate-900">Version 2</p>
-                          <span className="text-[10px] text-slate-400">Yesterday, 14:30</span>
-                        </div>
-                        <Badge
-                          variant="outline"
-                          className="text-[10px] bg-red-50 text-red-600 border-red-200 my-1"
-                        >
-                          Rejected by Farmer
-                        </Badge>
-                        <p className="text-xs text-slate-500 bg-red-50/50 p-2 rounded border border-red-100">
-                          "Quantity proposed ({formulationLot?.quantityKg || 1250}kg) is lower than available harvest. Want to sell entire lot."
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
               </div>
             </div>
           </DialogContent>

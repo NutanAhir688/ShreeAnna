@@ -1057,33 +1057,57 @@ function AgreementCard({ lot }) {
                         <div className="flex items-start justify-between gap-4">
                             <Detail
                                 label="Agreement ID"
-                                value={lot.agreementId}
+                                value={lot.agreementId || `AGR-${lot.lotNumber}`}
                             />
 
-                            <Badge variant="secondary">
-                                {lot.agreementStatus}
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="font-mono text-xs">
+                                    {lot.agreementVersion || "v1.0"}
+                                </Badge>
+                                <Badge variant={lot.status?.includes("REJECTED") ? "destructive" : "secondary"}>
+                                    {lot.status?.includes("REJECTED") ? "REJECTED BY FARMER" : lot.agreementStatus || lot.status}
+                                </Badge>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <Detail
                                 label="Agreed Quantity"
                                 value={
-                                    lot.agreedQuantity !== null
-                                        ? `${lot.agreedQuantity} kg`
+                                    lot.agreedQuantityKg ?? lot.agreedQuantity ?? lot.estimatedQuantityKg
+                                        ? `${lot.agreedQuantityKg ?? lot.agreedQuantity ?? lot.estimatedQuantityKg} kg`
                                         : "—"
                                 }
                             />
 
                             <Detail
-                                label="Purchase Price"
+                                label="Offered Unit Price"
                                 value={
-                                    lot.pricePerKg !== null
-                                        ? `₹${lot.pricePerKg}/kg`
+                                    lot.offeredPricePerKg ?? lot.pricePerKg
+                                        ? `₹${lot.offeredPricePerKg ?? lot.pricePerKg}/kg`
                                         : "—"
                                 }
                             />
                         </div>
+
+                        {lot.status?.includes("REJECTED") && (
+                            <div className="mt-3 p-3 rounded-lg bg-red-50 border border-red-200 text-xs space-y-2">
+                                <div className="flex items-center justify-between font-bold text-red-900">
+                                    <span>Agreement Version {lot.agreementVersion || "v1.0"} Rejected</span>
+                                    <span className="text-[10px] bg-red-200 text-red-900 px-1.5 py-0.5 rounded">Action Required</span>
+                                </div>
+                                <p className="text-slate-600 italic">
+                                    "{lot.negotiationRemarks || 'Farmer rejected previous contract terms during negotiation. Create new version formulation.'}"
+                                </p>
+                                <Button
+                                    size="sm"
+                                    onClick={() => navigate(`/agreements/new/${lot.id}`)}
+                                    className="w-full bg-red-700 hover:bg-red-800 text-white font-bold mt-1"
+                                >
+                                    Re-Formulate Agreement (Next Version)
+                                </Button>
+                            </div>
+                        )}
                     </>
                 )}
 
@@ -1377,7 +1401,7 @@ function InspectorTrackingCard({ lot, onAssignClick, onLocationUpdate }) {
             </CardContent>
         </Card>
     );
-}
+}   
 
 /* ---------------- Assign Inspector Modal ---------------- */
 function AssignInspectorModal({ isOpen, onClose, onSubmit }) {
