@@ -1,4 +1,5 @@
 namespace backend.Features.Farms.Entities;
+
 using backend.Features.Farmers.Entities;
 public class Farm
 {
@@ -39,4 +40,6 @@ public class Farm
     public Guid? VerifiedBy { get; set; }
 
     public Farmer Farmer { get; set; } = null!;
+    public ICollection<FarmCrop> Crops { get; set; }
+        = new List<FarmCrop>();
 }

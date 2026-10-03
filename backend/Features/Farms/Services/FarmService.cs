@@ -25,6 +25,24 @@ public class FarmService : IFarmService
         {
             throw new KeyNotFoundException("Farmer not found.");
         }
+        if (request.Crops is null || request.Crops.Count == 0)
+        {
+            throw new ArgumentException(
+                "At least one crop must be added to the farm.");
+        }
+        var duplicateCrop = request.Crops
+            .GroupBy(x => new
+            {
+                CropName = x.CropName.Trim().ToLower(),
+                Season = x.Season.Trim().ToLower()
+            })
+            .Any(x => x.Count() > 1);
+
+        if (duplicateCrop)
+        {
+            throw new ArgumentException(
+                "The same crop cannot be added more than once for the same season.");
+        }
 
         var farm = new Farm
         {
@@ -34,54 +52,93 @@ public class FarmService : IFarmService
 
             FarmerId = farmerId,
 
-            FarmName = request.FarmName,
+            FarmName = request.FarmName.Trim(),
             AreaInAcres = request.AreaInAcres,
-            SoilType = request.SoilType,
-            MilletType = request.MilletType,
-            SurveyNumber = request.SurveyNumber,
+            SoilType = request.SoilType.Trim(),
 
-            District = request.District,
-            Taluka = request.Taluka,
-            Village = request.Village,
+            SurveyNumber = request.SurveyNumber.Trim(),
+
+            District = request.District.Trim(),
+            Taluka = request.Taluka.Trim(),
+            Village = request.Village.Trim(),
 
             Latitude = request.Latitude,
             Longitude = request.Longitude,
 
-            ImageUrl = request.ImageUrl,
+            ImageUrl = request.ImageUrl?.Trim() ?? string.Empty,
 
             Status = "Pending Verification",
 
             CreatedAt = DateTime.UtcNow
         };
 
+        foreach (var cropRequest in request.Crops)
+        {
+            farm.Crops.Add(new FarmCrop
+            {
+                Id = Guid.NewGuid(),
+
+                CropName = cropRequest.CropName.Trim(),
+
+                Season = cropRequest.Season.Trim(),
+
+                SowingDate = DateTime.SpecifyKind(
+                    cropRequest.SowingDate,
+                    DateTimeKind.Utc),
+
+                ExpectedHarvestDate =
+                    cropRequest.ExpectedHarvestDate.HasValue
+                        ? DateTime.SpecifyKind(
+                            cropRequest.ExpectedHarvestDate.Value,
+                            DateTimeKind.Utc)
+                        : null,
+
+                EstimatedAreaInAcres =
+                    cropRequest.EstimatedAreaInAcres,
+
+                Status = "Active",
+
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
         await _context.Farms.AddAsync(farm);
+
         await _context.SaveChangesAsync();
 
         return MapToResponse(farm);
     }
-
     public async Task<List<FarmResponse>> GetByFarmerIdAsync(
         Guid farmerId)
     {
-        return await _context.Farms
+        var farms = await _context.Farms
             .AsNoTracking()
+            .Include(x => x.Crops)
             .Where(x => x.FarmerId == farmerId)
-            .Select(x => MapToResponseExpression(x))
             .ToListAsync();
+
+        return farms
+            .Select(MapToResponse)
+            .ToList();
     }
 
     public async Task<List<FarmResponse>> GetAllAsync()
     {
-        return await _context.Farms
+        var farms = await _context.Farms
             .AsNoTracking()
-            .Select(x => MapToResponseExpression(x))
+            .Include(x => x.Crops)
             .ToListAsync();
+
+        return farms
+            .Select(MapToResponse)
+            .ToList();
     }
 
     public async Task<FarmResponse?> GetByIdAsync(Guid farmId)
     {
         var farm = await _context.Farms
             .AsNoTracking()
+            .Include(x => x.Crops)
             .FirstOrDefaultAsync(x => x.Id == farmId);
 
         return farm is null
@@ -104,7 +161,7 @@ public class FarmService : IFarmService
         farm.FarmName = request.FarmName;
         farm.AreaInAcres = request.AreaInAcres;
         farm.SoilType = request.SoilType;
-        farm.MilletType = request.MilletType;
+        // farm.MilletType = request.MilletType;
 
         farm.District = request.District;
         farm.Taluka = request.Taluka;
@@ -217,30 +274,42 @@ public class FarmService : IFarmService
         return candidateCode;
     }
 
-    private static FarmResponse MapToResponse(Farm farm)
+private static FarmResponse MapToResponse(Farm farm)
+{
+    return new FarmResponse
     {
-        return new FarmResponse
-        {
-            Id = farm.Id,
-            FarmCode = farm.FarmCode,
-            FarmerId = farm.FarmerId,
-            FarmName = farm.FarmName,
-            AreaInAcres = farm.AreaInAcres,
-            SoilType = farm.SoilType,
-            MilletType = farm.MilletType,
-            SurveyNumber = farm.SurveyNumber,
-            District = farm.District,
-            Taluka = farm.Taluka,
-            Village = farm.Village,
-            Latitude = farm.Latitude,
-            Longitude = farm.Longitude,
-            ImageUrl = farm.ImageUrl,
-            Status = farm.Status,
-            CreatedAt = farm.CreatedAt,
-            VerifiedAt = farm.VerifiedAt,
-            VerifiedBy = farm.VerifiedBy
-        };
-    }
+        Id = farm.Id,
+        FarmCode = farm.FarmCode,
+        FarmerId = farm.FarmerId,
+        FarmName = farm.FarmName,
+        AreaInAcres = farm.AreaInAcres,
+        SoilType = farm.SoilType,
+        SurveyNumber = farm.SurveyNumber,
+        District = farm.District,
+        Taluka = farm.Taluka,
+        Village = farm.Village,
+        Latitude = farm.Latitude,
+        Longitude = farm.Longitude,
+        ImageUrl = farm.ImageUrl,
+        Status = farm.Status,
+        CreatedAt = farm.CreatedAt,
+        VerifiedAt = farm.VerifiedAt,
+        VerifiedBy = farm.VerifiedBy,
+
+        Crops = farm.Crops
+            .Select(c => new FarmCropResponse
+            {
+                Id = c.Id,
+                CropName = c.CropName,
+                Season = c.Season,
+                SowingDate = c.SowingDate,
+                ExpectedHarvestDate = c.ExpectedHarvestDate,
+                EstimatedAreaInAcres = c.EstimatedAreaInAcres,
+                Status = c.Status
+            })
+            .ToList()
+    };
+}
 
     private static FarmResponse MapToResponseExpression(Farm farm)
     {
@@ -252,7 +321,7 @@ public class FarmService : IFarmService
             FarmName = farm.FarmName,
             AreaInAcres = farm.AreaInAcres,
             SoilType = farm.SoilType,
-            MilletType = farm.MilletType,
+            // MilletType = farm.MilletType,
             SurveyNumber = farm.SurveyNumber,
             District = farm.District,
             Taluka = farm.Taluka,

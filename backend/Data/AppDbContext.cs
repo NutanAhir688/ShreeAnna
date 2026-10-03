@@ -7,6 +7,7 @@ using backend.Features.Quality.Entities;
 using backend.Features.Warehouses.Entities;
 using backend.Features.Inventory.Entities;
 using backend.Features.Logistics.Entities;
+
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Data;
@@ -33,6 +34,7 @@ public class AppDbContext : DbContext
     public DbSet<InventoryBatch> InventoryBatches => Set<InventoryBatch>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<Dispatch> Dispatches => Set<Dispatch>();
+    public DbSet<FarmCrop> FarmCrops => Set<FarmCrop>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -45,6 +47,41 @@ public class AppDbContext : DbContext
         ConfigureFarm(modelBuilder);
         ConfigureFarmerOtp(modelBuilder);
         ConfigureProcurementLot(modelBuilder);
+        ConfigureFarmCrop(modelBuilder);
+    }
+    private static void ConfigureFarmCrop(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<FarmCrop>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.CropName)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(x => x.Season)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(x => x.Status)
+                .IsRequired()
+                .HasMaxLength(30);
+
+            entity.Property(x => x.EstimatedAreaInAcres)
+                .HasPrecision(10, 2);
+
+            entity.HasOne(x => x.Farm)
+                .WithMany(x => x.Crops)
+                .HasForeignKey(x => x.FarmId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(x => new
+            {
+                x.FarmId,
+                x.CropName,
+                x.Season
+            }).IsUnique();
+        });
     }
     private static void ConfigureFarmerOtp(ModelBuilder modelBuilder)
     {
@@ -74,7 +111,7 @@ public class AppDbContext : DbContext
             entity.HasIndex(x => x.Phone);
         });
     }
-        private static void ConfigureUser(ModelBuilder modelBuilder)
+    private static void ConfigureUser(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<User>(entity =>
         {
@@ -105,6 +142,7 @@ public class AppDbContext : DbContext
             entity.Property(x => x.RefreshTokenExpiryTime);
         });
     }
+
 
     private static void ConfigureFpoMember(ModelBuilder modelBuilder)
     {
@@ -244,9 +282,9 @@ public class AppDbContext : DbContext
                 .IsRequired()
                 .HasMaxLength(30);
 
-            entity.Property(x => x.MilletType)
-                .IsRequired()
-                .HasMaxLength(100);
+            // entity.Property(x => x.MilletType)
+            //     .IsRequired()
+            //     .HasMaxLength(100);
 
             entity.Property(x => x.EstimatedQuantityKg)
                 .HasPrecision(10, 2);

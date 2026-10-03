@@ -1,3 +1,4 @@
+using backend.Features.Auth;
 using backend.Features.Quality.DTOs;
 using backend.Features.Quality.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -33,16 +34,36 @@ public class QualityController : ControllerBase
     }
 
     [HttpPost("inspections")]
-    public async Task<ActionResult<InspectionResponse>> CreateInspection(CreateInspectionRequest request)
+    [Authorize(Roles = Roles.QualityInspector)]
+    public async Task<ActionResult<InspectionResponse>> CreateInspection(
+        CreateInspectionRequest request)
     {
         try
         {
             var result = await _qualityService.CreateInspectionAsync(request);
+
             return Ok(result);
         }
         catch (KeyNotFoundException ex)
         {
-            return NotFound(new { message = ex.Message });
+            return NotFound(new
+            {
+                message = ex.Message
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new
+            {
+                message = ex.Message
+            });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new
+            {
+                message = ex.Message
+            });
         }
     }
 
@@ -60,4 +81,14 @@ public class QualityController : ControllerBase
         if (result is null) return NotFound(new { message = "Certificate not found." });
         return Ok(result);
     }
+
+    [HttpGet("certificates/verify/{certificateNumber}")]
+    [AllowAnonymous]
+    public async Task<ActionResult<QualityCertificateResponse>> VerifyCertificate(string certificateNumber)
+    {
+        var result = await _qualityService.VerifyCertificateAsync(certificateNumber);
+        if (result is null) return NotFound(new { message = "Certificate not found or invalid." });
+        return Ok(result);
+    }
 }
+

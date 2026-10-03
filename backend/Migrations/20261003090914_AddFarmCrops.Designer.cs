@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.Data;
@@ -11,9 +12,11 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261003090914_AddFarmCrops")]
+    partial class AddFarmCrops
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -501,15 +504,6 @@ namespace backend.Migrations
                         .HasPrecision(10, 2)
                         .HasColumnType("numeric(10,2)");
 
-                    b.Property<Guid?>("AssignedInspectorId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("AssignedInspectorName")
-                        .HasColumnType("text");
-
-                    b.Property<string>("AssignedInspectorPhone")
-                        .HasColumnType("text");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -533,25 +527,10 @@ namespace backend.Migrations
                     b.Property<DateTime>("HarvestDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("InspectionTrackingStatus")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("InspectorLastUpdated")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal?>("InspectorLatitude")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal?>("InspectorLongitude")
-                        .HasColumnType("numeric");
-
                     b.Property<string>("LotNumber")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
-
-                    b.Property<DateTime?>("ScheduledInspectionDate")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Status")
                         .IsRequired()

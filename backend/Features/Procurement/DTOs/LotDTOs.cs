@@ -2,10 +2,23 @@ namespace backend.Features.Procurement.DTOs;
 
 public record CreateLotRequest(
     Guid FarmId,
-    string MilletType,
+    Guid FarmCropId,
     decimal EstimatedQuantityKg,
     DateTime HarvestDate,
     string? Description
+);
+
+public record AssignInspectorRequest(
+    Guid? InspectorId,
+    string InspectorName,
+    string InspectorPhone,
+    DateTime ScheduledDate
+);
+
+public record UpdateInspectorLocationRequest(
+    string TrackingStatus,
+    decimal? Latitude,
+    decimal? Longitude
 );
 
 public record LotResponse(
@@ -15,13 +28,24 @@ public record LotResponse(
     string FarmerName,
     Guid FarmId,
     string FarmName,
-    string MilletType,
+    string FarmCrop,
     decimal EstimatedQuantityKg,
     decimal? ActualQuantityKg,
     DateTime HarvestDate,
     DateTime SubmissionDate,
     string Status,
-    string? Description
+    string? Description,
+    string? AssignedInspectorName,
+    string? AssignedInspectorPhone,
+    DateTime? ScheduledInspectionDate,
+    string? InspectionTrackingStatus,
+    decimal? InspectorLatitude,
+    decimal? InspectorLongitude,
+    DateTime? InspectorLastUpdated,
+    decimal? FarmLatitude,
+    decimal? FarmLongitude,
+    string? FarmerPhone,
+    string? FarmerAddress
 );
 
 public record LotTimelineStepResponse(
@@ -45,3 +69,12 @@ public record ReschedulePickupRequest(
     DateTime RequestedDate,
     string Reason
 );
+
+public record InspectorResponse(
+    Guid Id,
+    string Name,
+    string Phone,
+    string Role,
+    string Email
+);
+

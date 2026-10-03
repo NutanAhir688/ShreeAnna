@@ -14,7 +14,7 @@ public class UpdateFarmRequest
     public string SoilType { get; set; } = string.Empty;
 
     [Required]
-    public string MilletType { get; set; } = string.Empty;
+    public string SurveyNumber { get; set; } = string.Empty;
 
     [Required]
     public string District { get; set; } = string.Empty;
@@ -30,4 +30,6 @@ public class UpdateFarmRequest
     public decimal Longitude { get; set; }
 
     public string ImageUrl { get; set; } = string.Empty;
+
+    public List<CreateFarmCropRequest> Crops { get; set; } = new();
 }

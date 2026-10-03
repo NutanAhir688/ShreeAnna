@@ -8,8 +8,12 @@ public interface ILotService
     Task<List<LotResponse>> GetByFarmerIdAsync(Guid farmerId);
     Task<LotResponse?> GetByIdAsync(Guid id);
     Task<LotResponse> CreateAsync(Guid farmerId, CreateLotRequest request);
+    Task<LotResponse?> AssignInspectorAsync(Guid lotId, AssignInspectorRequest request);
+    Task<LotResponse?> UpdateInspectorLocationAsync(Guid lotId, UpdateInspectorLocationRequest request);
     Task<LotTimelineResponse?> GetTimelineAsync(Guid lotId);
     Task<bool> AcceptAgreementAsync(Guid lotId);
     Task<bool> RejectAgreementAsync(Guid lotId, RejectAgreementRequest request);
     Task<bool> ReschedulePickupAsync(Guid lotId, ReschedulePickupRequest request);
+    Task<List<InspectorResponse>> GetInspectorsAsync();
 }
+

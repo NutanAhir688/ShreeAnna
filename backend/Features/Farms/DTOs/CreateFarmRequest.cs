@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 
 namespace backend.Features.Farms.DTOs;
+using backend.Features.Farms.DTOs;
 
 public class CreateFarmRequest
 {
@@ -12,9 +13,6 @@ public class CreateFarmRequest
 
     [Required]
     public string SoilType { get; set; } = string.Empty;
-
-    [Required]
-    public string MilletType { get; set; } = string.Empty;
 
     [Required]
     public string SurveyNumber { get; set; } = string.Empty;
@@ -33,4 +31,6 @@ public class CreateFarmRequest
     public decimal Longitude { get; set; }
 
     public string ImageUrl { get; set; } = string.Empty;
+
+    public List<CreateFarmCropRequest> Crops { get; set; } = new();
 }

@@ -1,4 +1,5 @@
 namespace backend.Features.Farms.DTOs;
+using backend.Features.Farms.DTOs;
 
 public class FarmResponse
 {
@@ -11,8 +12,6 @@ public class FarmResponse
     public string FarmName { get; set; } = string.Empty;
 
     public decimal AreaInAcres { get; set; }
-
-    public string MilletType { get; set; } = string.Empty;
 
     public string SoilType { get; set; } = string.Empty;
 
@@ -37,4 +36,22 @@ public class FarmResponse
     public DateTime? VerifiedAt { get; set; }
 
     public Guid? VerifiedBy { get; set; }
+
+    public List<FarmCropResponse> Crops { get; set; } = new();
+}
+public class FarmCropResponse
+{
+    public Guid Id { get; set; }
+
+    public string CropName { get; set; } = string.Empty;
+
+    public string Season { get; set; } = string.Empty;
+
+    public DateTime SowingDate { get; set; }
+
+    public DateTime? ExpectedHarvestDate { get; set; }
+
+    public decimal? EstimatedAreaInAcres { get; set; }
+
+    public string Status { get; set; } = string.Empty;
 }
