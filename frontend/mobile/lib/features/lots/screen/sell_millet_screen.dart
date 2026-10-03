@@ -208,7 +208,8 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
 
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(26, 18, 26, 30),
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 60),
 
           child: Form(
             key: _formKey,
@@ -231,7 +232,7 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
                 // ------------------------------------------------
                 _buildLabel(l10n.selectFarm),
 
-                const SizedBox(height: 7),
+                const SizedBox(height: 5),
 
                 if (_isLoadingFarms)
                   const Padding(
@@ -256,6 +257,7 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
                   )
                 else
                   DropdownButtonFormField<Farm>(
+                    isExpanded: true,
                     initialValue: _selectedFarmObj,
                     decoration: _inputDecoration(
                       hintText: l10n.chooseFarm,
@@ -268,6 +270,7 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
                           farm.isVerified
                               ? farm.farmName
                               : '${farm.farmName} (Pending Verification)',
+                          overflow: TextOverflow.ellipsis,
                         ),
                       );
                     }).toList(),
@@ -297,7 +300,8 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
                 const SizedBox(height: 7),
 
                 DropdownButtonFormField<FarmCrop>(
-                  value: _selectedCropObj,
+                  isExpanded: true,
+                  initialValue: _selectedCropObj,
                   decoration: _inputDecoration(
                     hintText: l10n.chooseMilletType,
                     icon: Icons.grass_outlined,
@@ -306,7 +310,10 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
                       .map((crop) {
                         return DropdownMenuItem<FarmCrop>(
                           value: crop,
-                          child: Text('${crop.cropName} (${crop.season})'),
+                          child: Text(
+                            '${crop.cropName} (${crop.season})',
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         );
                       })
                       .toList(),

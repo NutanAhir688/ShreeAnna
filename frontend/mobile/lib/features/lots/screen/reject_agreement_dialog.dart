@@ -1,22 +1,67 @@
 import 'package:flutter/material.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
+import '../services/lot_api.dart';
 
 class RejectAgreementDialog extends StatefulWidget {
-  const RejectAgreementDialog({super.key});
+  final String lotId;
+
+  const RejectAgreementDialog({
+    super.key,
+    required this.lotId,
+  });
 
   @override
   State<RejectAgreementDialog> createState() => _RejectAgreementDialogState();
 }
 
 class _RejectAgreementDialogState extends State<RejectAgreementDialog> {
-  String? _selectedReason;
+  final LotApi _lotApi = LotApi();
+
+  String? _selectedReason = 'Price is not acceptable';
   final TextEditingController _commentController = TextEditingController();
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
     _commentController.dispose();
     super.dispose();
+  }
+
+  Future<void> _submitRejection() async {
+    if (_selectedReason == null || _selectedReason!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a reason for rejection.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final comment = _commentController.text.trim();
+      await _lotApi.rejectAgreement(
+        widget.lotId,
+        reason: _selectedReason!,
+        comment: comment,
+      );
+
+      if (!mounted) return;
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isSubmitting = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to reject agreement: ${e.toString().replaceFirst('Exception: ', '')}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -26,7 +71,7 @@ class _RejectAgreementDialogState extends State<RejectAgreementDialog> {
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -36,49 +81,51 @@ class _RejectAgreementDialogState extends State<RejectAgreementDialog> {
               children: [
                 Text(
                   l10n.rejectAgreement,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                 ),
                 IconButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: _isSubmitting ? null : () => Navigator.pop(context),
                   icon: const Icon(Icons.close),
                 ),
               ],
             ),
 
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
 
             const Text(
-              'Why are you rejecting?',
+              'Why are you rejecting this procurement agreement?',
               style: TextStyle(fontSize: 12, color: Color(0xFF707870)),
             ),
 
             const SizedBox(height: 8),
 
-            _radioTile('Price is not acceptable', 'price'),
-            _radioTile('Quantity is not acceptable', 'quantity'),
-            _radioTile('Pickup charges', 'pickup'),
-            _radioTile('Other', 'other'),
+            _radioTile('Price is not acceptable', 'Price is not acceptable'),
+            _radioTile('Quantity is not acceptable', 'Quantity is not acceptable'),
+            _radioTile('Pickup charges too high', 'Pickup charges too high'),
+            _radioTile('Other reason', 'Other reason'),
 
             const SizedBox(height: 8),
 
             TextField(
               controller: _commentController,
+              enabled: !_isSubmitting,
               maxLines: 3,
               decoration: InputDecoration(
-                hintText: 'Provide more details...',
+                hintText: 'Provide additional details for FPO officer...',
+                hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF9E9E9E)),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(6),
                 ),
               ),
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
 
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: _isSubmitting ? null : () => Navigator.pop(context),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       child: Text(l10n.cancel.toUpperCase()),
@@ -90,13 +137,23 @@ class _RejectAgreementDialogState extends State<RejectAgreementDialog> {
 
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: _submitRejection,
+                    onPressed: _isSubmitting ? null : _submitRejection,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Text(l10n.rejectAgreement.toUpperCase()),
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(l10n.rejectAgreement.toUpperCase()),
                     ),
                   ),
                 ),
@@ -110,22 +167,18 @@ class _RejectAgreementDialogState extends State<RejectAgreementDialog> {
 
   Widget _radioTile(String label, String value) {
     return RadioListTile<String>(
+      dense: true,
       contentPadding: EdgeInsets.zero,
       title: Text(label, style: const TextStyle(fontSize: 13)),
       value: value,
       groupValue: _selectedReason,
-      onChanged: (v) {
-        setState(() {
-          _selectedReason = v;
-        });
-      },
+      onChanged: _isSubmitting
+          ? null
+          : (v) {
+              setState(() {
+                _selectedReason = v;
+              });
+            },
     );
-  }
-
-  void _submitRejection() {
-    // For now, just close and show a snack. Hook API here later.
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Rejection submitted')));
   }
 }

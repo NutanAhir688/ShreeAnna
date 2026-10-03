@@ -213,6 +213,18 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
               ),
 
               if (_lot != null &&
+                  (_lot!.status == 'AGREEMENT_PENDING' ||
+                   _lot!.status == 'AGREEMENT_ACCEPTED' ||
+                   _lot!.status == 'AGREEMENT_REJECTED' ||
+                   _lot!.status == 'PROCUREMENT_AGREEMENT' ||
+                   _lot!.status.toUpperCase().contains('AGREEMENT'))) ...[
+                const SizedBox(height: 16),
+                _buildAgreementNotificationBanner(_lot!, context),
+                const SizedBox(height: 16),
+                _buildProcurementOfficerCard(_lot!, context),
+              ],
+
+              if (_lot != null &&
                   _lot!.assignedInspectorName != null &&
                   _lot!.assignedInspectorName!.isNotEmpty) ...[
                 const SizedBox(height: 18),
@@ -311,13 +323,16 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                       isCompleted: true,
                       isCurrent: false,
                       isLast: false,
-                      onTap: () {
-                        Navigator.push(
+                      onTap: () async {
+                        final refreshed = await Navigator.push<bool>(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const ProcurementAgreementScreen(),
+                            builder: (_) => ProcurementAgreementScreen(lotId: widget.lotId ?? ''),
                           ),
                         );
+                        if (refreshed == true) {
+                          _loadTimeline();
+                        }
                       },
                       actionLabel: l10n.viewAgreement,
                     ),
@@ -488,24 +503,25 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
       case 'QUALITY_CERTIFICATE':
         title = l10n.qualityCertificate;
         subtitle = l10n.qualityCertificateSubtitle;
-        if (canInteract) {
-          actionLabel = l10n.viewCertificate;
-          onTap = () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => QualityCertificateScreen(lotId: widget.lotId)),
-              );
-        }
+        actionLabel = l10n.viewCertificate;
+        onTap = () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => QualityCertificateScreen(lotId: widget.lotId)),
+            );
         break;
       case 'PROCUREMENT_AGREEMENT':
         title = l10n.procurementAgreement;
         subtitle = l10n.procurementAgreementSubtitle;
-        if (canInteract) {
-          actionLabel = l10n.viewAgreement;
-          onTap = () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ProcurementAgreementScreen()),
-              );
-        }
+        actionLabel = l10n.viewAgreement;
+        onTap = () async {
+          final refreshed = await Navigator.push<bool>(
+            context,
+            MaterialPageRoute(builder: (_) => ProcurementAgreementScreen(lotId: widget.lotId ?? '')),
+          );
+          if (refreshed == true) {
+            _loadTimeline();
+          }
+        };
         break;
       case 'PICKUP':
         title = l10n.pickupDelivery;
@@ -945,8 +961,8 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                       lot.assignedInspectorPhone ?? "+91 9876543210",
                     );
                   },
-                  icon: const Icon(Icons.message, size: 16),
-                  label: const Text('SMS / Info', style: TextStyle(fontSize: 12)),
+                  icon: const Icon(Icons.chat, size: 16),
+                  label: const Text('Chat Support', style: TextStyle(fontSize: 12)),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF202420),
                     side: const BorderSide(color: Color(0xFFD5DFD0)),
@@ -958,6 +974,226 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProcurementOfficerCard(LotModel lot, BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4F7F4),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFD5DFD0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: ShreeAnnaTheme.primaryGreen.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.business_center,
+                  color: ShreeAnnaTheme.primaryGreen,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Procurement Officer Contact',
+                      style: TextStyle(fontSize: 11, color: Color(0xFF707870)),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      lot.procurementOfficerName,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF202420),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Phone: ${lot.procurementOfficerPhone}',
+                      style: const TextStyle(fontSize: 11, color: Color(0xFF707870)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    _showContactInspectorModal(
+                      context,
+                      lot.procurementOfficerName,
+                      lot.procurementOfficerPhone,
+                    );
+                  },
+                  icon: const Icon(Icons.phone, size: 16),
+                  label: const Text('Call Officer', style: TextStyle(fontSize: 12)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ShreeAnnaTheme.primaryGreen,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    _showContactInspectorModal(
+                      context,
+                      lot.procurementOfficerName,
+                      lot.procurementOfficerPhone,
+                    );
+                  },
+                  icon: const Icon(Icons.chat, size: 16),
+                  label: const Text('Chat Officer', style: TextStyle(fontSize: 12)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF202420),
+                    side: const BorderSide(color: Color(0xFFD5DFD0)),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAgreementNotificationBanner(LotModel lot, BuildContext context) {
+    final ver = lot.agreementVersion;
+    final isRejected = lot.status.contains('REJECTED');
+    final isAccepted = lot.status.contains('ACCEPTED') || lot.status.contains('CERTIFIED');
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isRejected
+            ? const Color(0xFFFDE8E8)
+            : isAccepted
+                ? const Color(0xFFE8F5E9)
+                : const Color(0xFFFFF8E1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isRejected
+              ? Colors.red.shade300
+              : isAccepted
+                  ? ShreeAnnaTheme.primaryGreen
+                  : Colors.amber.shade400,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isRejected
+                    ? Icons.cancel
+                    : isAccepted
+                        ? Icons.check_circle
+                        : Icons.notifications_active,
+                color: isRejected
+                    ? Colors.red
+                    : isAccepted
+                        ? ShreeAnnaTheme.primaryGreen
+                        : Colors.amber.shade900,
+                size: 22,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  isRejected
+                      ? 'Procurement Agreement Rejected ($ver)'
+                      : isAccepted
+                          ? 'Agreement Executed & Signed ($ver)'
+                          : 'New Procurement Agreement Formulated ($ver)',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: isRejected
+                        ? Colors.red.shade900
+                        : isAccepted
+                            ? ShreeAnnaTheme.primaryGreen
+                            : Colors.amber.shade900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            isRejected
+                ? 'You rejected version $ver. You can view the full commercial terms & re-negotiate with the Procurement Officer.'
+                : isAccepted
+                    ? 'Version $ver contract has been accepted and digitally signed.'
+                    : 'FPO Procurement Officer formulated your commercial purchase contract terms ($ver). Review pricing & details.',
+            style: TextStyle(
+              fontSize: 11,
+              color: isRejected
+                  ? const Color(0xFF7A1C1C)
+                  : isAccepted
+                      ? const Color(0xFF1B4D2E)
+                      : const Color(0xFF5D4037),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                final refreshed = await Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ProcurementAgreementScreen(lotId: widget.lotId ?? ''),
+                  ),
+                );
+                if (refreshed == true) {
+                  _loadTimeline();
+                }
+              },
+              icon: const Icon(Icons.description, size: 16),
+              label: Text('Review Agreement ($ver)', style: const TextStyle(fontSize: 12)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isRejected
+                    ? Colors.red
+                    : isAccepted
+                        ? ShreeAnnaTheme.primaryGreen
+                        : Colors.amber.shade800,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+            ),
           ),
         ],
       ),

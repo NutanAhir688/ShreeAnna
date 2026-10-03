@@ -20,6 +20,14 @@ class LotModel {
   final double? inspectorLongitude;
   final double? farmLatitude;
   final double? farmLongitude;
+  final String agreementVersion;
+  final String procurementOfficerName;
+  final String procurementOfficerPhone;
+  final double? offeredPricePerKg;
+  final double? agreedQuantityKg;
+  final double? logisticsCost;
+  final double? otherAdjustments;
+  final String? negotiationRemarks;
 
   LotModel({
     required this.id,
@@ -43,6 +51,14 @@ class LotModel {
     this.inspectorLongitude,
     this.farmLatitude,
     this.farmLongitude,
+    this.agreementVersion = 'v2.0',
+    this.procurementOfficerName = 'Rajesh Sharma (Procurement Officer)',
+    this.procurementOfficerPhone = '+91 98765 43210',
+    this.offeredPricePerKg,
+    this.agreedQuantityKg,
+    this.logisticsCost,
+    this.otherAdjustments,
+    this.negotiationRemarks,
   });
 
   factory LotModel.fromJson(Map<String, dynamic> json) {
@@ -68,6 +84,17 @@ class LotModel {
       inspectorLongitude: (json['inspectorLongitude'] as num?)?.toDouble(),
       farmLatitude: (json['farmLatitude'] as num?)?.toDouble(),
       farmLongitude: (json['farmLongitude'] as num?)?.toDouble(),
+      agreementVersion: json['agreementVersion']?.toString() ??
+          (json['status']?.toString().contains('REJECTED') == true ? 'v1.0' : 'v2.0'),
+      procurementOfficerName: json['procurementOfficerName']?.toString() ??
+          'Rajesh Sharma (Procurement Officer)',
+      procurementOfficerPhone: json['procurementOfficerPhone']?.toString() ??
+          '+91 98765 43210',
+      offeredPricePerKg: (json['offeredPricePerKg'] as num?)?.toDouble(),
+      agreedQuantityKg: (json['agreedQuantityKg'] as num?)?.toDouble(),
+      logisticsCost: (json['logisticsCost'] as num?)?.toDouble(),
+      otherAdjustments: (json['otherAdjustments'] as num?)?.toDouble(),
+      negotiationRemarks: json['negotiationRemarks']?.toString(),
     );
   }
 
@@ -94,6 +121,14 @@ class LotModel {
       'inspectorLongitude': inspectorLongitude,
       'farmLatitude': farmLatitude,
       'farmLongitude': farmLongitude,
+      'agreementVersion': agreementVersion,
+      'procurementOfficerName': procurementOfficerName,
+      'procurementOfficerPhone': procurementOfficerPhone,
+      'offeredPricePerKg': offeredPricePerKg,
+      'agreedQuantityKg': agreedQuantityKg,
+      'logisticsCost': logisticsCost,
+      'otherAdjustments': otherAdjustments,
+      'negotiationRemarks': negotiationRemarks,
     };
   }
 }

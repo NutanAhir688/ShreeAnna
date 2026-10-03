@@ -150,6 +150,7 @@ export const agreementsApi = {
   getAll: () => request("/api/lots"),
   getById: (id) => request(`/api/lots/${id}`),
   getByLot: (id) => request(`/api/lots/${id}`),
+  create: (id, data) => request(`/api/lots/${id}/agreement/create`, { method: "POST", body: data }),
   accept: (id) => request(`/api/lots/${id}/agreement/accept`, { method: "POST" }),
   reject: (id, reason) =>
     request(`/api/lots/${id}/agreement/reject`, {
