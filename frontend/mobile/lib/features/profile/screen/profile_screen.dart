@@ -613,9 +613,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => const SupportScreen(),
-                      ),
+                      MaterialPageRoute(builder: (_) => const SupportScreen()),
                     );
                   },
                 ),
@@ -860,9 +858,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (!context.mounted) return;
 
                 Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(
-                    builder: (_) => const WelcomeScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const WelcomeScreen()),
                   (route) => false,
                 );
               },

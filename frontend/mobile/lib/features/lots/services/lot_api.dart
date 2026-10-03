@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_config.dart';
 import '../models/lot_model.dart';
@@ -40,7 +41,7 @@ class LotApi {
   Future<LotModel> createLot({
     required String farmerId,
     required String farmId,
-    required String milletType,
+    required String farmCropId,
     required double estimatedQuantityKg,
     required DateTime harvestDate,
     String? description,
@@ -49,7 +50,7 @@ class LotApi {
       ApiConfig.farmerLots(farmerId),
       body: {
         'farmId': farmId,
-        'milletType': milletType,
+        'farmCropId': farmCropId,
         'estimatedQuantityKg': estimatedQuantityKg,
         'harvestDate': harvestDate.toIso8601String(),
         'description': description ?? '',
@@ -62,7 +63,15 @@ class LotApi {
     }
 
     if (response.statusCode == 400) {
-      throw Exception('Please check the lot details.');
+      throw Exception(
+        _extractErrorMessage(response.body, 'Please check the lot details.'),
+      );
+    }
+
+    if (response.statusCode == 409) {
+      throw Exception(
+        _extractErrorMessage(response.body, 'This farm is not verified yet.'),
+      );
     }
 
     throw Exception('Failed to submit lot: ${response.statusCode}');
@@ -79,13 +88,14 @@ class LotApi {
     throw Exception('Failed to load lot timeline.');
   }
 
-  Future<void> rejectAgreement(String lotId, {required String reason, String? comment}) async {
+  Future<void> rejectAgreement(
+    String lotId, {
+    required String reason,
+    String? comment,
+  }) async {
     final response = await _apiClient.post(
       ApiConfig.rejectAgreement(lotId),
-      body: {
-        'reason': reason,
-        'comment': comment ?? '',
-      },
+      body: {'reason': reason, 'comment': comment ?? ''},
     );
 
     if (response.statusCode != 200) {
@@ -93,7 +103,11 @@ class LotApi {
     }
   }
 
-  Future<void> reschedulePickup(String lotId, {required DateTime requestedDate, required String reason}) async {
+  Future<void> reschedulePickup(
+    String lotId, {
+    required DateTime requestedDate,
+    required String reason,
+  }) async {
     final response = await _apiClient.post(
       ApiConfig.reschedulePickup(lotId),
       body: {
@@ -147,5 +161,21 @@ class LotApi {
       return decoded;
     }
     throw Exception('Unexpected response format.');
+  }
+
+  String _extractErrorMessage(String body, String fallback) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) {
+        final message = decoded['message']?.toString();
+        if (message != null && message.isNotEmpty) {
+          return message;
+        }
+      }
+    } catch (_) {
+      // Use fallback.
+    }
+
+    return fallback;
   }
 }

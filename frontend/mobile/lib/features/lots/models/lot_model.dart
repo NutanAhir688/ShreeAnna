@@ -12,6 +12,14 @@ class LotModel {
   final String submissionDate;
   final String status;
   final String? description;
+  final String? assignedInspectorName;
+  final String? assignedInspectorPhone;
+  final String? scheduledInspectionDate;
+  final String? inspectionTrackingStatus;
+  final double? inspectorLatitude;
+  final double? inspectorLongitude;
+  final double? farmLatitude;
+  final double? farmLongitude;
 
   LotModel({
     required this.id,
@@ -27,6 +35,14 @@ class LotModel {
     required this.submissionDate,
     required this.status,
     this.description,
+    this.assignedInspectorName,
+    this.assignedInspectorPhone,
+    this.scheduledInspectionDate,
+    this.inspectionTrackingStatus,
+    this.inspectorLatitude,
+    this.inspectorLongitude,
+    this.farmLatitude,
+    this.farmLongitude,
   });
 
   factory LotModel.fromJson(Map<String, dynamic> json) {
@@ -44,6 +60,14 @@ class LotModel {
       submissionDate: json['submissionDate']?.toString() ?? '',
       status: json['status']?.toString() ?? 'SUBMITTED',
       description: json['description']?.toString(),
+      assignedInspectorName: json['assignedInspectorName']?.toString(),
+      assignedInspectorPhone: json['assignedInspectorPhone']?.toString(),
+      scheduledInspectionDate: json['scheduledInspectionDate']?.toString(),
+      inspectionTrackingStatus: json['inspectionTrackingStatus']?.toString(),
+      inspectorLatitude: (json['inspectorLatitude'] as num?)?.toDouble(),
+      inspectorLongitude: (json['inspectorLongitude'] as num?)?.toDouble(),
+      farmLatitude: (json['farmLatitude'] as num?)?.toDouble(),
+      farmLongitude: (json['farmLongitude'] as num?)?.toDouble(),
     );
   }
 
@@ -62,6 +86,14 @@ class LotModel {
       'submissionDate': submissionDate,
       'status': status,
       'description': description,
+      'assignedInspectorName': assignedInspectorName,
+      'assignedInspectorPhone': assignedInspectorPhone,
+      'scheduledInspectionDate': scheduledInspectionDate,
+      'inspectionTrackingStatus': inspectionTrackingStatus,
+      'inspectorLatitude': inspectorLatitude,
+      'inspectorLongitude': inspectorLongitude,
+      'farmLatitude': farmLatitude,
+      'farmLongitude': farmLongitude,
     };
   }
 }

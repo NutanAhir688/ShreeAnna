@@ -55,11 +55,11 @@ function Topbar() {
           {/* Quick Role Switcher Dropdown in Topbar */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="hidden sm:flex items-center gap-2 border-slate-300 text-xs font-semibold">
+              {/* <Button variant="outline" size="sm" className="hidden sm:flex items-center gap-2 border-slate-300 text-xs font-semibold">
                 <RefreshCw className="h-3.5 w-3.5 text-emerald-600" />
                 <span>Switch Role</span>
                 <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
-              </Button>
+              </Button> */}
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel className="text-xs text-slate-500 uppercase font-bold">

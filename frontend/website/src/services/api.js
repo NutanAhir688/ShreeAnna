@@ -136,6 +136,11 @@ export const lotsApi = {
   create: (data) => request("/api/lots", { method: "POST", body: data }),
   updateStatus: (id, status, notes) =>
     request(`/api/lots/${id}/status`, { method: "PATCH", body: { status, notes } }),
+  assignInspector: (id, data) =>
+    request(`/api/lots/${id}/assign-inspector`, { method: "POST", body: data }),
+  updateInspectorLocation: (id, data) =>
+    request(`/api/lots/${id}/inspector-location`, { method: "POST", body: data }),
+  getInspectors: () => request("/api/inspectors"),
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -144,6 +149,7 @@ export const lotsApi = {
 export const agreementsApi = {
   getAll: () => request("/api/lots"),
   getById: (id) => request(`/api/lots/${id}`),
+  getByLot: (id) => request(`/api/lots/${id}`),
   accept: (id) => request(`/api/lots/${id}/agreement/accept`, { method: "POST" }),
   reject: (id, reason) =>
     request(`/api/lots/${id}/agreement/reject`, {
@@ -151,6 +157,7 @@ export const agreementsApi = {
       body: { reason: reason || "Rejected by FPO Officer" },
     }),
 };
+
 
 // ─────────────────────────────────────────────────────────────
 // QUALITY
@@ -162,7 +169,9 @@ export const qualityApi = {
     request("/api/quality/inspections", { method: "POST", body: data }),
   getCertificate: (lotId) => request(`/api/quality/certificates/lot/${lotId}`),
   getAllCertificates: () => request("/api/quality/certificates"),
+  verifyCertificate: (certNum) => request(`/api/quality/certificates/verify/${certNum}`),
 };
+
 
 // ─────────────────────────────────────────────────────────────
 // WAREHOUSES
@@ -259,4 +268,7 @@ export const fpoApi = {
 // ─────────────────────────────────────────────────────────────
 export const dashboardApi = {
   getStats: () => request("/api/dashboard/stats"),
+
+   getRecentActivities: () =>
+    request("/api/dashboard/recent-activities"),
 };
