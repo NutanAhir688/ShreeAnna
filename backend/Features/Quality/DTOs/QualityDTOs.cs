@@ -1,13 +1,18 @@
 namespace backend.Features.Quality.DTOs;
+using System.ComponentModel.DataAnnotations;
 
 public record CreateInspectionRequest(
-    Guid LotId,
-    string InspectorName,
-    decimal MoisturePercentage,
-    decimal PurityPercentage,
-    string Grade,
-    string Status,
-    string Notes
+    [Required] Guid LotId,
+    [Required] string InspectorName,
+    [Range(0, 100)] decimal MoisturePercentage,
+    [Range(0, 100)] decimal PurityPercentage,
+    decimal? ForeignMatterPercentage,
+    decimal? DamagedGrainsPercentage,
+    decimal? ImmatureGrainsPercentage,
+    string? InsectDamage,
+    [Required] string Grade,
+    [Required] string Status,
+    string? Notes
 );
 
 public record InspectionResponse(
@@ -17,6 +22,10 @@ public record InspectionResponse(
     string InspectorName,
     decimal MoisturePercentage,
     decimal PurityPercentage,
+    decimal? ForeignMatterPercentage,
+    decimal? DamagedGrainsPercentage,
+    decimal? ImmatureGrainsPercentage,
+    string? InsectDamage,
     string Grade,
     string Status,
     string Notes,
@@ -31,5 +40,15 @@ public record QualityCertificateResponse(
     string IssuedBy,
     DateTime IssueDate,
     DateTime ValidUntil,
-    string Grade
+    string Grade,
+    string? FarmerName,
+    string? MilletType,
+    decimal? EstimatedQuantityKg,
+    decimal? MoisturePercentage,
+    decimal? PurityPercentage,
+    decimal? ForeignMatterPercentage,
+    decimal? DamagedGrainsPercentage,
+    decimal? ImmatureGrainsPercentage,
+    string? InsectDamage,
+    string? Notes
 );

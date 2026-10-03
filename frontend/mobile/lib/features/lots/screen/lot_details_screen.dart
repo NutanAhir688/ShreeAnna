@@ -39,6 +39,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
   final LotApi _lotApi = LotApi();
   bool _isLoadingTimeline = false;
   LotTimelineModel? _timeline;
+  LotModel? _lot;
   String? _currentStatus;
 
   @override
@@ -64,6 +65,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
 
       setState(() {
         _timeline = timeline;
+        _lot = lotDetails;
         if (lotDetails != null) {
           _currentStatus = _formatStatusText(lotDetails.status);
         }
@@ -209,6 +211,13 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                   ],
                 ),
               ),
+
+              if (_lot != null &&
+                  _lot!.assignedInspectorName != null &&
+                  _lot!.assignedInspectorName!.isNotEmpty) ...[
+                const SizedBox(height: 18),
+                _buildInspectorCard(_lot!, context),
+              ],
 
               const SizedBox(height: 22),
 
@@ -693,5 +702,360 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
 
   Widget _buildDivider() {
     return const Divider(height: 1, color: Color(0xFFE3E7E3));
+  }
+
+  Widget _buildStepBadge(String label, bool isActive, Color activeColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+      decoration: BoxDecoration(
+        color: isActive ? activeColor.withValues(alpha: 0.12) : const Color(0xFFEFEFEF),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: isActive ? activeColor.withValues(alpha: 0.5) : const Color(0xFFD5D5D5),
+          width: isActive ? 1.2 : 0.8,
+        ),
+      ),
+      child: Text(
+        label,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+          color: isActive ? activeColor : const Color(0xFF707070),
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildInspectorCard(LotModel lot, BuildContext context) {
+    final trackingStatus = (lot.inspectionTrackingStatus ?? 'ASSIGNED').toUpperCase();
+
+    Color statusColor;
+    String statusLabel;
+    IconData statusIcon;
+
+    switch (trackingStatus) {
+      case 'IN_TRANSIT':
+        statusColor = const Color(0xFFE97900);
+        statusLabel = 'Inspector In Transit 🚗';
+        statusIcon = Icons.directions_car;
+        break;
+      case 'ARRIVED_AT_FARM':
+        statusColor = const Color(0xFF2E7D32);
+        statusLabel = 'Arrived at Farm 📍';
+        statusIcon = Icons.location_on;
+        break;
+      case 'SAMPLE_COLLECTED':
+        statusColor = Colors.purple.shade700;
+        statusLabel = 'Sample Collected 🌾';
+        statusIcon = Icons.eco;
+        break;
+      case 'COMPLETED':
+        statusColor = ShreeAnnaTheme.primaryGreen;
+        statusLabel = 'Inspection Complete ✓';
+        statusIcon = Icons.verified;
+        break;
+      default:
+        statusColor = const Color(0xFF1265C0);
+        statusLabel = 'Inspector Assigned 📋';
+        statusIcon = Icons.assignment_ind;
+        break;
+    }
+
+    final bool isAssignedStep = true;
+    final bool isInTransitStep = trackingStatus == 'IN_TRANSIT' || trackingStatus == 'ARRIVED_AT_FARM' || trackingStatus == 'SAMPLE_COLLECTED' || trackingStatus == 'COMPLETED';
+    final bool isArrivedStep = trackingStatus == 'ARRIVED_AT_FARM' || trackingStatus == 'SAMPLE_COLLECTED' || trackingStatus == 'COMPLETED';
+    final bool isSampleCollectedStep = trackingStatus == 'SAMPLE_COLLECTED' || trackingStatus == 'COMPLETED';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: statusColor.withValues(alpha: 0.4), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: statusColor.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(statusIcon, color: statusColor, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Quality Inspector Visit Progress',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF687068),
+                      ),
+                    ),
+                    Text(
+                      statusLabel,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: statusColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: _loadTimeline,
+                icon: const Icon(Icons.refresh, size: 20, color: Color(0xFF687068)),
+                tooltip: 'Refresh Status',
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // 4-Step Field Visit Progress Steps
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF6F8F6),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE2E8E2)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Inspector Visit Journey:',
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF505850)),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildStepBadge('1. Assigned', isAssignedStep, const Color(0xFF1265C0)),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: _buildStepBadge('2. In Transit 🚗', isInTransitStep, const Color(0xFFE97900)),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: _buildStepBadge('3. Arrived 📍', isArrivedStep, const Color(0xFF2E7D32)),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: _buildStepBadge('4. Sample 🌾', isSampleCollectedStep, Colors.purple.shade700),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const Divider(height: 24, color: Color(0xFFE8EFE8)),
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: ShreeAnnaTheme.primaryGreen.withOpacity(0.15),
+                child: Text(
+                  lot.assignedInspectorName!.substring(0, 1).toUpperCase(),
+                  style: const TextStyle(
+                    color: ShreeAnnaTheme.primaryGreen,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      lot.assignedInspectorName!,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF202420),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Mobile: ${lot.assignedInspectorPhone ?? "+91 9876543210"}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF505850),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    _showContactInspectorModal(
+                      context,
+                      lot.assignedInspectorName!,
+                      lot.assignedInspectorPhone ?? "+91 9876543210",
+                    );
+                  },
+                  icon: const Icon(Icons.phone, size: 16),
+                  label: const Text('Call Inspector', style: TextStyle(fontSize: 12)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ShreeAnnaTheme.primaryGreen,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    _showContactInspectorModal(
+                      context,
+                      lot.assignedInspectorName!,
+                      lot.assignedInspectorPhone ?? "+91 9876543210",
+                    );
+                  },
+                  icon: const Icon(Icons.message, size: 16),
+                  label: const Text('SMS / Info', style: TextStyle(fontSize: 12)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF202420),
+                    side: const BorderSide(color: Color(0xFFD5DFD0)),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showContactInspectorModal(
+    BuildContext context,
+    String name,
+    String phone,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.contact_phone, color: ShreeAnnaTheme.primaryGreen),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Contact Inspector: $name',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF4F7F4),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Phone Number',
+                            style: TextStyle(fontSize: 11, color: Color(0xFF687068)),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            phone,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF202420),
+                            ),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.phone_forwarded, color: ShreeAnnaTheme.primaryGreen),
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Calling $name at $phone...'),
+                              duration: const Duration(seconds: 3),
+                            ),
+                          );
+                          Navigator.pop(ctx);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ShreeAnnaTheme.primaryGreen,
+                    ),
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Close'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }

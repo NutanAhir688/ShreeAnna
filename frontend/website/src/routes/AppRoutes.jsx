@@ -38,14 +38,19 @@ import FPOManagement from "@/features/fpo/pages/FPOManagement";
 import FPOMemberDetails from "@/features/fpo/pages/FPOMemberDetails";
 import Reports from "@/features/reports/pages/Reports";
 
+import VerifyCertificate from "../features/quality/pages/VerifyCertificate";
+
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public Login Route */}
+      {/* Public Login & Verification Routes */}
       <Route path="/login" element={<Login />} />
+      <Route path="/verify-certificate" element={<VerifyCertificate />} />
+      <Route path="/verify" element={<VerifyCertificate />} />
 
       {/* Default redirect to /dashboard */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
 
       {/* Protected Dashboard Layout */}
       <Route element={<ProtectedRoute />}>

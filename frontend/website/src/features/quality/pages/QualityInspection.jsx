@@ -26,22 +26,57 @@ function QualityInspection() {
   const [error, setError] = useState("");
 
   const [parameters, setParameters] = useState({
-    moisture: "12.0",
-    foreignMatter: "0.5",
-    damagedGrains: "1.0",
-    immatureGrains: "0.5",
+    moisture: "",
+    foreignMatter: "",
+    damagedGrains: "",
+    immatureGrains: "",
     insectDamage: "None",
-    grade: "Grade A",
+    grade: "",
   });
 
   const [result, setResult] = useState("Passed");
-  const [remarks, setRemarks] = useState("Lot passed quality verification standards.");
+  const [remarks, setRemarks] = useState("");
 
   useEffect(() => {
     async function loadLotData() {
       try {
+        setLoading(true);
         const data = await lotsApi.getById(id);
         setLot(data);
+
+        // Fetch existing saved inspection if available
+        try {
+          const savedInspection = await qualityApi.getByLot(id);
+          if (savedInspection) {
+            setParameters({
+              moisture: savedInspection.moisturePercentage !== null && savedInspection.moisturePercentage !== undefined
+                ? savedInspection.moisturePercentage.toString()
+                : "",
+              foreignMatter: savedInspection.foreignMatterPercentage !== null && savedInspection.foreignMatterPercentage !== undefined
+                ? savedInspection.foreignMatterPercentage.toString()
+                : savedInspection.purityPercentage !== null && savedInspection.purityPercentage !== undefined
+                ? (100 - savedInspection.purityPercentage).toFixed(1)
+                : "",
+              damagedGrains: savedInspection.damagedGrainsPercentage !== null && savedInspection.damagedGrainsPercentage !== undefined
+                ? savedInspection.damagedGrainsPercentage.toString()
+                : "",
+              immatureGrains: savedInspection.immatureGrainsPercentage !== null && savedInspection.immatureGrainsPercentage !== undefined
+                ? savedInspection.immatureGrainsPercentage.toString()
+                : "",
+              insectDamage: savedInspection.insectDamage || "None",
+              grade: savedInspection.grade || "",
+            });
+
+            if (savedInspection.status) {
+              setResult(savedInspection.status.toUpperCase() === "PASSED" ? "Passed" : savedInspection.status.toUpperCase() === "FAILED" ? "Failed" : "Hold");
+            }
+            if (savedInspection.notes) {
+              setRemarks(savedInspection.notes);
+            }
+          }
+        } catch (_) {
+          // No saved inspection found yet — keep fields blank with placeholders
+        }
       } catch (err) {
         setError(err.message || "Failed to load lot data.");
       } finally {
@@ -59,13 +94,18 @@ function QualityInspection() {
     setError("");
 
     try {
+      const foreignMatterVal = parameters.foreignMatter ? parseFloat(parameters.foreignMatter) : 0.5;
       const payload = {
         lotId: lot.id,
-        inspectorName: "Quality Inspector",
-        moisturePercentage: parseFloat(parameters.moisture) || 12.0,
-        purityPercentage: 100 - (parseFloat(parameters.foreignMatter) || 0),
+        inspectorName: lot.assignedInspectorName || "Quality Inspector",
+        moisturePercentage: parameters.moisture ? parseFloat(parameters.moisture) : 12.0,
+        purityPercentage: (100 - foreignMatterVal),
+        foreignMatterPercentage: foreignMatterVal,
+        damagedGrainsPercentage: parameters.damagedGrains ? parseFloat(parameters.damagedGrains) : 0,
+        immatureGrainsPercentage: parameters.immatureGrains ? parseFloat(parameters.immatureGrains) : 0,
+        insectDamage: parameters.insectDamage || "None",
         grade: parameters.grade || "Grade A",
-        status: result === "Passed" ? "PASSED" : "FAILED",
+        status: result === "Passed" ? "PASSED" : result === "Failed" ? "FAILED" : "HOLD",
         notes: remarks || "Quality inspection recorded.",
       };
 
@@ -77,6 +117,8 @@ function QualityInspection() {
       setSubmitting(false);
     }
   };
+
+
 
   if (loading) {
     return (

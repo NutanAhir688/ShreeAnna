@@ -65,6 +65,10 @@ public class LotsController : ControllerBase
         {
             return NotFound(new { message = ex.Message });
         }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
     }
 
     [HttpPost("farmers/{farmerId:guid}/lots")]
@@ -85,6 +89,10 @@ public class LotsController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
         }
     }
 
@@ -156,6 +164,39 @@ public class LotsController : ControllerBase
 
         return Ok(new { message = "Pickup reschedule requested successfully." });
     }
+
+    [HttpPost("lots/{id:guid}/assign-inspector")]
+    public async Task<ActionResult<LotResponse>> AssignInspector(Guid id, AssignInspectorRequest request)
+    {
+        var lot = await _lotService.AssignInspectorAsync(id, request);
+        if (lot is null)
+        {
+            return NotFound(new { message = "Lot not found." });
+        }
+
+        return Ok(lot);
+    }
+
+    [HttpPost("lots/{id:guid}/inspector-location")]
+    public async Task<ActionResult<LotResponse>> UpdateInspectorLocation(Guid id, UpdateInspectorLocationRequest request)
+    {
+        var lot = await _lotService.UpdateInspectorLocationAsync(id, request);
+        if (lot is null)
+        {
+            return NotFound(new { message = "Lot not found." });
+        }
+
+        return Ok(lot);
+    }
+
+    [HttpGet("inspectors")]
+    [HttpGet("lots/inspectors")]
+    public async Task<ActionResult<List<InspectorResponse>>> GetInspectors()
+    {
+        var inspectors = await _lotService.GetInspectorsAsync();
+        return Ok(inspectors);
+    }
+
 
     private Guid GetLoggedInFarmerId()
     {

@@ -16,8 +16,68 @@ public static class DbSeeder
 
         await SeedFarmersAsync(context);
         await SeedFarmsAsync(context);
+        await SeedFarmCropsAsync(context);
         await SeedUsersAsync(context);
         await SeedProcurementLotsAsync(context);
+    }
+
+    private static async Task SeedFarmCropsAsync(AppDbContext context)
+    {
+        if (await context.FarmCrops.AnyAsync())
+        {
+            return;
+        }
+
+        var farm = await context.Farms.FirstOrDefaultAsync();
+        if (farm == null)
+        {
+            return;
+        }
+
+        var secondFarm = await context.Farms.Skip(2).FirstOrDefaultAsync() ?? farm;
+
+        var farmCrops = new List<FarmCrop>
+        {
+            new FarmCrop
+            {
+                Id = Guid.Parse("11111111-2222-3333-4444-555555555555"),
+                FarmId = farm.Id,
+                CropName = "Ragi (Finger Millet)",
+                Season = "Kharif 2026",
+                SowingDate = DateTime.SpecifyKind(new DateTime(2026, 6, 15), DateTimeKind.Utc),
+                ExpectedHarvestDate = DateTime.SpecifyKind(new DateTime(2026, 10, 10), DateTimeKind.Utc),
+                EstimatedAreaInAcres = 3.00m,
+                Status = "Active",
+                CreatedAt = DateTime.UtcNow
+            },
+            new FarmCrop
+            {
+                Id = Guid.Parse("22222222-3333-4444-5555-666666666666"),
+                FarmId = farm.Id,
+                CropName = "Bajra (Pearl Millet)",
+                Season = "Kharif 2026",
+                SowingDate = DateTime.SpecifyKind(new DateTime(2026, 6, 20), DateTimeKind.Utc),
+                ExpectedHarvestDate = DateTime.SpecifyKind(new DateTime(2026, 8, 5), DateTimeKind.Utc),
+                EstimatedAreaInAcres = 2.50m,
+                Status = "Harvested",
+                CreatedAt = DateTime.UtcNow
+            },
+            new FarmCrop
+            {
+                Id = Guid.Parse("33333333-4444-5555-6666-777777777777"),
+                FarmId = secondFarm.Id,
+                CropName = "Foxtail Millet",
+                Season = "Kharif 2026",
+                SowingDate = DateTime.SpecifyKind(new DateTime(2026, 7, 1), DateTimeKind.Utc),
+                ExpectedHarvestDate = DateTime.SpecifyKind(new DateTime(2026, 9, 25), DateTimeKind.Utc),
+                EstimatedAreaInAcres = 4.00m,
+                Status = "Harvested",
+                CreatedAt = DateTime.UtcNow
+            }
+        };
+
+        await context.FarmCrops.AddRangeAsync(farmCrops);
+        await context.SaveChangesAsync();
     }
 
     private static async Task SeedUsersAsync(AppDbContext context)
@@ -136,7 +196,6 @@ public static class DbSeeder
                 ),
                 FarmName = "Ramesh Main Farm",
                 AreaInAcres = 5.50m,
-                MilletType = "Kodo Millet",
                 SoilType = "Black Soil",
                 SurveyNumber = "123/1",
                 District = "Dahod",
@@ -160,7 +219,6 @@ public static class DbSeeder
                 ),
                 FarmName = "Ramesh North Farm",
                 AreaInAcres = 3.25m,
-                MilletType = "Kodo Millet",
                 SoilType = "Black Soil",
                 SurveyNumber = "124/2",
                 District = "Dahod",
@@ -182,7 +240,6 @@ public static class DbSeeder
                 ),
                 FarmName = "Mahesh Millet Farm",
                 AreaInAcres = 7.00m,
-                MilletType = "Rabi Millet",
                 SoilType = "Loamy Soil",
                 SurveyNumber = "210/3",
                 District = "Dahod",
@@ -207,13 +264,22 @@ public static class DbSeeder
             return;
         }
 
-        var farm = await context.Farms.FirstOrDefaultAsync();
-        if (farm == null)
+        var crop1 = await context.FarmCrops.FirstOrDefaultAsync(c => c.Id == Guid.Parse("11111111-2222-3333-4444-555555555555"));
+        var crop2 = await context.FarmCrops.FirstOrDefaultAsync(c => c.Id == Guid.Parse("22222222-3333-4444-5555-666666666666"));
+        var crop3 = await context.FarmCrops.FirstOrDefaultAsync(c => c.Id == Guid.Parse("33333333-4444-5555-6666-777777777777"));
+
+        if (crop1 == null || crop2 == null || crop3 == null)
         {
             return;
         }
 
-        var secondFarm = await context.Farms.Skip(1).FirstOrDefaultAsync() ?? farm;
+        var farm1 = await context.Farms.FirstOrDefaultAsync(f => f.Id == crop1.FarmId);
+        var farm3 = await context.Farms.FirstOrDefaultAsync(f => f.Id == crop3.FarmId);
+
+        if (farm1 == null || farm3 == null)
+        {
+            return;
+        }
 
         var lots = new List<ProcurementLot>
         {
@@ -221,9 +287,9 @@ public static class DbSeeder
             {
                 Id = Guid.NewGuid(),
                 LotNumber = "1042-A",
-                FarmerId = farm.FarmerId,
-                FarmId = farm.Id,
-                MilletType = "Finger Millet (Ragi)",
+                FarmerId = farm1.FarmerId,
+                FarmId = farm1.Id,
+                FarmCropId = crop1.Id,
                 EstimatedQuantityKg = 450,
                 HarvestDate = DateTime.SpecifyKind(new DateTime(2026, 10, 12), DateTimeKind.Utc),
                 SubmissionDate = DateTime.SpecifyKind(new DateTime(2026, 10, 12), DateTimeKind.Utc),
@@ -236,9 +302,9 @@ public static class DbSeeder
             {
                 Id = Guid.NewGuid(),
                 LotNumber = "8472-B",
-                FarmerId = farm.FarmerId,
-                FarmId = farm.Id,
-                MilletType = "Pearl Millet (Bajra)",
+                FarmerId = farm1.FarmerId,
+                FarmId = farm1.Id,
+                FarmCropId = crop2.Id,
                 EstimatedQuantityKg = 1200,
                 HarvestDate = DateTime.SpecifyKind(new DateTime(2026, 8, 10), DateTimeKind.Utc),
                 SubmissionDate = DateTime.SpecifyKind(new DateTime(2026, 8, 10), DateTimeKind.Utc),
@@ -251,9 +317,9 @@ public static class DbSeeder
             {
                 Id = Guid.NewGuid(),
                 LotNumber = "1038-C",
-                FarmerId = secondFarm.FarmerId,
-                FarmId = secondFarm.Id,
-                MilletType = "Foxtail Millet",
+                FarmerId = farm3.FarmerId,
+                FarmId = farm3.Id,
+                FarmCropId = crop3.Id,
                 EstimatedQuantityKg = 850,
                 HarvestDate = DateTime.SpecifyKind(new DateTime(2026, 9, 28), DateTimeKind.Utc),
                 SubmissionDate = DateTime.SpecifyKind(new DateTime(2026, 9, 28), DateTimeKind.Utc),

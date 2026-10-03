@@ -138,13 +138,13 @@ class FarmApi {
     required String farmName,
     required double areaInAcres,
     required String soilType,
-    required String milletType,
     required String surveyNumber,
     required String district,
     required String taluka,
     required String village,
     required double latitude,
     required double longitude,
+    required List<Map<String, dynamic>> crops,
     String imageUrl = '',
   }) async {
     final response = await _apiClient.post(
@@ -153,7 +153,6 @@ class FarmApi {
         'farmName': farmName,
         'areaInAcres': areaInAcres,
         'soilType': soilType,
-        'milletType': milletType,
         'surveyNumber': surveyNumber,
         'district': district,
         'taluka': taluka,
@@ -161,6 +160,7 @@ class FarmApi {
         'latitude': latitude,
         'longitude': longitude,
         'imageUrl': imageUrl,
+        'crops': crops,
       },
     );
 

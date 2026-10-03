@@ -15,7 +15,16 @@ public class Inspection
 
     public decimal PurityPercentage { get; set; }
 
+    public decimal? ForeignMatterPercentage { get; set; }
+
+    public decimal? DamagedGrainsPercentage { get; set; }
+
+    public decimal? ImmatureGrainsPercentage { get; set; }
+
+    public string? InsectDamage { get; set; }
+
     public string Grade { get; set; } = "A"; // Grade A, B, C, Rejected
+
 
     public string Status { get; set; } = "PASSED"; // PASSED, FAILED, PENDING
 

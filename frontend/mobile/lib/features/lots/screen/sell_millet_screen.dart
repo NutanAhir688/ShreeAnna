@@ -30,19 +30,8 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
   String? _farmerId;
   List<Farm> _farms = [];
   Farm? _selectedFarmObj;
-  String? _selectedMillet;
-
+  FarmCrop? _selectedCropObj;
   DateTime? _harvestDate;
-
-  final List<String> _milletTypes = [
-    'Pearl Millet (Bajra)',
-    'Finger Millet (Ragi)',
-    'Foxtail Millet',
-    'Sorghum (Jowar)',
-    'Kodo Millet',
-    'Little Millet',
-    'Barnyard Millet',
-  ];
 
   @override
   void initState() {
@@ -59,7 +48,13 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
         _farms = farms;
         _isLoadingFarms = false;
         if (farms.isNotEmpty) {
-          _selectedFarmObj = farms.first;
+          _selectedFarmObj = farms.firstWhere(
+            (farm) => farm.isVerified,
+            orElse: () => farms.first,
+          );
+          _selectedCropObj = _selectedFarmObj?.crops.isNotEmpty == true
+              ? _selectedFarmObj!.crops.first
+              : null;
         }
       });
     } catch (e) {
@@ -102,9 +97,8 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
     }
 
     if (_harvestDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.pleaseSelectHarvestDate)),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.pleaseSelectHarvestDate)));
       return;
     }
 
@@ -113,6 +107,32 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
         const SnackBar(content: Text('Please select a valid farm.')),
       );
       return;
+    }
+
+    if (!_selectedFarmObj!.isVerified) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'You can submit a lot only after the farm is verified.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final availableCrops = _selectedFarmObj!.crops;
+    if (availableCrops.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This farm does not have any crops configured.'),
+        ),
+      );
+      return;
+    }
+
+    if (_selectedCropObj == null ||
+        !availableCrops.any((c) => c.id == _selectedCropObj!.id)) {
+      _selectedCropObj = availableCrops.first;
     }
 
     setState(() {
@@ -127,7 +147,7 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
       await _lotApi.createLot(
         farmerId: _farmerId!,
         farmId: _selectedFarmObj!.id,
-        milletType: _selectedMillet!,
+        farmCropId: _selectedCropObj!.id,
         estimatedQuantityKg: quantityKg,
         harvestDate: _harvestDate!,
         description: description,
@@ -135,16 +155,17 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.lotSubmittedSuccessfully)),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.lotSubmittedSuccessfully)));
 
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to submit lot: ${e.toString().replaceFirst('Exception: ', '')}'),
+          content: Text(
+            'Failed to submit lot: ${e.toString().replaceFirst('Exception: ', '')}',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -197,7 +218,10 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
               children: [
                 Text(
                   l10n.sellMilletSubtitle,
-                  style: const TextStyle(fontSize: 11, color: Color(0xFF687068)),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF687068),
+                  ),
                 ),
 
                 const SizedBox(height: 24),
@@ -212,7 +236,9 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
                 if (_isLoadingFarms)
                   const Padding(
                     padding: EdgeInsets.all(8.0),
-                    child: CircularProgressIndicator(color: ShreeAnnaTheme.primaryGreen),
+                    child: CircularProgressIndicator(
+                      color: ShreeAnnaTheme.primaryGreen,
+                    ),
                   )
                 else if (_farms.isEmpty)
                   Container(
@@ -238,12 +264,19 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
                     items: _farms.map((farm) {
                       return DropdownMenuItem<Farm>(
                         value: farm,
-                        child: Text(farm.farmName),
+                        child: Text(
+                          farm.isVerified
+                              ? farm.farmName
+                              : '${farm.farmName} (Pending Verification)',
+                        ),
                       );
                     }).toList(),
                     onChanged: (value) {
                       setState(() {
                         _selectedFarmObj = value;
+                        _selectedCropObj = value?.crops.isNotEmpty == true
+                            ? value!.crops.first
+                            : null;
                       });
                     },
                     validator: (value) {
@@ -257,24 +290,29 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
                 const SizedBox(height: 18),
 
                 // ------------------------------------------------
-                // MILLET TYPE
+                // MILLET TYPE / CROP SELECTOR
                 // ------------------------------------------------
                 _buildLabel(l10n.milletType),
 
                 const SizedBox(height: 7),
 
-                DropdownButtonFormField<String>(
-                  initialValue: _selectedMillet,
+                DropdownButtonFormField<FarmCrop>(
+                  value: _selectedCropObj,
                   decoration: _inputDecoration(
                     hintText: l10n.chooseMilletType,
                     icon: Icons.grass_outlined,
                   ),
-                  items: _milletTypes.map((millet) {
-                    return DropdownMenuItem(value: millet, child: Text(millet));
-                  }).toList(),
+                  items: (_selectedFarmObj?.crops ?? const <FarmCrop>[])
+                      .map((crop) {
+                        return DropdownMenuItem<FarmCrop>(
+                          value: crop,
+                          child: Text('${crop.cropName} (${crop.season})'),
+                        );
+                      })
+                      .toList(),
                   onChanged: (value) {
                     setState(() {
-                      _selectedMillet = value;
+                      _selectedCropObj = value;
                     });
                   },
                   validator: (value) {
@@ -285,6 +323,18 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
                     return null;
                   },
                 ),
+
+                if (_selectedFarmObj != null && !_selectedFarmObj!.isVerified)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      'This farm is pending verification, so lot submission is disabled.',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.orange.shade800,
+                      ),
+                    ),
+                  ),
 
                 const SizedBox(height: 18),
 
@@ -377,12 +427,17 @@ class _SellMilletScreenState extends State<SellMilletScreen> {
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton.icon(
-                    onPressed: _isSubmitting ? null : () => _showSubmitLotConfirmation(context),
+                    onPressed: _isSubmitting
+                        ? null
+                        : () => _showSubmitLotConfirmation(context),
                     icon: _isSubmitting
                         ? const SizedBox(
                             width: 16,
                             height: 16,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
                           )
                         : const Icon(Icons.lock_outline, size: 16),
                     label: Text(

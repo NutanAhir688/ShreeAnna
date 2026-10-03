@@ -11,6 +11,39 @@ import '../../../l10n/generated/app_localizations.dart';
 import '../../farmers/services/farmer_api.dart';
 import '../data/farm_api.dart';
 
+class _CropEntry {
+  String cropName;
+  String season;
+  DateTime sowingDate;
+  DateTime? expectedHarvestDate;
+  final TextEditingController areaController;
+
+  _CropEntry({
+    this.cropName = 'Pearl Millet',
+    this.season = 'Kharif 2026',
+    DateTime? sowingDate,
+    this.expectedHarvestDate,
+    String? area,
+  })  : sowingDate = sowingDate ?? DateTime.now(),
+        areaController = TextEditingController(text: area ?? '');
+
+  Map<String, dynamic> toJson() {
+    final areaVal = double.tryParse(areaController.text.trim());
+    return {
+      'cropName': cropName,
+      'season': season,
+      'sowingDate': sowingDate.toIso8601String(),
+      if (expectedHarvestDate != null)
+        'expectedHarvestDate': expectedHarvestDate!.toIso8601String(),
+      if (areaVal != null && areaVal > 0) 'estimatedAreaInAcres': areaVal,
+    };
+  }
+
+  void dispose() {
+    areaController.dispose();
+  }
+}
+
 class AddFarmScreen extends StatefulWidget {
   const AddFarmScreen({super.key});
 
@@ -25,6 +58,10 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
   final _nameController = TextEditingController();
   final _areaController = TextEditingController();
 
+  final List<_CropEntry> _cropEntries = [
+    _CropEntry(cropName: 'Pearl Millet', season: 'Kharif 2026'),
+  ];
+
   // dropdown data
   List<String> _districts = [];
   List<String> _talukas = [];
@@ -35,7 +72,6 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
   String? _selectedTaluka;
   String? _selectedVillage;
   String? _selectedSurveyNumber;
-  String? _selectedMilletType;
 
   File? _photo;
   Position? _position;
@@ -52,6 +88,9 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
   void dispose() {
     _nameController.dispose();
     _areaController.dispose();
+    for (final crop in _cropEntries) {
+      crop.dispose();
+    }
     super.dispose();
   }
 
@@ -180,7 +219,6 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
   }
 
   Future<void> _askLocationAndCapture() async {
-    // Request location permission using geolocator
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -194,7 +232,6 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
       return;
     }
 
-    // Get current position
     final pos = await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
     );
@@ -203,7 +240,6 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
       _position = pos;
     });
 
-    // After acquiring location, ask user to take photo
     await _takePhoto();
   }
 
@@ -232,6 +268,25 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
           .showSnackBar(SnackBar(content: Text('Failed to open camera: $e')));
     }
   }
+
+  void _addCrop() {
+    setState(() {
+      _cropEntries.add(_CropEntry(
+        cropName: 'Finger Millet',
+        season: 'Kharif 2026',
+      ));
+    });
+  }
+
+  void _removeCrop(int index) {
+    if (_cropEntries.length <= 1) return;
+    setState(() {
+      final removed = _cropEntries.removeAt(index);
+      removed.dispose();
+    });
+  }
+
+
 
   Future<void> _save() async {
     if (_isLoading) return;
@@ -264,6 +319,15 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
       return;
     }
 
+    if (_cropEntries.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('At least one crop must be added to the farm.'),
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
@@ -276,18 +340,20 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
         imageUrl = await _farmApi.uploadImage(_photo!);
       }
 
+      final cropsJson = _cropEntries.map((e) => e.toJson()).toList();
+
       await _farmApi.createFarm(
         farmerId: farmer.id,
         farmName: name,
         areaInAcres: area,
         soilType: _soilType,
-        milletType: _selectedMilletType ?? 'Pearl Millet',
         surveyNumber: _selectedSurveyNumber!,
         district: _selectedDistrict!,
         taluka: _selectedTaluka!,
         village: _selectedVillage!,
         latitude: _position?.latitude ?? 0.0,
         longitude: _position?.longitude ?? 0.0,
+        crops: cropsJson,
         imageUrl: imageUrl,
       );
 
@@ -311,6 +377,8 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
       }
     }
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -352,7 +420,7 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
 
               // Soil Type
               DropdownButtonFormField<String>(
-                initialValue: _soilType,
+                value: _soilType,
                 decoration: InputDecoration(labelText: l10n.soilType),
                 items: const [
                   DropdownMenuItem(
@@ -370,62 +438,136 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
                 },
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 20),
 
-              const SizedBox(height: 12),
-
-              // Millet Type
-              DropdownButtonFormField<String>(
-                initialValue: _selectedMilletType,
-                decoration: InputDecoration(labelText: l10n.milletType),
-                items: [
-                  DropdownMenuItem(
-                    value: 'Sorghum',
-                    child: Text(l10n.milletSorghum),
+              // ==================================================
+              // MULTI-CROP SECTION
+              // ==================================================
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Crops Grown on Farm',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: ShreeAnnaTheme.primaryGreen,
+                    ),
                   ),
-                  DropdownMenuItem(
-                    value: 'Pearl Millet',
-                    child: Text(l10n.milletPearl),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Finger Millet',
-                    child: Text(l10n.milletFinger),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Foxtail Millet',
-                    child: Text(l10n.milletFoxtail),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Little Millet',
-                    child: Text(l10n.milletLittle),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Kodo Millet',
-                    child: Text(l10n.milletKodo),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Barnyard Millet',
-                    child: Text(l10n.milletBarnyard),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Proso Millet',
-                    child: Text(l10n.milletProso),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Browntop Millet',
-                    child: Text(l10n.milletBrowntop),
+                  TextButton.icon(
+                    onPressed: _addCrop,
+                    icon: const Icon(Icons.add_circle_outline, size: 18),
+                    label: const Text('Add Crop'),
                   ),
                 ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedMilletType = value;
-                  });
+              ),
+              const SizedBox(height: 8),
+
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _cropEntries.length,
+                itemBuilder: (context, index) {
+                  final crop = _cropEntries[index];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    elevation: 1,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Crop #${index + 1}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              if (_cropEntries.length > 1)
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline,
+                                      color: Colors.red, size: 20),
+                                  onPressed: () => _removeCrop(index),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          DropdownButtonFormField<String>(
+                            value: crop.cropName,
+                            decoration: const InputDecoration(
+                              labelText: 'Crop Name / Millet Type',
+                            ),
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'Sorghum',
+                                child: Text('Sorghum (Jowar)'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Pearl Millet',
+                                child: Text('Pearl Millet (Bajra)'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Finger Millet',
+                                child: Text('Finger Millet (Ragi)'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Foxtail Millet',
+                                child: Text('Foxtail Millet (Kangni)'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Little Millet',
+                                child: Text('Little Millet (Kutki)'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Kodo Millet',
+                                child: Text('Kodo Millet'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Barnyard Millet',
+                                child: Text('Barnyard Millet (Sanwa)'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Proso Millet',
+                                child: Text('Proso Millet (Chena)'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Browntop Millet',
+                                child: Text('Browntop Millet'),
+                              ),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) {
+                                setState(() => crop.cropName = val);
+                              }
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: crop.areaController,
+                            decoration: const InputDecoration(
+                              labelText: 'Crop Area (Acres)',
+                            ),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
                 },
               ),
+
               const SizedBox(height: 12),
 
               DropdownButtonFormField<String>(
-                initialValue: _selectedDistrict,
+                value: _selectedDistrict,
                 decoration: InputDecoration(labelText: l10n.district),
                 items: _districts
                     .map((d) => DropdownMenuItem(value: d, child: Text(d)))
@@ -511,11 +653,6 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
 
               const SizedBox(height: 12),
 
-              // const Text(
-              //   'Farm Status',
-              //   style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-              // ),
-              const SizedBox(height: 8),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),

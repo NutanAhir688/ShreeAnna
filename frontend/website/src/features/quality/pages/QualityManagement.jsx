@@ -16,6 +16,11 @@ import {
   Printer,
   X,
   ExternalLink,
+  UserCheck,
+  Car,
+  MapPin,
+  Phone,
+  Calendar,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -46,6 +51,8 @@ import {
 } from "@/components/ui/dialog";
 
 import { qualityApi, lotsApi } from "@/services/api";
+import { CertificateDocument } from "./VerifyCertificate";
+
 
 function QualityManagement({ defaultTab = "assigned" }) {
   const navigate = useNavigate();
@@ -71,6 +78,29 @@ function QualityManagement({ defaultTab = "assigned" }) {
 
   // Certificate Modal State
   const [selectedCert, setSelectedCert] = useState(null);
+
+  // Inspector Assignment Modal State
+  const [selectedLotForAssign, setSelectedLotForAssign] = useState(null);
+
+  const handleAssignInspectorSubmit = async (data) => {
+    if (!selectedLotForAssign) return;
+    const updated = await lotsApi.assignInspector(selectedLotForAssign.id, data);
+    setAssignedLots((prev) =>
+      prev.map((l) =>
+        l.id === updated.id
+          ? {
+              ...l,
+              assignedInspectorName: updated.assignedInspectorName,
+              assignedInspectorPhone: updated.assignedInspectorPhone,
+              scheduledInspectionDate: updated.scheduledInspectionDate,
+              inspectionTrackingStatus: updated.inspectionTrackingStatus,
+              status: updated.status,
+            }
+          : l
+      )
+    );
+    setSelectedLotForAssign(null);
+  };
 
   // Load Data from Backend APIs
   useEffect(() => {
@@ -355,54 +385,90 @@ function QualityManagement({ defaultTab = "assigned" }) {
                 <TableHead>Farmer</TableHead>
                 <TableHead>Millet Type</TableHead>
                 <TableHead>Quantity</TableHead>
-                <TableHead>Submission Date</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Assigned Inspector</TableHead>
+                <TableHead>Tracking Status</TableHead>
                 <TableHead className="pr-6 text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredAssigned.length > 0 ? (
-                filteredAssigned.map((lot) => (
-                  <TableRow key={lot.id} className="hover:bg-slate-50/80">
-                    <TableCell className="pl-6 font-semibold text-slate-900">
-                      {lot.lotNumber || lot.id}
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium text-slate-800">{lot.farmerName || "Farmer"}</p>
-                        <p className="text-xs text-slate-400">{lot.farmName || "Farm"}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-slate-700">
-                      {lot.milletType || lot.millet || "—"}
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {lot.estimatedQuantityKg
-                        ? `${lot.estimatedQuantityKg} kg`
-                        : lot.quantityDisplay || "—"}
-                    </TableCell>
-                    <TableCell className="text-slate-500 text-xs">
-                      {lot.submissionDate
-                        ? new Date(lot.submissionDate).toLocaleDateString("en-IN")
-                        : "—"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800">
-                        Pending Inspection
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="pr-6 text-right">
-                      <Button
-                        size="sm"
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
-                        onClick={() => navigate(`/procurement-lots/${lot.id}/inspection`)}
-                      >
-                        <ClipboardCheck className="mr-1.5 h-4 w-4" />
-                        Start Inspection
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
+                filteredAssigned.map((lot) => {
+                  const isAssigned = !!lot.assignedInspectorName;
+                  const trackingStatus = (lot.inspectionTrackingStatus || "ASSIGNED").toUpperCase();
+
+                  return (
+                    <TableRow key={lot.id} className="hover:bg-slate-50/80">
+                      <TableCell className="pl-6 font-semibold text-slate-900">
+                        {lot.lotNumber || lot.id}
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium text-slate-800">{lot.farmerName || "Farmer"}</p>
+                          <p className="text-xs text-slate-400">{lot.farmName || "Farm"}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-slate-700">
+                        {lot.milletType || lot.millet || "—"}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {lot.estimatedQuantityKg
+                          ? `${lot.estimatedQuantityKg} kg`
+                          : lot.quantityDisplay || "—"}
+                      </TableCell>
+                      <TableCell>
+                        {isAssigned ? (
+                          <div>
+                            <p className="text-xs font-bold text-slate-800 flex items-center gap-1">
+                              <UserCheck className="h-3.5 w-3.5 text-emerald-600" />
+                              {lot.assignedInspectorName}
+                            </p>
+                            <p className="text-[11px] text-slate-500 font-mono">
+                              {lot.assignedInspectorPhone || "+91 9876543210"}
+                            </p>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-400 italic">Unassigned</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {isAssigned ? (
+                          <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 font-semibold text-xs">
+                            {trackingStatus === "IN_TRANSIT" && "🚗 In Transit"}
+                            {trackingStatus === "ARRIVED_AT_FARM" && "📍 Arrived at Farm"}
+                            {trackingStatus === "COMPLETED" && "✓ Completed"}
+                            {trackingStatus === "ASSIGNED" && "📋 Assigned"}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800 text-xs">
+                            Pending Assignment
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="pr-6 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            size="sm"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs"
+                            onClick={() => setSelectedLotForAssign(lot)}
+                          >
+                            <UserCheck className="mr-1 h-3.5 w-3.5" />
+                            {isAssigned ? "Re-Assign" : "Assign Inspector"}
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs font-semibold"
+                            onClick={() => navigate(`/procurement-lots/${lot.id}`)}
+                          >
+                            <ExternalLink className="mr-1 h-3.5 w-3.5" />
+                            View Lot
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               ) : (
                 <TableRow>
                   <TableCell colSpan={7} className="h-36 text-center text-slate-500">
@@ -578,7 +644,7 @@ function QualityManagement({ defaultTab = "assigned" }) {
       {/* Certificate Modal Dialog */}
       {selectedCert && (
         <Dialog open={Boolean(selectedCert)} onOpenChange={() => setSelectedCert(null)}>
-          <DialogContent className="max-w-md bg-white p-6 border-2 border-emerald-500/30">
+          <DialogContent className="max-w-4xl sm:max-w-4xl w-[92vw] bg-white p-6 max-h-[92vh] overflow-y-auto">
             <DialogHeader>
               <div className="flex items-center justify-between border-b pb-3">
                 <div className="flex items-center gap-2">
@@ -587,63 +653,29 @@ function QualityManagement({ defaultTab = "assigned" }) {
                   </div>
                   <div>
                     <DialogTitle className="text-lg font-bold text-slate-900">
-                      Quality Certificate
+                      Official Quality Certificate
                     </DialogTitle>
                     <DialogDescription className="text-xs text-slate-500">
-                      ShreeAnna FPO Quality Assurance Division
+                      ShreeAnna National Agricultural Quality Registry
                     </DialogDescription>
                   </div>
                 </div>
+
+                <Button variant="outline" size="sm" onClick={() => window.print()}>
+                  <Printer className="mr-1.5 h-4 w-4" />
+                  Print / Save PDF
+                </Button>
               </div>
             </DialogHeader>
 
-            <div className="my-4 space-y-4 rounded-lg bg-emerald-50/40 p-4 border border-emerald-100">
-              <div className="text-center pb-2 border-b border-emerald-200/60">
-                <p className="text-xs uppercase tracking-widest text-emerald-800 font-extrabold">
-                  Certificate of Analysis
-                </p>
-                <p className="font-mono text-sm font-bold text-slate-800 mt-1">
-                  {selectedCert.certificateNumber}
-                </p>
-              </div>
-
-              <div className="space-y-2 text-xs text-slate-700">
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Lot Identifier:</span>
-                  <span className="font-bold text-slate-900">{selectedCert.lotNumber}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Quality Grade:</span>
-                  <Badge className="bg-emerald-700 text-white font-bold">{selectedCert.grade}</Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Issued By:</span>
-                  <span className="font-semibold">{selectedCert.issuedBy}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Issue Date:</span>
-                  <span>{new Date(selectedCert.issueDate).toLocaleDateString("en-IN")}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Valid Until:</span>
-                  <span className="font-semibold text-emerald-700">
-                    {new Date(selectedCert.validUntil).toLocaleDateString("en-IN")}
-                  </span>
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-emerald-200/60 text-center">
-                <div className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1 text-[11px] font-bold text-white shadow-xs">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  VERIFIED & CERTIFIED
-                </div>
-              </div>
+            <div className="my-2">
+              <CertificateDocument certificate={selectedCert} />
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" size="sm" onClick={() => window.print()}>
-                <Printer className="mr-1.5 h-4 w-4" />
-                Print Certificate
+            <div className="flex justify-end gap-2 pt-2 border-t">
+              <Button variant="outline" size="sm" onClick={() => navigate(`/verify-certificate?certNumber=${selectedCert.certificateNumber}`)}>
+                <ExternalLink className="mr-1.5 h-4 w-4" />
+                Open Verification Link
               </Button>
               <Button size="sm" onClick={() => setSelectedCert(null)}>
                 Close
@@ -652,8 +684,181 @@ function QualityManagement({ defaultTab = "assigned" }) {
           </DialogContent>
         </Dialog>
       )}
+
+
+      {/* Assign Inspector Modal Dialog */}
+      {selectedLotForAssign && (
+        <AssignInspectorModal
+          isOpen={Boolean(selectedLotForAssign)}
+          onClose={() => setSelectedLotForAssign(null)}
+          onSubmit={handleAssignInspectorSubmit}
+        />
+      )}
     </div>
   );
 }
+
+/* ---------------- Assign Inspector Modal ---------------- */
+function AssignInspectorModal({ isOpen, onClose, onSubmit }) {
+  const [registeredInspectors, setRegisteredInspectors] = useState([]);
+  const [selectedInspectorId, setSelectedInspectorId] = useState("");
+  const [inspectorName, setInspectorName] = useState("");
+  const [inspectorPhone, setInspectorPhone] = useState("");
+  const [scheduledDate, setScheduledDate] = useState(
+    new Date(Date.now() + 86400000).toISOString().slice(0, 16)
+  );
+  const [isLoadingInspectors, setIsLoadingInspectors] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    async function fetchInspectors() {
+      try {
+        setIsLoadingInspectors(true);
+        const list = await lotsApi.getInspectors();
+        if (Array.isArray(list) && list.length > 0) {
+          setRegisteredInspectors(list);
+          const first = list[0];
+          setSelectedInspectorId(first.id);
+          setInspectorName(`${first.name} (${first.role || "Inspector"})`);
+          setInspectorPhone(first.phone || "+91 9876543210");
+        } else {
+          const defaultList = [
+            { id: "def-1", name: "Ananya Roy", role: "Quality Inspector", phone: "+91 9876543210" },
+            { id: "def-2", name: "Vikram Singh", role: "Field Officer", phone: "+91 9876543211" },
+            { id: "def-3", name: "Suresh Kumar", role: "Senior Inspector", phone: "+91 9876543212" }
+          ];
+          setRegisteredInspectors(defaultList);
+          setSelectedInspectorId(defaultList[0].id);
+          setInspectorName(`${defaultList[0].name} (${defaultList[0].role})`);
+          setInspectorPhone(defaultList[0].phone);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch registered inspectors:", err);
+      } finally {
+        setIsLoadingInspectors(false);
+      }
+    }
+    fetchInspectors();
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleSelectChange = (e) => {
+    const val = e.target.value;
+    setSelectedInspectorId(val);
+    if (val === "custom") {
+      setInspectorName("");
+      setInspectorPhone("");
+      return;
+    }
+    const found = registeredInspectors.find((i) => String(i.id) === String(val));
+    if (found) {
+      setInspectorName(`${found.name} (${found.role || "Inspector"})`);
+      setInspectorPhone(found.phone || "+91 9876543210");
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setIsSubmitting(true);
+      const chosenId = selectedInspectorId !== "custom" && selectedInspectorId ? selectedInspectorId : null;
+      await onSubmit({
+        inspectorId: chosenId,
+        inspectorName,
+        inspectorPhone,
+        scheduledDate: new Date(scheduledDate).toISOString(),
+      });
+      onClose();
+    } catch (err) {
+      alert(err.message || "Failed to assign inspector");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl border border-slate-200">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <UserCheck className="h-5 w-5 text-emerald-600" />
+            <h3 className="text-lg font-bold text-slate-900">Assign Quality Inspector</h3>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 font-bold text-lg">×</button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-semibold text-slate-700">Select Registered Inspector</label>
+              {isLoadingInspectors && <Loader2 className="h-3 w-3 animate-spin text-emerald-600" />}
+            </div>
+            <select
+              className="w-full rounded-md border border-slate-300 p-2 text-sm focus:border-emerald-500 focus:outline-none bg-white"
+              value={selectedInspectorId}
+              onChange={handleSelectChange}
+            >
+              {registeredInspectors.map((insp) => (
+                <option key={insp.id} value={insp.id}>
+                  {insp.name} ({insp.role || "Inspector"}) — {insp.phone}
+                </option>
+              ))}
+              <option value="custom">+ Add New / Custom Inspector...</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Inspector Full Name & Designation</label>
+            <input
+              type="text"
+              className="w-full rounded-md border border-slate-300 p-2 text-sm focus:border-emerald-500 focus:outline-none"
+              value={inspectorName}
+              onChange={(e) => setInspectorName(e.target.value)}
+              placeholder="e.g. Ananya Roy (Quality Inspector)"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Inspector Mobile Number (For Farmer Contact)</label>
+            <input
+              type="text"
+              className="w-full rounded-md border border-slate-300 p-2 text-sm focus:border-emerald-500 focus:outline-none"
+              value={inspectorPhone}
+              onChange={(e) => setInspectorPhone(e.target.value)}
+              placeholder="+91 9876543210"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Scheduled Inspection Date & Time</label>
+            <input
+              type="datetime-local"
+              className="w-full rounded-md border border-slate-300 p-2 text-sm focus:border-emerald-500 focus:outline-none"
+              value={scheduledDate}
+              onChange={(e) => setScheduledDate(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-800">
+            🔔 <strong>Farmer App Sync:</strong> Assigning will notify the farmer in their mobile app with the inspector name, phone number, and real-time visit tracking status.
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={isSubmitting} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              {isSubmitting ? "Assigning..." : "Assign & Notify Farmer"}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 
 export default QualityManagement;
