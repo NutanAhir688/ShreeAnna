@@ -28,6 +28,8 @@ public class Dispatch
     public string DriverName { get; set; } = string.Empty;
     public string DriverPhone { get; set; } = string.Empty;
 
+    public string VerificationCode { get; set; } = "4829";
+
     public decimal TotalQuantityKg { get; set; }
     public decimal? FinalReceivedQuantityKg { get; set; }
     public decimal? WarehouseStockAfterDispatchKg { get; set; }

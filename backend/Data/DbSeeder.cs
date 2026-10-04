@@ -1,6 +1,7 @@
 using backend.Features.Farmers.Entities;
 using backend.Features.Farms.Entities;
 using backend.Features.Procurement.Entities;
+using backend.Features.Warehouses.Entities;
 using Microsoft.EntityFrameworkCore;
 using backend.Features.Fpo.Entities;
 using backend.Features.Auth.Entities;
@@ -14,11 +15,20 @@ public static class DbSeeder
     {
         await context.Database.MigrateAsync();
 
+        try
+        {
+            await context.Database.ExecuteSqlRawAsync(@"
+                ALTER TABLE ""Dispatches"" ADD COLUMN IF NOT EXISTS ""VerificationCode"" text NOT NULL DEFAULT '4829';
+            ");
+        }
+        catch { }
+
         await SeedFarmersAsync(context);
         await SeedFarmsAsync(context);
         await SeedFarmCropsAsync(context);
         await SeedUsersAsync(context);
         await SeedProcurementLotsAsync(context);
+        await SeedWarehousesAsync(context);
     }
 
     private static async Task SeedFarmCropsAsync(AppDbContext context)
@@ -331,6 +341,116 @@ public static class DbSeeder
         };
 
         await context.ProcurementLots.AddRangeAsync(lots);
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task SeedWarehousesAsync(AppDbContext context)
+    {
+        if (await context.Warehouses.AnyAsync())
+        {
+            return;
+        }
+
+        var warehouses = new List<Warehouse>
+        {
+            new Warehouse
+            {
+                Id = Guid.Parse("aa000001-1111-1111-1111-111111111111"),
+                WarehouseCode = "WH-GUJ-001",
+                Name = "Dahod Rural Grain Warehouse",
+                Location = "Bordi Village, Dahod, Gujarat",
+                District = "Dahod",
+                Taluka = "Dahod",
+                Village = "Bordi",
+                ManagerName = "Ramesh Patel",
+                ContactPhone = "+91 98765 11111",
+                CapacityInTons = 5000,
+                UtilizedCapacityTons = 1200,
+                Latitude = 22.8397m,
+                Longitude = 74.2558m,
+                StorageCondition = "Dry Grain, Aerated",
+                Status = "ACTIVE",
+                CreatedAt = DateTime.UtcNow
+            },
+            new Warehouse
+            {
+                Id = Guid.Parse("aa000002-2222-2222-2222-222222222222"),
+                WarehouseCode = "WH-GUJ-002",
+                Name = "Bharuch Agrico Warehouse",
+                Location = "Nabipur Village, Bharuch, Gujarat",
+                District = "Bharuch",
+                Taluka = "Nabipur",
+                Village = "Nabipur",
+                ManagerName = "Karan Desai",
+                ContactPhone = "+91 98765 22222",
+                CapacityInTons = 7500,
+                UtilizedCapacityTons = 2100,
+                Latitude = 21.7051m,
+                Longitude = 72.9959m,
+                StorageCondition = "Cold Storage, Temperature Controlled",
+                Status = "ACTIVE",
+                CreatedAt = DateTime.UtcNow
+            },
+            new Warehouse
+            {
+                Id = Guid.Parse("aa000003-3333-3333-3333-333333333333"),
+                WarehouseCode = "WH-GUJ-003",
+                Name = "Amreli Farmer Grain Hub",
+                Location = "Dhari Village, Amreli, Gujarat",
+                District = "Amreli",
+                Taluka = "Dhari",
+                Village = "Dhari",
+                ManagerName = "Bhavik Parmar",
+                ContactPhone = "+91 98765 33333",
+                CapacityInTons = 4000,
+                UtilizedCapacityTons = 850,
+                Latitude = 21.6032m,
+                Longitude = 71.2221m,
+                StorageCondition = "Dry Grain, Aerated",
+                Status = "ACTIVE",
+                CreatedAt = DateTime.UtcNow
+            },
+            new Warehouse
+            {
+                Id = Guid.Parse("aa000004-4444-4444-4444-444444444444"),
+                WarehouseCode = "WH-GUJ-004",
+                Name = "Anand Cooperative Warehouse",
+                Location = "Petlad Village, Anand, Gujarat",
+                District = "Anand",
+                Taluka = "Petlad",
+                Village = "Petlad",
+                ManagerName = "Vikram Solanki",
+                ContactPhone = "+91 98765 44444",
+                CapacityInTons = 6000,
+                UtilizedCapacityTons = 3100,
+                Latitude = 22.5645m,
+                Longitude = 72.9289m,
+                StorageCondition = "Hermetic Storage, Moisture Control",
+                Status = "ACTIVE",
+                CreatedAt = DateTime.UtcNow
+            },
+            new Warehouse
+            {
+                Id = Guid.Parse("aa000005-5555-5555-5555-555555555555"),
+                WarehouseCode = "WH-GUJ-005",
+                Name = "Junagadh Agricultural Depository",
+                Location = "Keshod Village, Junagadh, Gujarat",
+                District = "Junagadh",
+                Taluka = "Keshod",
+                Village = "Keshod",
+                ManagerName = "Hitesh Chavda",
+                ContactPhone = "+91 98765 55555",
+                CapacityInTons = 5500,
+                UtilizedCapacityTons = 1400,
+                Latitude = 21.5222m,
+                Longitude = 70.4579m,
+                StorageCondition = "Dry Grain, Aerated",
+                Status = "ACTIVE",
+                CreatedAt = DateTime.UtcNow
+            }
+        };
+
+        await context.Warehouses.AddRangeAsync(warehouses);
         await context.SaveChangesAsync();
     }
 }
