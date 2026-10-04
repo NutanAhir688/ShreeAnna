@@ -26,11 +26,12 @@ function DispatchFilters({
       <select
         value={status}
         onChange={(e) => setStatus(e.target.value)}
-        className="rounded-lg border bg-background px-3 py-2 text-sm outline-none"
+        className="rounded-lg border bg-background px-3 py-2 text-sm outline-none font-semibold"
       >
         <option value="All">All Status</option>
-        <option value="Stock Reserved">Stock Reserved</option>
-        <option value="Ready for Dispatch">Ready for Dispatch</option>
+        <option value="Pending Dispatch">Pending Dispatch</option>
+        <option value="Vehicle Assigned">Vehicle Assigned</option>
+        <option value="Scheduled">Scheduled</option>
         <option value="In Transit">In Transit</option>
         <option value="Delivered">Delivered</option>
       </select>

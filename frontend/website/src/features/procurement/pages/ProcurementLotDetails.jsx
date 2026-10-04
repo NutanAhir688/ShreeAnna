@@ -1124,6 +1124,7 @@ const STATUS_ORDER = [
     "QUALITY_CERTIFICATE",
     "PROCUREMENT_AGREEMENT",
     "PICKUP",
+    "WAREHOUSE_RECEIPT",
     "PAYMENT",
     "COMPLETED",
 ];
@@ -1134,8 +1135,16 @@ function ProcurementWorkflow({ lot }) {
         lot.status || ""
     ).toUpperCase();
 
-    const currentIndex =
-        STATUS_ORDER.indexOf(currentStatus);
+    let currentIndex = STATUS_ORDER.indexOf(currentStatus);
+    if (currentIndex === -1) {
+        if (currentStatus === "STORED" || currentStatus === "DELIVERED" || currentStatus === "RECEIVED") {
+            currentIndex = STATUS_ORDER.indexOf("WAREHOUSE_RECEIPT");
+        } else if (currentStatus === "AGREEMENT_ACCEPTED") {
+            currentIndex = STATUS_ORDER.indexOf("PROCUREMENT_AGREEMENT");
+        } else if (currentStatus === "DISPATCHED" || currentStatus === "IN_TRANSIT" || currentStatus === "PICKUP_SCHEDULED") {
+            currentIndex = STATUS_ORDER.indexOf("PICKUP");
+        }
+    }
 
 
     const steps = STATUS_ORDER.map(

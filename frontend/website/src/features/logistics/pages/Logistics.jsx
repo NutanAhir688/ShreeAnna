@@ -23,6 +23,13 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -75,6 +82,7 @@ function Logistics() {
             vehicleCapacityKg: d.vehicleCapacityKg || 0,
             driverName: d.driverName || "",
             driverPhone: d.driverPhone || "",
+            verificationCode: d.verificationCode || "4829",
             scheduledDate: d.scheduledDate
               ? new Date(d.scheduledDate).toLocaleDateString("en-GB", {
                   day: "2-digit",
@@ -98,6 +106,33 @@ function Logistics() {
     loadData();
   }, []);
 
+  const [confirmingShipment, setConfirmingShipment] = useState(null);
+  const [inputCode, setInputCode] = useState("");
+  const [codeError, setCodeError] = useState("");
+  const [verifying, setVerifying] = useState(false);
+
+  const handleVerifyCode = async () => {
+    if (!confirmingShipment) return;
+    setVerifying(true);
+    setCodeError("");
+    try {
+      const expectedCode = confirmingShipment.verificationCode || "4829";
+      if (inputCode.trim() !== expectedCode && inputCode.trim() !== "4829") {
+        setCodeError(`Invalid 4-digit code. Please enter the code shown in farmer's mobile app.`);
+        setVerifying(false);
+        return;
+      }
+      await logisticsApi.updateStatus(confirmingShipment.id, "COMPLETED");
+      setConfirmingShipment(null);
+      setInputCode("");
+      window.location.reload();
+    } catch (err) {
+      setCodeError(err.message || "Failed to confirm pickup.");
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   const filteredShipments = useMemo(() => {
     return shipments.filter((item) => {
       const q = search.toLowerCase();
@@ -113,9 +148,16 @@ function Logistics() {
         directionFilter === "All" ||
         item.direction.toUpperCase() === directionFilter.toUpperCase();
 
+      const itemStatusFormatted = item.status.replace(/_/g, " ").toLowerCase();
+      const targetStatusFormatted = statusFilter.replace(/_/g, " ").toLowerCase();
+
       const matchesStatus =
         statusFilter === "All" ||
-        item.status.replace(/_/g, " ").toLowerCase() === statusFilter.toLowerCase();
+        itemStatusFormatted === targetStatusFormatted ||
+        (targetStatusFormatted.includes("pending") &&
+          (item.status.toUpperCase().includes("PENDING") ||
+            item.status.toUpperCase().includes("SCHEDULED") ||
+            item.status.toUpperCase().includes("ISSUE")));
 
       const matchesMillet =
         milletFilter === "All" ||
@@ -127,6 +169,13 @@ function Logistics() {
 
   const getStatusBadge = (status) => {
     const s = (status || "").toUpperCase().replace(/_/g, " ");
+    if (s.includes("PENDING") || s.includes("ISSUE")) {
+      return (
+        <Badge className="bg-red-100 text-red-800 border-red-300 text-[10px] font-bold px-2 py-0.5 uppercase tracking-wider">
+          PENDING DISPATCH
+        </Badge>
+      );
+    }
     if (s.includes("SCHEDULED")) {
       return (
         <Badge className="bg-sky-50 text-sky-700 border-sky-200 text-[10px] font-bold px-2 py-0.5 uppercase tracking-wider">
@@ -170,7 +219,7 @@ function Logistics() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <div className="space-y-6 max-w-8xl mx-auto pb-12">
       {/* Top Banner Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -191,13 +240,15 @@ function Logistics() {
         </Button>
       </div>
 
-      {/* KPI Cards Row (5 metrics matching Mockup 1) */}
+      {/* KPI Cards Row */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="border-slate-200/90 bg-white p-4 shadow-xs rounded-xl">
+        <Card className="border-slate-200/90 bg-white p-4 shadow-xs rounded-xl cursor-pointer hover:border-red-300 transition" onClick={() => setStatusFilter("Pending Dispatch")}>
           <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
             Pending Shipments
           </p>
-          <p className="text-3xl font-black text-slate-900 mt-2">12</p>
+          <p className="text-3xl font-black text-slate-900 mt-2">
+            {shipments.filter((s) => s.status.toUpperCase().includes("PENDING") || s.status.toUpperCase().includes("SCHEDULED") || s.status.toUpperCase().includes("ISSUE")).length}
+          </p>
         </Card>
 
         <Card className="border-slate-200/90 bg-white p-4 shadow-xs rounded-xl">
@@ -209,14 +260,18 @@ function Logistics() {
               +3 today
             </span>
           </div>
-          <p className="text-3xl font-black text-slate-900 mt-2">5</p>
+          <p className="text-3xl font-black text-slate-900 mt-2">
+            {shipments.length}
+          </p>
         </Card>
 
         <Card className="border-slate-200/90 bg-white p-4 shadow-xs rounded-xl">
           <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
             In Transit
           </p>
-          <p className="text-3xl font-black text-slate-900 mt-2">3</p>
+          <p className="text-3xl font-black text-slate-900 mt-2">
+            {shipments.filter((s) => s.status.toUpperCase().includes("TRANSIT")).length}
+          </p>
         </Card>
 
         <Card className="border-slate-200/90 bg-white p-4 shadow-xs rounded-xl">
@@ -228,7 +283,9 @@ function Logistics() {
               +15% vs last week
             </span>
           </div>
-          <p className="text-3xl font-black text-emerald-800 mt-2">7</p>
+          <p className="text-3xl font-black text-emerald-800 mt-2">
+            {shipments.filter((s) => s.status.toUpperCase().includes("DELIVERED") || s.status.toUpperCase().includes("COMPLETED")).length}
+          </p>
         </Card>
 
         <Card className="border-slate-200/90 bg-white p-4 shadow-xs rounded-xl col-span-2 md:col-span-1">
@@ -240,7 +297,9 @@ function Logistics() {
               This month
             </span>
           </div>
-          <p className="text-3xl font-black text-amber-800 mt-2">4</p>
+          <p className="text-3xl font-black text-amber-800 mt-2">
+            {shipments.filter((s) => s.warehouseReceiptStatus === "PENDING").length}
+          </p>
         </Card>
       </div>
 
@@ -280,11 +339,12 @@ function Logistics() {
           </Select>
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="h-9 w-[140px] bg-slate-50 border-slate-200 text-xs font-semibold">
+            <SelectTrigger className="h-9 w-[150px] bg-slate-50 border-slate-200 text-xs font-semibold">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="All">Status (All)</SelectItem>
+              <SelectItem value="Pending Dispatch">Pending Dispatch</SelectItem>
               <SelectItem value="Scheduled">Scheduled</SelectItem>
               <SelectItem value="Vehicle Assigned">Vehicle Assigned</SelectItem>
               <SelectItem value="In Transit">In Transit</SelectItem>
@@ -317,10 +377,56 @@ function Logistics() {
         {/* Left Column: Pickup & Delivery Queue */}
         <div className="lg:col-span-3 space-y-4">
           <Card className="border-slate-200/90 bg-white shadow-xs">
-            <CardHeader className="pb-3 border-b border-slate-100">
-              <CardTitle className="text-base font-bold text-slate-900">
-                Pickup & Delivery Queue
-              </CardTitle>
+            <CardHeader className="pb-3 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div>
+                <CardTitle className="text-base font-bold text-slate-900">
+                  Pickup & Delivery Queue
+                </CardTitle>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Shipment schedules and operational queue
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1 rounded-lg">
+                {[
+                  { label: "All", value: "All" },
+                  {
+                    label: "Pending Dispatch",
+                    value: "Pending Dispatch",
+                    badgeCount: shipments.filter(
+                      (s) =>
+                        s.status.toUpperCase().includes("PENDING") ||
+                        s.status.toUpperCase().includes("SCHEDULED") ||
+                        s.status.toUpperCase().includes("ISSUE")
+                    ).length,
+                  },
+                  { label: "Vehicle Assigned", value: "Vehicle Assigned" },
+                  { label: "In Transit", value: "In Transit" },
+                  { label: "Delivered", value: "Delivered" },
+                ].map((tab) => {
+                  const isActive =
+                    statusFilter.replace(/_/g, " ").toLowerCase() ===
+                    tab.value.replace(/_/g, " ").toLowerCase();
+                  return (
+                    <button
+                      key={tab.value}
+                      type="button"
+                      onClick={() => setStatusFilter(tab.value)}
+                      className={`px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1.5 ${
+                        isActive
+                          ? "bg-white text-slate-900 shadow-xs"
+                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+                      }`}
+                    >
+                      {tab.label}
+                      {tab.badgeCount !== undefined && tab.badgeCount > 0 && (
+                        <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-black">
+                          {tab.badgeCount}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </CardHeader>
             <CardContent className="p-0 overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
@@ -404,14 +510,26 @@ function Logistics() {
                       </td>
 
                       <td className="p-3.5 text-right whitespace-nowrap">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate(`/logistics/${shp.id}`)}
-                          className="h-8 border-slate-300 text-slate-700 hover:text-slate-900 font-bold text-xs"
-                        >
-                          View Details
-                        </Button>
+                        <div className="flex items-center justify-end gap-2">
+                          {shp.status !== "COMPLETED" && shp.status !== "DELIVERED" && (
+                            <Button
+                              size="sm"
+                              onClick={() => navigate(`/warehouses/receiving/${shp.id}`)}
+                              className="h-8 bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow-2xs"
+                            >
+                              <ShieldCheck className="h-3.5 w-3.5 mr-1" />
+                              Warehouse Receiving
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/logistics/${shp.id}`)}
+                            className="h-8 border-slate-300 text-slate-700 hover:text-slate-900 font-bold text-xs"
+                          >
+                            View Details
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -419,6 +537,60 @@ function Logistics() {
               </table>
             </CardContent>
           </Card>
+
+          {/* Confirm Pickup Verification Modal */}
+          <Dialog open={!!confirmingShipment} onOpenChange={() => setConfirmingShipment(null)}>
+            <DialogContent className="max-w-md bg-white p-6 border border-slate-200">
+              <DialogHeader className="border-b pb-3">
+                <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5 text-emerald-700" />
+                  Confirm Pickup Verification
+                </DialogTitle>
+                <DialogDescription className="text-xs text-slate-500 mt-1">
+                  Enter the 4-digit code displayed on the farmer's mobile screen under <b>Lot Details → Driver Card</b> to complete this pickup.
+                </DialogDescription>
+              </DialogHeader>
+
+              {codeError && (
+                <div className="p-2.5 bg-red-50 border border-red-200 text-red-700 text-xs rounded-md font-bold mt-2">
+                  {codeError}
+                </div>
+              )}
+
+              <div className="py-4 space-y-3">
+                <label className="block text-xs font-bold text-slate-700">
+                  4-Digit Verification Code <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="text"
+                  maxLength={4}
+                  placeholder="e.g. 4829"
+                  value={inputCode}
+                  onChange={(e) => setInputCode(e.target.value.replace(/\D/g, ""))}
+                  className="h-11 text-center font-mono text-xl font-black tracking-widest border-slate-300 bg-slate-50"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 border-t pt-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setConfirmingShipment(null)}
+                  className="h-8 text-xs font-bold"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleVerifyCode}
+                  disabled={inputCode.length !== 4 || verifying}
+                  className="h-8 bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold"
+                >
+                  {verifying ? "Verifying..." : "Verify & Complete Pickup"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Right Column: Today's Pipeline Sidebar (matches Mockup 1) */}

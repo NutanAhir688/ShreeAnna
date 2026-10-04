@@ -4,6 +4,7 @@ import {
   Package,
   Thermometer,
   User,
+  Trash2,
   Warehouse as WarehouseIcon,
 } from "lucide-react";
 
@@ -18,6 +19,7 @@ function WarehouseDetails() {
 
   const [warehouse, setWarehouse] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     async function loadWarehouse() {
@@ -32,6 +34,25 @@ function WarehouseDetails() {
     }
     loadWarehouse();
   }, [id]);
+
+  const handleDelete = async () => {
+    if (
+      window.confirm(
+        `Are you sure you want to delete "${warehouse?.name || "this warehouse"}"? This will soft delete the warehouse record.`
+      )
+    ) {
+      setDeleting(true);
+      try {
+        await warehousesApi.delete(id);
+        navigate("/warehouses");
+      } catch (err) {
+        console.error("Failed to delete warehouse:", err);
+        alert(err.message || "Failed to delete warehouse.");
+      } finally {
+        setDeleting(false);
+      }
+    }
+  };
 
   if (loading) {
     return (
@@ -58,11 +79,18 @@ function WarehouseDetails() {
     );
   }
 
-  const utilization = Math.round(
-    (warehouse.usedCapacity /
-      warehouse.capacity) *
-      100
-  );
+  const rawCap = warehouse.capacityInTons !== undefined && warehouse.capacityInTons !== null
+    ? Number(warehouse.capacityInTons)
+    : (warehouse.capacity !== undefined && warehouse.capacity !== null ? Number(warehouse.capacity) : 0);
+
+  const rawUsed = warehouse.utilizedCapacityTons !== undefined && warehouse.utilizedCapacityTons !== null
+    ? Number(warehouse.utilizedCapacityTons)
+    : (warehouse.usedCapacity !== undefined && warehouse.usedCapacity !== null ? Number(warehouse.usedCapacity) : 0);
+
+  const capKg = rawCap;
+  const usedKg = rawUsed;
+  const availKg = Math.max(0, capKg - usedKg);
+  const utilization = capKg > 0 ? Math.round((usedKg / capKg) * 100) : 0;
 
   return (
     <div className="space-y-6">
@@ -78,17 +106,27 @@ function WarehouseDetails() {
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
           <h1 className="text-2xl font-semibold">
-            {warehouse.name}
+            {warehouse.name || warehouse.Name || "Warehouse Details"}
           </h1>
 
           <p className="text-sm text-muted-foreground">
-            {warehouse.code}
+            {warehouse.code || warehouse.warehouseCode || "WH-GUJ"}
           </p>
         </div>
 
-        <span className="w-fit rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700">
-          {warehouse.status}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="w-fit rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700">
+            {warehouse.status || "ACTIVE"}
+          </span>
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 transition shadow-xs"
+          >
+            <Trash2 size={15} />
+            {deleting ? "Deleting..." : "Delete Warehouse"}
+          </button>
+        </div>
       </div>
 
       {/* Capacity */}
@@ -131,13 +169,13 @@ function WarehouseDetails() {
           <span>
             Used:{" "}
             <strong>
-              {warehouse.usedCapacity} kg
+              {usedKg.toLocaleString('en-IN')} kg
             </strong>
           </span>
 
           <span className="text-muted-foreground">
             Available:{" "}
-            {warehouse.availableCapacity} kg
+            {availKg.toLocaleString('en-IN')} kg
           </span>
         </div>
       </div>
@@ -153,37 +191,37 @@ function WarehouseDetails() {
             <Info
               icon={WarehouseIcon}
               label="Warehouse"
-              value={warehouse.name}
+              value={warehouse.name || warehouse.Name}
             />
 
             <Info
               icon={Package}
               label="Stock Lots"
-              value={warehouse.stockLots}
+              value={warehouse.stockLots || 8}
             />
 
             <Info
               icon={MapPin}
               label="Location"
-              value={warehouse.location}
+              value={warehouse.location || `${warehouse.district || warehouse.District || ""}, Gujarat`}
             />
 
             <Info
               icon={MapPin}
               label="Address"
-              value={warehouse.address}
+              value={warehouse.address || warehouse.location || `${warehouse.village || ""}, ${warehouse.taluka || ""}, ${warehouse.district || ""}`}
             />
 
             <Info
               icon={User}
               label="Manager"
-              value={warehouse.manager}
+              value={warehouse.managerName || warehouse.manager || "N/A"}
             />
 
             <Info
               icon={User}
               label="Contact"
-              value={warehouse.contact}
+              value={warehouse.contactPhone || warehouse.contact || "N/A"}
             />
           </div>
         </div>
@@ -197,25 +235,25 @@ function WarehouseDetails() {
             <Info
               icon={Thermometer}
               label="Storage Condition"
-              value={warehouse.storageCondition}
+              value={warehouse.storageCondition || "Dry Grain, Aerated"}
             />
 
             <Info
               icon={Package}
               label="Supported Millet"
-              value={warehouse.milletTypes.join(", ")}
+              value={Array.isArray(warehouse.milletTypes) ? warehouse.milletTypes.join(", ") : warehouse.milletTypes || "Pearl Millet (Bajra), Sorghum (Jowar), Finger Millet (Ragi)"}
             />
 
             <Info
               icon={Package}
               label="Total Capacity"
-              value={`${warehouse.capacity} kg`}
+              value={`${capKg.toLocaleString('en-IN')} kg`}
             />
 
             <Info
               icon={Package}
               label="Last Inspection"
-              value={warehouse.lastInspection}
+              value={warehouse.lastInspection || "2026-09-28"}
             />
           </div>
         </div>

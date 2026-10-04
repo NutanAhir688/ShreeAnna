@@ -172,6 +172,7 @@ export const ROLE_CONFIGS = {
         title: "WAREHOUSE OPERATIONS",
         items: [
           { to: "/inventory", icon: Warehouse, label: "Inventory" },
+          { to: "/warehouses/receiving", icon: FileCheck, label: "Warehouse Receiving" },
           { to: "/inventory/movements", icon: Factory, label: "Stock Movements" },
           { to: "/warehouses", icon: Building2, label: "Warehouses" },
           { to: "/warehouses/lots", icon: Package, label: "Lot Allocation" },
@@ -220,7 +221,7 @@ export const ROLE_CONFIGS = {
         title: "LOGISTICS OPERATIONS",
         items: [
           { to: "/dispatches", icon: Truck, label: "Logistics Operations", end: true },
-          { to: "/dispatches?status=Scheduled", icon: ClipboardCheck, label: "Pending Dispatch" },
+          { to: "/dispatches?status=Pending Dispatch", icon: ClipboardCheck, label: "Pending Dispatch" },
           { to: "/dispatches?status=In Transit", icon: Truck, label: "In Transit" },
           { to: "/dispatches?status=Delivered", icon: FileCheck, label: "Delivered" },
           { to: "/dispatches?status=Vehicle Assigned", icon: Truck, label: "Vehicles & Drivers" },

@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { lotsApi, warehousesApi } from "@/services/api";
 
 function ReceiveStockForm({ onClose }) {
+  const [procurementLots, setProcurementLots] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
   const [form, setForm] = useState({
     lotId: "",
     warehouse: "",
@@ -8,6 +11,22 @@ function ReceiveStockForm({ onClose }) {
     receivedDate: "",
     remarks: "",
   });
+
+  useEffect(() => {
+    async function loadOptions() {
+      try {
+        const [lotsData, whData] = await Promise.all([
+          lotsApi.getAll().catch(() => []),
+          warehousesApi.getAll().catch(() => []),
+        ]);
+        setProcurementLots(Array.isArray(lotsData) ? lotsData : []);
+        setWarehouses(Array.isArray(whData) ? whData : []);
+      } catch (err) {
+        console.error("Failed to load options:", err);
+      }
+    }
+    loadOptions();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -57,18 +76,11 @@ function ReceiveStockForm({ onClose }) {
               <option value="">
                 Select procurement lot
               </option>
-
-              <option value="PL-1024">
-                PL-1024 — Pearl Millet — 1200 kg
-              </option>
-
-              <option value="PL-1020">
-                PL-1020 — Pearl Millet — 2100 kg
-              </option>
-
-              <option value="PL-1018">
-                PL-1018 — Finger Millet — 950 kg
-              </option>
+              {procurementLots.map((lot) => (
+                <option key={lot.id || lot.lotNumber} value={lot.lotNumber || lot.id}>
+                  {lot.lotNumber || lot.id} — {lot.millet || lot.milletType || "Millet"} ({lot.actualQuantityKg || lot.estimatedQuantityKg || 0} kg)
+                </option>
+              ))}
             </select>
           </Field>
 
@@ -83,14 +95,11 @@ function ReceiveStockForm({ onClose }) {
               <option value="">
                 Select warehouse
               </option>
-
-              <option value="Dahod FPO Warehouse">
-                Dahod FPO Warehouse
-              </option>
-
-              <option value="Mehsana FPO Warehouse">
-                Mehsana FPO Warehouse
-              </option>
+              {warehouses.map((wh) => (
+                <option key={wh.id} value={wh.id}>
+                  {wh.name || wh.warehouseCode} ({wh.district || wh.location || "Central"})
+                </option>
+              ))}
             </select>
           </Field>
 

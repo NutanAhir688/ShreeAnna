@@ -28,6 +28,10 @@ class LotModel {
   final double? logisticsCost;
   final double? otherAdjustments;
   final String? negotiationRemarks;
+  final String? driverName;
+  final String? driverPhone;
+  final String? vehicleNumber;
+  final String? verificationCode;
 
   LotModel({
     required this.id,
@@ -59,6 +63,10 @@ class LotModel {
     this.logisticsCost,
     this.otherAdjustments,
     this.negotiationRemarks,
+    this.driverName,
+    this.driverPhone,
+    this.vehicleNumber,
+    this.verificationCode,
   });
 
   factory LotModel.fromJson(Map<String, dynamic> json) {
@@ -95,6 +103,10 @@ class LotModel {
       logisticsCost: (json['logisticsCost'] as num?)?.toDouble(),
       otherAdjustments: (json['otherAdjustments'] as num?)?.toDouble(),
       negotiationRemarks: json['negotiationRemarks']?.toString(),
+      driverName: json['driverName']?.toString(),
+      driverPhone: json['driverPhone']?.toString(),
+      vehicleNumber: json['vehicleNumber']?.toString(),
+      verificationCode: json['verificationCode']?.toString(),
     );
   }
 
@@ -129,6 +141,10 @@ class LotModel {
       'logisticsCost': logisticsCost,
       'otherAdjustments': otherAdjustments,
       'negotiationRemarks': negotiationRemarks,
+      'driverName': driverName,
+      'driverPhone': driverPhone,
+      'vehicleNumber': vehicleNumber,
+      'verificationCode': verificationCode,
     };
   }
 }

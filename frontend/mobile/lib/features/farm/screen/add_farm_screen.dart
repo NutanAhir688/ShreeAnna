@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart' show rootBundle, PlatformException;
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../../app/theme.dart';
 import '../../../l10n/generated/app_localizations.dart';
@@ -245,6 +246,37 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
 
   Future<void> _takePhoto() async {
     try {
+      var status = await Permission.camera.status;
+      if (status.isDenied) {
+        status = await Permission.camera.request();
+      }
+
+      if (status.isPermanentlyDenied) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Camera permission is permanently denied. Please allow it in settings.',
+            ),
+            action: SnackBarAction(
+              label: 'Settings',
+              onPressed: () => openAppSettings(),
+            ),
+          ),
+        );
+        return;
+      }
+
+      if (!status.isGranted) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Camera permission is required to capture farm photo.'),
+          ),
+        );
+        return;
+      }
+
       final picker = ImagePicker();
       final picked = await picker.pickImage(
         source: ImageSource.camera,
@@ -256,6 +288,7 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
         _photo = File(picked.path);
       });
     } on PlatformException catch (_) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -264,6 +297,7 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Failed to open camera: $e')));
     }

@@ -137,7 +137,10 @@ function NavItem({ to, icon: Icon, label, badgeCount, end = false }) {
   if (targetSearch) {
     const targetParams = new URLSearchParams(targetSearch);
     const currentParams = new URLSearchParams(location.search);
-    const matchesPath = location.pathname === targetPath;
+    const matchesPath =
+      location.pathname === targetPath ||
+      (targetPath === "/dispatches" && location.pathname === "/logistics") ||
+      (targetPath === "/logistics" && location.pathname === "/dispatches");
 
     const targetTab = targetParams.get("tab");
     if (targetTab) {
@@ -146,7 +149,8 @@ function NavItem({ to, icon: Icon, label, badgeCount, end = false }) {
     } else {
       let allMatch = true;
       for (const [k, v] of targetParams.entries()) {
-        if (currentParams.get(k) !== v) {
+        const curVal = currentParams.get(k) || "";
+        if (curVal.replace(/_/g, " ").toLowerCase() !== v.replace(/_/g, " ").toLowerCase()) {
           allMatch = false;
           break;
         }
@@ -154,7 +158,10 @@ function NavItem({ to, icon: Icon, label, badgeCount, end = false }) {
       isActive = matchesPath && allMatch;
     }
   } else {
-    const matchesExactPath = location.pathname === targetPath;
+    const matchesExactPath =
+      location.pathname === targetPath ||
+      (targetPath === "/dispatches" && location.pathname === "/logistics") ||
+      (targetPath === "/logistics" && location.pathname === "/dispatches");
     const matchesSubPath = targetPath !== "/" && location.pathname.startsWith(targetPath + "/");
     const matchesPath = matchesExactPath || (!end && matchesSubPath);
 

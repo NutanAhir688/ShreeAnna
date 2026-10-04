@@ -26,12 +26,15 @@ import OrderDetails from "../features/orders/pages/OrderDetails";
 import Logistics from "@/features/logistics/pages/Logistics";
 import CreateShipment from "@/features/logistics/pages/CreateShipment";
 import ShipmentDetails from "@/features/logistics/pages/ShipmentDetails";
+import ConfirmDelivery from "@/features/logistics/pages/ConfirmDelivery";
+import ReportIssue from "@/features/logistics/pages/ReportIssue";
 import Inventory from "@/features/inventory/pages/Inventory";
 import InventoryDetails from "@/features/inventory/pages/InventoryDetails";
 import StockMovements from "@/features/inventory/pages/StockMovements";
 import Warehouses from "@/features/warehouse/pages/Warehouses";
 import WarehouseDetails from "@/features/warehouse/pages/WarehouseDetails";
 import WarehouseLotAllocation from "@/features/warehouse/pages/WarehouseLotAllocation";
+import WarehouseReceiving from "@/features/warehouse/pages/WarehouseReceiving";
 import Settlements from "@/features/settlements/pages/Settlements";
 import SettlementDetails from "@/features/settlements/pages/SettlementDetails";
 import Buyers from "@/features/buyers/pages/Buyers";
@@ -91,15 +94,23 @@ function AppRoutes() {
           <Route path="/logistics" element={<Logistics />} />
           <Route path="/logistics/create" element={<CreateShipment />} />
           <Route path="/logistics/:id" element={<ShipmentDetails />} />
+          <Route path="/logistics/:id/confirm" element={<WarehouseReceiving />} />
+          <Route path="/logistics/:id/report-issue" element={<ReportIssue />} />
+          <Route path="/logistics/report-issue" element={<ReportIssue />} />
           <Route path="/dispatches" element={<Logistics />} />
           <Route path="/dispatches/create" element={<CreateShipment />} />
           <Route path="/dispatches/:id" element={<ShipmentDetails />} />
+          <Route path="/dispatches/:id/confirm" element={<WarehouseReceiving />} />
+          <Route path="/dispatches/:id/report-issue" element={<ReportIssue />} />
+          <Route path="/dispatches/report-issue" element={<ReportIssue />} />
 
           <Route path="/inventory" element={<Inventory />} />
           <Route path="/inventory/movements" element={<StockMovements />} />
           <Route path="/inventory/:id" element={<InventoryDetails />} />
 
           <Route path="/warehouses" element={<Warehouses />} />
+          <Route path="/warehouses/receiving" element={<WarehouseReceiving />} />
+          <Route path="/warehouses/receiving/:id" element={<WarehouseReceiving />} />
           <Route path="/warehouses/lots" element={<WarehouseLotAllocation />} />
           <Route path="/warehouses/:id" element={<WarehouseDetails />} />
 
