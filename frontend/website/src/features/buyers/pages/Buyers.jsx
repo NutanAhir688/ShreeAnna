@@ -1,44 +1,45 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import BuyerStats from "../components/BuyerStats";
 import BuyerFilters from "../components/BuyerFilters";
 import BuyerTable from "../components/BuyerTable";
 
-import { buyers as buyerData } from "../data/buyers";
+import { buyersApi } from "@/services/api";
 
 function Buyers() {
+  const [buyerData, setBuyerData] = useState([]);
   const [search, setSearch] = useState("");
   const [type, setType] = useState("All");
   const [status, setStatus] = useState("All");
+
+  useEffect(() => {
+    async function loadBuyers() {
+      try {
+        const data = await buyersApi.getAll();
+        if (Array.isArray(data)) setBuyerData(data);
+      } catch (err) {
+        console.error("Failed to load buyers:", err);
+        setBuyerData([]);
+      }
+    }
+    loadBuyers();
+  }, []);
 
   const filteredBuyers = useMemo(() => {
     const query = search.toLowerCase();
 
     return buyerData.filter((buyer) => {
       const matchesSearch =
-        buyer.name.toLowerCase().includes(query) ||
-        buyer.contactPerson
-          .toLowerCase()
-          .includes(query) ||
-        buyer.address
-          .toLowerCase()
-          .includes(query);
+        (buyer.name && buyer.name.toLowerCase().includes(query)) ||
+        (buyer.contactPerson && buyer.contactPerson.toLowerCase().includes(query)) ||
+        (buyer.address && buyer.address.toLowerCase().includes(query));
 
-      const matchesType =
-        type === "All" ||
-        buyer.type === type;
+      const matchesType = type === "All" || buyer.type === type;
+      const matchesStatus = status === "All" || buyer.status === status;
 
-      const matchesStatus =
-        status === "All" ||
-        buyer.status === status;
-
-      return (
-        matchesSearch &&
-        matchesType &&
-        matchesStatus
-      );
+      return matchesSearch && matchesType && matchesStatus;
     });
-  }, [search, type, status]);
+  }, [buyerData, search, type, status]);
 
   return (
     <div className="space-y-6">

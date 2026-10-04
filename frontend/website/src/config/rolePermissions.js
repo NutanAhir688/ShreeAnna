@@ -48,9 +48,9 @@ export const ROLE_CONFIGS = {
         ],
       },
       {
-        title: "LOGISTICS & INVENTORY",
+        title: "LOGISTICS OPERATIONS",
         items: [
-          { to: "/dispatches", icon: Truck, label: "Dispatch & Logistics" },
+          { to: "/dispatches", icon: Truck, label: "Logistics Operations", end: true },
           {
             type: "dropdown",
             label: "Warehouse & Inventory",
@@ -217,13 +217,13 @@ export const ROLE_CONFIGS = {
         ],
       },
       {
-        title: "LOGISTICS",
+        title: "LOGISTICS OPERATIONS",
         items: [
-          { to: "/dispatches", icon: Truck, label: "Dispatches" },
-          { to: "/dispatches", icon: ClipboardCheck, label: "Pending Dispatch" },
-          { to: "/dispatches", icon: Truck, label: "In Transit" },
-          { to: "/dispatches", icon: FileCheck, label: "Delivered" },
-          { to: "/dispatches", icon: Truck, label: "Vehicles & Drivers" },
+          { to: "/dispatches", icon: Truck, label: "Logistics Operations", end: true },
+          { to: "/dispatches?status=Scheduled", icon: ClipboardCheck, label: "Pending Dispatch" },
+          { to: "/dispatches?status=In Transit", icon: Truck, label: "In Transit" },
+          { to: "/dispatches?status=Delivered", icon: FileCheck, label: "Delivered" },
+          { to: "/dispatches?status=Vehicle Assigned", icon: Truck, label: "Vehicles & Drivers" },
         ],
       },
       {
@@ -262,10 +262,10 @@ export const ROLE_CONFIGS = {
       {
         title: "FINANCE",
         items: [
-          { to: "/settlements", icon: Wallet, label: "Farmer Payments" },
-          { to: "/settlements", icon: CircleDollarSign, label: "Settlements" },
-          { to: "/settlements", icon: FileText, label: "Transactions" },
-          { to: "/settlements", icon: CircleDollarSign, label: "Payment History" },
+          { to: "/settlements?status=Pending", icon: Wallet, label: "Farmer Payments" },
+          { to: "/settlements", icon: CircleDollarSign, label: "Settlements", end: true },
+          { to: "/settlements?status=Completed", icon: FileText, label: "Transactions" },
+          { to: "/settlements?status=Paid", icon: CircleDollarSign, label: "Payment History" },
         ],
       },
       {
@@ -279,9 +279,9 @@ export const ROLE_CONFIGS = {
       {
         title: "REPORTS",
         items: [
-          { to: "/reports", icon: BarChart3, label: "Financial Reports" },
-          { to: "/reports", icon: BarChart3, label: "Revenue Reports" },
-          { to: "/reports", icon: BarChart3, label: "FPO Margin" },
+          { to: "/reports?type=financial", icon: BarChart3, label: "Financial Reports" },
+          { to: "/reports?type=revenue", icon: BarChart3, label: "Revenue Reports" },
+          { to: "/reports?type=margin", icon: BarChart3, label: "FPO Margin" },
         ],
       },
       {

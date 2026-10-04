@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation, NavLink } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { ROLE_CONFIGS, COMMON_SYSTEM_SECTION } from "@/config/rolePermissions";
 import { ChevronDown, Shield } from "lucide-react";
@@ -89,9 +89,10 @@ function Sidebar() {
 
 function DropdownNavItem({ label, icon: Icon, items }) {
   const location = useLocation();
-  const isChildActive = items.some((item) =>
-    location.pathname === item.to || (item.to !== "/inventory" && location.pathname.startsWith(item.to))
-  );
+  const isChildActive = items.some((item) => {
+    const [targetPath] = item.to.split("?");
+    return location.pathname === targetPath || (targetPath !== "/inventory" && location.pathname.startsWith(targetPath + "/"));
+  });
 
   const [open, setOpen] = useState(isChildActive);
 
@@ -132,37 +133,48 @@ function NavItem({ to, icon: Icon, label, badgeCount, end = false }) {
   const [targetPath, targetSearch] = to.split("?");
 
   let isActive = false;
+
   if (targetSearch) {
     const targetParams = new URLSearchParams(targetSearch);
     const currentParams = new URLSearchParams(location.search);
-
     const matchesPath = location.pathname === targetPath;
-    const targetTab = targetParams.get("tab");
-    const currentTab = currentParams.get("tab") || "assigned";
 
+    const targetTab = targetParams.get("tab");
     if (targetTab) {
+      const currentTab = currentParams.get("tab") || "assigned";
       isActive = matchesPath && currentTab === targetTab;
     } else {
-      isActive = matchesPath && location.search === `?${targetSearch}`;
+      let allMatch = true;
+      for (const [k, v] of targetParams.entries()) {
+        if (currentParams.get(k) !== v) {
+          allMatch = false;
+          break;
+        }
+      }
+      isActive = matchesPath && allMatch;
     }
   } else {
-    if (end) {
-      isActive = location.pathname === targetPath && !location.search;
-    } else {
-      isActive =
-        location.pathname === targetPath ||
-        (targetPath !== "/" && location.pathname.startsWith(targetPath + "/"));
+    const matchesExactPath = location.pathname === targetPath;
+    const matchesSubPath = targetPath !== "/" && location.pathname.startsWith(targetPath + "/");
+    const matchesPath = matchesExactPath || (!end && matchesSubPath);
+
+    if (matchesPath) {
+      if (location.search) {
+        isActive = false;
+      } else {
+        isActive = true;
+      }
     }
   }
 
   return (
-    <NavLink
+    <Link
       to={to}
       className={`
         flex items-center gap-3 rounded-lg px-3 py-2
         text-xs font-semibold transition-all
         ${isActive
-          ? "bg-slate-900 text-white shadow-xs"
+          ? "bg-slate-900 text-white shadow-xs font-bold"
           : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
         }
       `}
@@ -175,7 +187,7 @@ function NavItem({ to, icon: Icon, label, badgeCount, end = false }) {
           {badgeCount}
         </span>
       )}
-    </NavLink>
+    </Link>
   );
 }
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
     ArrowLeft,
     Award,
@@ -19,28 +19,31 @@ import CertificationSummary from "../components/CertificationSummary";
 import InspectionResultCard from "../components/InspectionResultCard";
 import CertificationForm from "../components/CertificationForm";
 
-import { certifications } from "../data/certifications";
-import { inspections } from "@/features/quality/data/inspections";
+import { qualityApi } from "@/services/api";
 
 function Certification() {
     const navigate = useNavigate();
     const { id } = useParams();
 
-    const certification = useMemo(
-        () =>
-            certifications.find(
-                (item) => item.lotId === id
-            ),
-        [id]
-    );
+    const [certification, setCertification] = useState(null);
+    const [inspection, setInspection] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    const inspection = useMemo(
-        () =>
-            inspections.find(
-                (item) => item.id === certification?.inspectionId
-            ),
-        [certification]
-    );
+    useEffect(() => {
+        async function loadData() {
+            try {
+                const cert = await qualityApi.getCertificate(id);
+                if (cert) setCertification(cert);
+                const insp = await qualityApi.getByLot(id);
+                if (insp) setInspection(insp);
+            } catch (err) {
+                console.error("Error loading certification data:", err);
+            } finally {
+                setLoading(false);
+            }
+        }
+        loadData();
+    }, [id]);
 
     const [form, setForm] = useState({
         certificateNumber: `CERT-${id}-2026`,

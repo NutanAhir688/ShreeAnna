@@ -1,18 +1,32 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import OrderStats from "../components/OrderStats";
 import OrderFilters from "../components/OrderFilters";
 import OrdersTable from "../components/OrdersTable";
 
-import { orders } from "../data/orders";
+import { ordersApi } from "@/services/api";
 
 function Orders() {
   const navigate = useNavigate();
 
+  const [orders, setOrders] = useState([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [buyerType, setBuyerType] = useState("all");
+
+  useEffect(() => {
+    async function loadOrders() {
+      try {
+        const data = await ordersApi.getAll();
+        if (Array.isArray(data)) setOrders(data);
+      } catch (err) {
+        console.error("Error loading orders:", err);
+        setOrders([]);
+      }
+    }
+    loadOrders();
+  }, []);
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
@@ -20,26 +34,17 @@ function Orders() {
 
       const searchMatch =
         query === "" ||
-        order.id.toLowerCase().includes(query) ||
-        order.lotId.toLowerCase().includes(query) ||
-        order.buyerName.toLowerCase().includes(query) ||
-        order.millet.toLowerCase().includes(query);
+        (order.id && order.id.toLowerCase().includes(query)) ||
+        (order.lotId && order.lotId.toLowerCase().includes(query)) ||
+        (order.buyerName && order.buyerName.toLowerCase().includes(query)) ||
+        (order.millet && order.millet.toLowerCase().includes(query));
 
-      const statusMatch =
-        status === "all" ||
-        order.status === status;
+      const statusMatch = status === "all" || order.status === status;
+      const buyerMatch = buyerType === "all" || order.buyerType === buyerType;
 
-      const buyerMatch =
-        buyerType === "all" ||
-        order.buyerType === buyerType;
-
-      return (
-        searchMatch &&
-        statusMatch &&
-        buyerMatch
-      );
+      return searchMatch && statusMatch && buyerMatch;
     });
-  }, [search, status, buyerType]);
+  }, [orders, search, status, buyerType]);
 
   const handleReset = () => {
     setSearch("");

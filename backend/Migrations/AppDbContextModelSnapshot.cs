@@ -448,10 +448,25 @@ namespace backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("AgreementId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BatchId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime?>("DeliveredDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("DestinationAddress")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Direction")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -467,8 +482,43 @@ namespace backend.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("FarmerOrProcessorName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("FinalReceivedQuantityKg")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("LotId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("MilletType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProcessorType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("ScheduledDate")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ScheduledEndTime")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ScheduledStartTime")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SourceAddress")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SpecialInstructions")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -477,12 +527,26 @@ namespace backend.Migrations
                     b.Property<decimal>("TotalQuantityKg")
                         .HasColumnType("numeric");
 
+                    b.Property<string>("TransportResponsibility")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("VehicleCapacityKg")
+                        .HasColumnType("numeric");
+
                     b.Property<string>("VehicleNumber")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("WarehouseId")
+                    b.Property<Guid?>("WarehouseId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("WarehouseReceiptStatus")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("WarehouseStockAfterDispatchKg")
+                        .HasColumnType("numeric");
 
                     b.HasKey("Id");
 
@@ -784,9 +848,7 @@ namespace backend.Migrations
                 {
                     b.HasOne("backend.Features.Warehouses.Entities.Warehouse", "Warehouse")
                         .WithMany()
-                        .HasForeignKey("WarehouseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("WarehouseId");
 
                     b.Navigation("Warehouse");
                 });

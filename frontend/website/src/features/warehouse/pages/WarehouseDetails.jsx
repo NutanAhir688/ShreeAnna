@@ -7,22 +7,39 @@ import {
   Warehouse as WarehouseIcon,
 } from "lucide-react";
 
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { warehouses } from "../data/warehouses";
+import { warehousesApi } from "@/services/api";
 
 function WarehouseDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const warehouse = useMemo(
-    () =>
-      warehouses.find(
-        (item) => item.id === id
-      ),
-    [id]
-  );
+  const [warehouse, setWarehouse] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadWarehouse() {
+      try {
+        const data = await warehousesApi.getById(id);
+        if (data) setWarehouse(data);
+      } catch (err) {
+        console.error("Failed to fetch warehouse details:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadWarehouse();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-800" />
+      </div>
+    );
+  }
 
   if (!warehouse) {
     return (

@@ -23,8 +23,9 @@ import MarketplaceListingDetails from "../features/marketplace/pages/Marketplace
 import CreateMarketplaceListing from "../features/marketplace/pages/CreateMarketplaceListing";
 import Orders from "../features/orders/pages/Orders";
 import OrderDetails from "../features/orders/pages/OrderDetails";
-import Dispatches from "@/features/logistics/pages/Dispatches";
-import DispatchDetails from "@/features/logistics/pages/DispatchDetails";
+import Logistics from "@/features/logistics/pages/Logistics";
+import CreateShipment from "@/features/logistics/pages/CreateShipment";
+import ShipmentDetails from "@/features/logistics/pages/ShipmentDetails";
 import Inventory from "@/features/inventory/pages/Inventory";
 import InventoryDetails from "@/features/inventory/pages/InventoryDetails";
 import StockMovements from "@/features/inventory/pages/StockMovements";
@@ -87,8 +88,12 @@ function AppRoutes() {
           <Route path="/orders" element={<Orders />} />
           <Route path="/orders/:id" element={<OrderDetails />} />
 
-          <Route path="/dispatches" element={<Dispatches />} />
-          <Route path="/dispatches/:id" element={<DispatchDetails />} />
+          <Route path="/logistics" element={<Logistics />} />
+          <Route path="/logistics/create" element={<CreateShipment />} />
+          <Route path="/logistics/:id" element={<ShipmentDetails />} />
+          <Route path="/dispatches" element={<Logistics />} />
+          <Route path="/dispatches/create" element={<CreateShipment />} />
+          <Route path="/dispatches/:id" element={<ShipmentDetails />} />
 
           <Route path="/inventory" element={<Inventory />} />
           <Route path="/inventory/movements" element={<StockMovements />} />

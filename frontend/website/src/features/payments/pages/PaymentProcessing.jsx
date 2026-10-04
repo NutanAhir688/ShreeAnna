@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -16,26 +16,46 @@ import {
 } from "@/components/ui/card";
 
 import { Button } from "@/components/ui/button";
-
 import { Badge } from "@/components/ui/badge";
 
 import PaymentSummary from "../components/PaymentSummary";
 import FarmerPaymentDetails from "../components/FarmerPaymentDetails";
 import PaymentForm from "../components/PaymentForm";
 
-import { payments } from "../data/payments";
+import { settlementsApi, lotsApi } from "@/services/api";
 
 function PaymentProcessing() {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  const payment = useMemo(
-    () =>
-      payments.find(
-        (item) => item.lotId === id
-      ),
-    [id]
-  );
+  const [payment, setPayment] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadPayment() {
+      try {
+        const lot = await lotsApi.getById(id);
+        if (lot) {
+          setPayment({
+            id: `PAY-${lot.id}`,
+            lotId: lot.lotCode || lot.id,
+            farmerId: lot.farmerId || "-",
+            farmerName: lot.farmerName || "Farmer",
+            totalAmount: lot.totalAmount || (lot.estimatedQuantityKg || 0) * (lot.unitPrice || 35),
+            status: lot.paymentStatus || "Pending",
+            paymentMethod: "Bank Transfer",
+            transactionId: lot.transactionId || null,
+            paymentDate: lot.paymentDate || null,
+          });
+        }
+      } catch (err) {
+        console.error("Error loading payment data:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadPayment();
+  }, [id]);
 
   const [form, setForm] = useState({
     paymentMethod:

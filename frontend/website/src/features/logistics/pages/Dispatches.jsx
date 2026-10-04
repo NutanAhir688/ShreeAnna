@@ -4,11 +4,10 @@ import DispatchStats from "../components/DispatchStats";
 import DispatchFilters from "../components/DispatchFilters";
 import DispatchTable from "../components/DispatchTable";
 
-import { dispatches as initialMockDispatches } from "../data/dispatches";
 import { logisticsApi } from "@/services/api";
 
 function Dispatches() {
-  const [dispatchList, setDispatchList] = useState(initialMockDispatches);
+  const [dispatchList, setDispatchList] = useState([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
 
@@ -16,7 +15,7 @@ function Dispatches() {
     async function loadDispatches() {
       try {
         const data = await logisticsApi.getAll();
-        if (data && data.length > 0) {
+        if (Array.isArray(data)) {
           const mapped = data.map((d) => ({
             id: d.dispatchCode || d.id,
             orderId: d.dispatchCode,
@@ -31,7 +30,8 @@ function Dispatches() {
           setDispatchList(mapped);
         }
       } catch (err) {
-        console.warn("Using local dispatch mock data:", err.message);
+        console.error("Error loading dispatches:", err);
+        setDispatchList([]);
       }
     }
     loadDispatches();

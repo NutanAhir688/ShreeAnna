@@ -187,8 +187,8 @@ export const warehousesApi = {
 // INVENTORY
 // ─────────────────────────────────────────────────────────────
 export const inventoryApi = {
-  getBatches: () => request("/api/inventory/batches"),
-  getMovements: () => request("/api/inventory/movements"),
+  getBatches: () => request("/api/inventory").catch(() => []),
+  getMovements: () => request("/api/inventory/movements").catch(() => []),
   createMovement: (data) =>
     request("/api/inventory/movements", { method: "POST", body: data }),
 };

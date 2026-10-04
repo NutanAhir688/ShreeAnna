@@ -4,11 +4,10 @@ import WarehouseStats from "../components/WarehouseStats";
 import WarehouseFilters from "../components/WarehouseFilters";
 import WarehouseTable from "../components/WarehouseTable";
 
-import { warehouses as initialMockWarehouses } from "../data/warehouses";
 import { warehousesApi } from "@/services/api";
 
 function Warehouses() {
-  const [warehouseList, setWarehouseList] = useState(initialMockWarehouses);
+  const [warehouseList, setWarehouseList] = useState([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
 
@@ -16,21 +15,22 @@ function Warehouses() {
     async function loadWarehouses() {
       try {
         const data = await warehousesApi.getAll();
-        if (data && data.length > 0) {
+        if (Array.isArray(data)) {
           const mapped = data.map((w) => ({
             id: w.id,
-            code: w.warehouseCode,
+            code: w.warehouseCode || w.id,
             name: w.name,
             location: w.location,
-            manager: w.managerName,
-            capacity: `${w.capacityInTons} Tons`,
-            utilized: `${w.utilizedCapacityTons} Tons`,
-            status: w.status === "ACTIVE" ? "Active" : w.status,
+            manager: w.managerName || "Manager",
+            capacity: `${w.capacityInTons || 0} Tons`,
+            utilized: `${w.utilizedCapacityTons || 0} Tons`,
+            status: w.status === "ACTIVE" ? "Active" : w.status || "Active",
           }));
           setWarehouseList(mapped);
         }
       } catch (err) {
-        console.warn("Using local warehouse mock data:", err.message);
+        console.error("Error loading warehouses:", err);
+        setWarehouseList([]);
       }
     }
     loadWarehouses();

@@ -11,22 +11,39 @@ import {
   UsersRound,
 } from "lucide-react";
 
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { buyers } from "../data/buyers";
+import { buyersApi } from "@/services/api";
 
 function BuyerDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const buyer = useMemo(
-    () =>
-      buyers.find(
-        (item) => item.id === id
-      ),
-    [id]
-  );
+  const [buyer, setBuyer] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadBuyer() {
+      try {
+        const data = await buyersApi.getById(id);
+        if (data) setBuyer(data);
+      } catch (err) {
+        console.error("Failed to fetch buyer details:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadBuyer();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-800" />
+      </div>
+    );
+  }
 
   if (!buyer) {
     return (

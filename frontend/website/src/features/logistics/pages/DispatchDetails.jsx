@@ -1,21 +1,57 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, CheckCircle2, Truck } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { dispatches } from "../data/dispatches";
+import { logisticsApi } from "@/services/api";
 
 function DispatchDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const dispatch = useMemo(
-    () => dispatches.find((item) => item.id === id),
-    [id]
-  );
+  const [dispatch, setDispatch] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState("Stock Reserved");
 
-  const [status, setStatus] = useState(
-    dispatch?.status || "Stock Reserved"
-  );
+  useEffect(() => {
+    async function loadDispatch() {
+      try {
+        const data = await logisticsApi.getById(id);
+        if (data) {
+          setDispatch({
+            id: data.dispatchCode || data.id,
+            orderId: data.agreementId || data.id,
+            buyerName: data.farmerOrProcessorName || "-",
+            buyerType: data.processorType || "Buyer",
+            millet: data.milletType || "-",
+            grade: "Grade A",
+            quantity: data.totalQuantityKg || 0,
+            unit: "kg",
+            deliveryLocation: data.destinationAddress || "-",
+            warehouse: data.sourceAddress || "-",
+            expectedDelivery: data.scheduledDate ? `${data.scheduledDate}` : "-",
+            vehicleNumber: data.vehicleNumber,
+            driverName: data.driverName,
+            driverPhone: data.driverPhone,
+            status: data.status || "Stock Reserved",
+          });
+          setStatus(data.status || "Stock Reserved");
+        }
+      } catch (err) {
+        console.error("Error loading dispatch details:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadDispatch();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-800" />
+      </div>
+    );
+  }
 
   if (!dispatch) {
     return (

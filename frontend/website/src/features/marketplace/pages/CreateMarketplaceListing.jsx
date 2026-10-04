@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -16,51 +16,38 @@ import {
 } from "@/components/ui/card";
 
 import { Button } from "@/components/ui/button";
-
 import { Badge } from "@/components/ui/badge";
 
 import CreateListingForm from "../components/CreateListingForm";
-
-import { marketplaceListings } from "../data/marketplaceListings";
+import { marketplaceApi, lotsApi } from "@/services/api";
 
 function CreateMarketplaceListing() {
   const navigate = useNavigate();
 
-  /*
-   * Prototype data.
-   *
-   * In the real backend this should come from:
-   * GET /procurement-lots?status=certified
-   */
-  const certifiedLots = useMemo(
-    () => [
-      {
-        id: "PL-1024",
-        millet: "Pearl Millet",
-        grade: "Grade A",
-        availableQuantity: 1200,
-        unit: "kg",
-        certificationId: "CERT-001",
-      },
-      {
-        id: "PL-1020",
-        millet: "Pearl Millet",
-        grade: "Grade A",
-        availableQuantity: 2100,
-        unit: "kg",
-        certificationId: "CERT-002",
-      },
-      {
-        id: "PL-1018",
-        millet: "Finger Millet",
-        grade: "Grade A",
-        availableQuantity: 950,
-        unit: "kg",
-        certificationId: "CERT-003",
-      },
-    ],
-    []
-  );
+  const [certifiedLots, setCertifiedLots] = useState([]);
+
+  useEffect(() => {
+    async function loadLots() {
+      try {
+        const data = await lotsApi.getAll();
+        if (Array.isArray(data)) {
+          const mapped = data.map((l) => ({
+            id: l.lotCode || l.id,
+            millet: l.milletType || "Millet",
+            grade: l.grade || "Grade A",
+            availableQuantity: l.estimatedQuantityKg || l.actualQuantityKg || 1000,
+            unit: "kg",
+            certificationId: l.certificateNumber || "CERT-001",
+          }));
+          setCertifiedLots(mapped);
+        }
+      } catch (err) {
+        console.error("Error loading certified lots:", err);
+        setCertifiedLots([]);
+      }
+    }
+    loadLots();
+  }, []);
 
   const [form, setForm] = useState({
     lotId: "",
@@ -74,7 +61,7 @@ function CreateMarketplaceListing() {
     (lot) => lot.id === form.lotId
   );
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
     if (!form.lotId) {
       alert("Please select a procurement lot.");
       return;
@@ -101,37 +88,22 @@ function CreateMarketplaceListing() {
     }
 
     const listing = {
-      id: `ML-${String(
-        marketplaceListings.length + 1
-      ).padStart(3, "0")}`,
-
       lotId: form.lotId,
-
-      millet: selectedLot.millet,
+      milletType: selectedLot.millet,
       grade: selectedLot.grade,
-
-      quantity: Number(form.quantity),
-      availableQuantity: Number(form.quantity),
-
-      unit: "kg",
-
+      quantityKg: Number(form.quantity),
       pricePerKg: Number(form.pricePerKg),
-
-      certificationId:
-        selectedLot.certificationId,
-
       title: form.title,
       description: form.description,
-
-      status: "Available",
     };
 
-    console.log(
-      "Marketplace listing created:",
-      listing
-    );
-
-    navigate("/marketplace");
+    try {
+      await marketplaceApi.create(listing);
+    } catch (err) {
+      console.error("Failed to create marketplace listing:", err);
+    } finally {
+      navigate("/marketplace");
+    }
   };
 
   return (

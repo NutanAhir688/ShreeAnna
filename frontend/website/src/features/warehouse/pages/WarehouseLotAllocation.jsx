@@ -1,34 +1,47 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Plus, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-import { warehouseLots } from "../data/warehouseLots";
 import LotAllocationForm from "../components/LotAllocationForm";
+import { lotsApi } from "@/services/api";
 
 function WarehouseLotAllocation() {
   const navigate = useNavigate();
 
+  const [warehouseLots, setWarehouseLots] = useState([]);
   const [search, setSearch] = useState("");
   const [warehouse, setWarehouse] = useState("All");
   const [showForm, setShowForm] = useState(false);
+
+  useEffect(() => {
+    async function loadLots() {
+      try {
+        const data = await lotsApi.getAll();
+        if (Array.isArray(data)) setWarehouseLots(data);
+      } catch (err) {
+        console.error("Error loading warehouse lots:", err);
+        setWarehouseLots([]);
+      }
+    }
+    loadLots();
+  }, []);
 
   const filteredLots = useMemo(() => {
     const query = search.toLowerCase();
 
     return warehouseLots.filter((lot) => {
       const matchesSearch =
-        lot.lotId.toLowerCase().includes(query) ||
-        lot.farmerName.toLowerCase().includes(query) ||
-        lot.millet.toLowerCase().includes(query) ||
-        lot.warehouseName.toLowerCase().includes(query);
+        (lot.lotId && lot.lotId.toLowerCase().includes(query)) ||
+        (lot.farmerName && lot.farmerName.toLowerCase().includes(query)) ||
+        (lot.millet && lot.millet.toLowerCase().includes(query)) ||
+        (lot.warehouseName && lot.warehouseName.toLowerCase().includes(query));
 
       const matchesWarehouse =
-        warehouse === "All" ||
-        lot.warehouseId === warehouse;
+        warehouse === "All" || lot.warehouseId === warehouse;
 
       return matchesSearch && matchesWarehouse;
     });
-  }, [search, warehouse]);
+  }, [warehouseLots, search, warehouse]);
 
   return (
     <div className="space-y-6">

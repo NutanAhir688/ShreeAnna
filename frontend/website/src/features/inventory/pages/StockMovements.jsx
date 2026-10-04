@@ -1,37 +1,44 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowDownToLine, Search } from "lucide-react";
 
 import StockMovementTable from "../components/StockMovementTable";
-import { stockMovements } from "../data/stockMovements";
 import ReceiveStockForm from "../components/ReceiveStockForm";
+import { inventoryApi } from "@/services/api";
 
 function StockMovements() {
+    const [movements, setMovements] = useState([]);
     const [search, setSearch] = useState("");
     const [type, setType] = useState("All");
     const [showReceiveForm, setShowReceiveForm] = useState(false);
-    {
-        showReceiveForm && (
-            <ReceiveStockForm
-                onClose={() => setShowReceiveForm(false)}
-            />
-        )
-    }
+
+    useEffect(() => {
+        async function loadMovements() {
+            try {
+                const data = await inventoryApi.getMovements();
+                if (Array.isArray(data)) setMovements(data);
+            } catch (err) {
+                console.error("Error loading stock movements:", err);
+                setMovements([]);
+            }
+        }
+        loadMovements();
+    }, []);
+
     const filteredMovements = useMemo(() => {
         const query = search.toLowerCase();
 
-        return stockMovements.filter((movement) => {
+        return movements.filter((movement) => {
             const matchesSearch =
-                movement.id.toLowerCase().includes(query) ||
-                movement.lotId.toLowerCase().includes(query) ||
-                movement.millet.toLowerCase().includes(query) ||
-                movement.warehouse.toLowerCase().includes(query);
+                (movement.id && movement.id.toLowerCase().includes(query)) ||
+                (movement.lotId && movement.lotId.toLowerCase().includes(query)) ||
+                (movement.millet && movement.millet.toLowerCase().includes(query)) ||
+                (movement.warehouse && movement.warehouse.toLowerCase().includes(query));
 
-            const matchesType =
-                type === "All" || movement.type === type;
+            const matchesType = type === "All" || movement.type === type;
 
             return matchesSearch && matchesType;
         });
-    }, [search, type]);
+    }, [movements, search, type]);
 
     return (
         <div className="space-y-6">

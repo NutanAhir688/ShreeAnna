@@ -1,0 +1,20 @@
+---
+trigger: always_on
+description: Consult the graphify knowledge graph at graphify-out/ for codebase and architecture questions.
+---
+
+## graphify
+
+This project has a graphify knowledge graph at graphify-out/.
+
+Rules:
+- For codebase or architecture questions, when `graphify-out/graph.json` exists, first run `graphify query "<question>"` (CLI) or `query_graph` (MCP). Use `graphify path "<A>" "<B>"` / `shortest_path` for relationships and `graphify explain "<concept>"` / `get_node` for focused concepts. These return a scoped subgraph, usually much smaller than `GRAPH_REPORT.md` or raw grep output.
+- If graphify-out/wiki/index.md exists, navigate it instead of reading raw files
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context
+- After modifying code files in this session, run `graphify update .` to keep the graph current (AST-only, no API cost)
+
+## Development & Safety Constraints
+- **No Mock Data:** Strictly avoid creating mock or placeholder data arrays. Always implement real data integration patterns or model mapping.
+- **UI Components:** Use shadcn/ui components exclusively when building, styling, or scaffolding user interface elements.
+- **Database Guardrails:** Never write code or execute operations that delete database records without explicitly prompting the user and obtaining consent first.
+- **End-to-End Integration:** When creating or modifying features, always build the complete pipeline end-to-end (Database Schema -> Backend Controller/API -> Frontend Service Layer -> shadcn/ui View Component). Never leave a feature half-implemented or hardcoded.
