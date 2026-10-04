@@ -4,11 +4,10 @@ import DispatchStats from "../components/DispatchStats";
 import DispatchFilters from "../components/DispatchFilters";
 import DispatchTable from "../components/DispatchTable";
 
-import { dispatches as initialMockDispatches } from "../data/dispatches";
 import { logisticsApi } from "@/services/api";
 
 function Dispatches() {
-  const [dispatchList, setDispatchList] = useState(initialMockDispatches);
+  const [dispatchList, setDispatchList] = useState([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
 
@@ -16,22 +15,38 @@ function Dispatches() {
     async function loadDispatches() {
       try {
         const data = await logisticsApi.getAll();
-        if (data && data.length > 0) {
-          const mapped = data.map((d) => ({
-            id: d.dispatchCode || d.id,
-            orderId: d.dispatchCode,
-            buyerName: d.driverName ? `${d.driverName} (${d.vehicleNumber})` : d.warehouseName,
-            destination: d.destinationAddress,
-            driver: d.driverName,
-            vehicle: d.vehicleNumber,
-            quantity: `${d.totalQuantityKg} kg`,
-            status: d.status === "PENDING" ? "Scheduled" : d.status === "DELIVERED" ? "Delivered" : "In Transit",
-            scheduledDate: d.scheduledDate ? new Date(d.scheduledDate).toLocaleDateString() : "Today",
-          }));
+        if (Array.isArray(data)) {
+          const mapped = data.map((d) => {
+            let displayStatus = "Scheduled";
+            const upperStatus = (d.status || "").toUpperCase();
+            if (upperStatus.includes("PENDING") || upperStatus.includes("ISSUE")) {
+              displayStatus = "Pending Dispatch";
+            } else if (upperStatus.includes("DELIVERED") || upperStatus.includes("COMPLETED")) {
+              displayStatus = "Delivered";
+            } else if (upperStatus.includes("TRANSIT")) {
+              displayStatus = "In Transit";
+            } else if (upperStatus.includes("ASSIGNED")) {
+              displayStatus = "Vehicle Assigned";
+            }
+            return {
+              id: d.dispatchCode || d.id,
+              orderId: d.dispatchCode,
+              buyerName: d.farmerOrProcessorName || d.warehouseName || "Pending Assignment",
+              destination: d.destinationAddress,
+              driver: d.driverName || "Unassigned",
+              vehicle: d.vehicleNumber || "Unassigned",
+              millet: d.milletType || "Finger Millet",
+              unit: "kg",
+              quantity: `${d.totalQuantityKg} kg`,
+              status: displayStatus,
+              scheduledDate: d.scheduledDate ? new Date(d.scheduledDate).toLocaleDateString() : "Today",
+            };
+          });
           setDispatchList(mapped);
         }
       } catch (err) {
-        console.warn("Using local dispatch mock data:", err.message);
+        console.error("Error loading dispatches:", err);
+        setDispatchList([]);
       }
     }
     loadDispatches();

@@ -1,17 +1,59 @@
+import { useEffect, useState } from "react";
 import { ArrowLeft, Package, Warehouse } from "lucide-react";
-import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { inventory } from "../data/inventory";
+import { inventoryApi } from "@/services/api";
 
 function InventoryDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const item = useMemo(
-    () => inventory.find((stock) => stock.id === id),
-    [id]
-  );
+  const [item, setItem] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadItem() {
+      try {
+        const batches = await inventoryApi.getBatches();
+        if (Array.isArray(batches)) {
+          const match = batches.find((b) => b.id === id || b.batchCode === id);
+          if (match) {
+            setItem({
+              id: match.batchCode || match.id,
+              lotId: match.lotNumber || "LOT",
+              farmerName: match.warehouseName || "Warehouse",
+              farmName: "Farm Location",
+              millet: match.milletType || "Millet",
+              grade: match.grade || "Grade A",
+              totalQuantity: match.quantityInKg || 0,
+              reservedQuantity: 0,
+              availableQuantity: match.quantityInKg || 0,
+              unit: "kg",
+              certificationId: "CERT-001",
+              inspectionId: "INSP-001",
+              warehouse: match.warehouseName || "Warehouse",
+              warehouseLocation: match.warehouseName || "Warehouse Location",
+              receivedDate: match.receivedDate ? new Date(match.receivedDate).toLocaleDateString() : "Recent",
+              status: match.status || "IN_STOCK",
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Error loading inventory details:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadItem();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-800" />
+      </div>
+    );
+  }
 
   if (!item) {
     return (

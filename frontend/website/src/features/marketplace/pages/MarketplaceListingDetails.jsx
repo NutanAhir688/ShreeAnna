@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   Pencil,
@@ -17,19 +17,36 @@ import ListingSource from "../components/ListingSource";
 import ListingCertificate from "../components/ListingCertificate";
 import BuyerOrders from "../components/BuyerOrders";
 
-import { marketplaceListings } from "../data/marketplaceListings";
+import { marketplaceApi } from "@/services/api";
 
 function MarketplaceListingDetails() {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  const listing = useMemo(
-    () =>
-      marketplaceListings.find(
-        (item) => item.id === id
-      ),
-    [id]
-  );
+  const [listing, setListing] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadListing() {
+      try {
+        const data = await marketplaceApi.getById(id);
+        if (data) setListing(data);
+      } catch (err) {
+        console.error("Error loading listing details:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadListing();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-800" />
+      </div>
+    );
+  }
 
   if (!listing) {
     return (

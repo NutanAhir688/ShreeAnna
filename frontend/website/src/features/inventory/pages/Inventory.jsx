@@ -4,11 +4,10 @@ import InventoryStats from "../components/InventoryStats";
 import InventoryFilters from "../components/InventoryFilters";
 import InventoryTable from "../components/InventoryTable";
 
-import { inventory as initialMockInventory } from "../data/inventory";
 import { inventoryApi } from "@/services/api";
 
 function Inventory() {
-  const [inventoryList, setInventoryList] = useState(initialMockInventory);
+  const [inventoryList, setInventoryList] = useState([]);
   const [search, setSearch] = useState("");
   const [millet, setMillet] = useState("All");
   const [status, setStatus] = useState("All");
@@ -17,22 +16,23 @@ function Inventory() {
     async function loadInventory() {
       try {
         const data = await inventoryApi.getBatches();
-        if (data && data.length > 0) {
+        if (Array.isArray(data)) {
           const mapped = data.map((b) => ({
             id: b.batchCode || b.id,
             lotId: b.lotNumber || "LOT",
-            farmerName: b.warehouseName,
-            millet: b.milletType,
-            quantity: `${b.quantityInKg} kg`,
-            grade: b.grade,
-            warehouse: b.warehouseName,
-            status: b.status === "IN_STOCK" ? "In Stock" : b.status,
+            farmerName: b.warehouseName || "Warehouse",
+            millet: b.milletType || "Millet",
+            quantity: `${b.quantityInKg || 0} kg`,
+            grade: b.grade || "Grade A",
+            warehouse: b.warehouseName || "Warehouse",
+            status: b.status === "IN_STOCK" ? "In Stock" : b.status || "In Stock",
             date: b.receivedDate ? new Date(b.receivedDate).toLocaleDateString() : "Recent",
           }));
           setInventoryList(mapped);
         }
       } catch (err) {
-        console.warn("Using local inventory mock data:", err.message);
+        console.error("Error loading inventory:", err);
+        setInventoryList([]);
       }
     }
     loadInventory();

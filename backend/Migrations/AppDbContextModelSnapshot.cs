@@ -448,10 +448,25 @@ namespace backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("AgreementId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BatchId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime?>("DeliveredDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("DestinationAddress")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Direction")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -467,8 +482,43 @@ namespace backend.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("FarmerOrProcessorName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("FinalReceivedQuantityKg")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("LotId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("MilletType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProcessorType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("ScheduledDate")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ScheduledEndTime")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ScheduledStartTime")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SourceAddress")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SpecialInstructions")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -477,18 +527,96 @@ namespace backend.Migrations
                     b.Property<decimal>("TotalQuantityKg")
                         .HasColumnType("numeric");
 
+                    b.Property<string>("TransportResponsibility")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("VehicleCapacityKg")
+                        .HasColumnType("numeric");
+
                     b.Property<string>("VehicleNumber")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("WarehouseId")
+                    b.Property<string>("VerificationCode")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("WarehouseId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("WarehouseReceiptStatus")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("WarehouseStockAfterDispatchKg")
+                        .HasColumnType("numeric");
 
                     b.HasKey("Id");
 
                     b.HasIndex("WarehouseId");
 
                     b.ToTable("Dispatches");
+                });
+
+            modelBuilder.Entity("backend.Features.Logistics.Entities.ShipmentIssue", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AttachmentUrlsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("DetailedDescription")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("DispatchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DriverName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("FarmerName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("IncidentDateTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("IssueCategory")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PriorityLevel")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ReferenceId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ReferenceType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("ReportedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ShipmentIssues");
                 });
 
             modelBuilder.Entity("backend.Features.Procurement.Entities.ProcurementLot", b =>
@@ -689,12 +817,26 @@ namespace backend.Migrations
                     b.Property<decimal>("CapacityInTons")
                         .HasColumnType("numeric");
 
+                    b.Property<string>("ContactPhone")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("District")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("Latitude")
+                        .HasColumnType("numeric");
 
                     b.Property<string>("Location")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<decimal?>("Longitude")
+                        .HasColumnType("numeric");
 
                     b.Property<string>("ManagerName")
                         .IsRequired()
@@ -708,8 +850,20 @@ namespace backend.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("StorageCondition")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Taluka")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<decimal>("UtilizedCapacityTons")
                         .HasColumnType("numeric");
+
+                    b.Property<string>("Village")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("WarehouseCode")
                         .IsRequired()
@@ -784,9 +938,7 @@ namespace backend.Migrations
                 {
                     b.HasOne("backend.Features.Warehouses.Entities.Warehouse", "Warehouse")
                         .WithMany()
-                        .HasForeignKey("WarehouseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("WarehouseId");
 
                     b.Navigation("Warehouse");
                 });

@@ -59,6 +59,35 @@ public class LogisticsController : ControllerBase
             return NotFound(new { message = ex.Message });
         }
     }
+
+    [HttpPost("{id:guid}/confirm-delivery")]
+    public async Task<ActionResult<DispatchResponse>> ConfirmDelivery(Guid id, [FromBody] ConfirmDeliveryRequest request)
+    {
+        try
+        {
+            var dispatch = await _logisticsService.ConfirmDeliveryAsync(id, request);
+            return Ok(dispatch);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("report-issue")]
+    [HttpPost("{id:guid}/report-issue")]
+    public async Task<ActionResult<ShipmentIssueResponse>> ReportIssue([FromRoute] Guid? id, [FromBody] ReportIssueRequest request)
+    {
+        try
+        {
+            var issue = await _logisticsService.ReportIssueAsync(id, request);
+            return Ok(issue);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }
 
 public record UpdateDispatchStatusRequest(string Status);

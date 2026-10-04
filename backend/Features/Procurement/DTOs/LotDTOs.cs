@@ -51,7 +51,11 @@ public record LotResponse(
     string? AgreementVersion,
     decimal? LogisticsCost,
     decimal? OtherAdjustments,
-    string? NegotiationRemarks
+    string? NegotiationRemarks,
+    string? DriverName,
+    string? DriverPhone,
+    string? VehicleNumber,
+    string? VerificationCode
 );
 
 public record FormulateAgreementRequest(

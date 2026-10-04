@@ -2,7 +2,7 @@ import {
   ArrowLeft,
   Pencil,
 } from "lucide-react";
-
+import { useEffect, useState } from "react";
 import {
   useNavigate,
   useParams,
@@ -16,15 +16,36 @@ import FarmerFarms from "../components/FarmerFarms";
 import FarmerProcurement from "../components/FarmerProcurement";
 import FarmerActivity from "../components/FarmerActivity";
 
-import { farmers } from "../data/farmers";
+import { farmersApi } from "@/services/api";
 
 function FarmerDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const farmer = farmers.find(
-    (item) => item.id === id
-  );
+  const [farmer, setFarmer] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadFarmer() {
+      try {
+        const data = await farmersApi.getById(id);
+        if (data) setFarmer(data);
+      } catch (err) {
+        console.error("Error loading farmer details:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadFarmer();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-800" />
+      </div>
+    );
+  }
 
   if (!farmer) {
     return (

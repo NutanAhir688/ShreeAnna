@@ -4,6 +4,12 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>This app requires camera access to take farm photos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app requires photo library access to select farm photos.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app requires location access to record farm coordinates.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

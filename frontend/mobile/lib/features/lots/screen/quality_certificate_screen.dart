@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../core/utils/document_downloader.dart';
+import '../../../core/utils/pdf_generator.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../services/lot_api.dart';
 
@@ -45,9 +47,21 @@ class _QualityCertificateScreenState extends State<QualityCertificateScreen> {
     }
   }
 
-  void _triggerDownloadCertificate() {
+  Future<void> _triggerDownloadCertificate() async {
     final certNum = _certData?['certificateNumber']?.toString() ?? 'CERT-2026-8891';
-    
+    final lotNum = _certData?['lotNumber']?.toString() ?? widget.lotId ?? 'LOT-2026-004';
+    final farmerName = _certData?['farmerName']?.toString() ?? 'Registered Farmer';
+    final grade = _certData?['grade']?.toString() ?? 'GRADE A (PREMIUM)';
+    final moisture = _certData?['moisturePercentage'] != null ? '${_certData!['moisturePercentage']}%' : '12.0%';
+    final purity = _certData?['purityPercentage'] != null ? '${_certData!['purityPercentage']}%' : '99.5%';
+    final foreignMatter = _certData?['foreignMatterPercentage'] != null ? '${_certData!['foreignMatterPercentage']}%' : '0.5%';
+    final damagedGrains = _certData?['damagedGrainsPercentage'] != null ? '${_certData!['damagedGrainsPercentage']}%' : '1.0%';
+    final immatureGrains = _certData?['immatureGrainsPercentage'] != null ? '${_certData!['immatureGrainsPercentage']}%' : '0.5%';
+    final insectDamage = _certData?['insectDamage']?.toString() ?? 'Nil (Passed)';
+    final issueDate = _certData?['issueDate']?.toString() ?? '2026-10-03';
+    final validUntil = _certData?['validUntil']?.toString() ?? '2027-10-03';
+    final issuedBy = _certData?['issuedBy']?.toString() ?? 'Ananya Roy (QA Lead)';
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -105,21 +119,45 @@ class _QualityCertificateScreenState extends State<QualityCertificateScreen> {
               backgroundColor: ShreeAnnaTheme.primaryGreen,
               foregroundColor: Colors.white,
             ),
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
+              final pdfBytes = await PdfGenerator.generateQualityCertificatePdf(
+                certNum: certNum,
+                lotNum: lotNum,
+                farmerName: farmerName,
+                grade: grade,
+                moisture: moisture,
+                purity: purity,
+                issueDate: issueDate,
+                validUntil: validUntil,
+                issuedBy: issuedBy,
+                foreignMatter: foreignMatter,
+                damagedGrains: damagedGrains,
+                immatureGrains: immatureGrains,
+                insectDamage: insectDamage,
+              );
+
+              final savedFile = await DocumentDownloader.downloadBytes(
+                filename: 'Quality_Certificate_${certNum.replaceAll('-', '_')}.pdf',
+                bytes: pdfBytes,
+              );
+
+              if (!mounted) return;
+              final path = savedFile?.path ?? 'Downloads folder';
+
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   backgroundColor: const Color(0xFF1B5E20),
                   behavior: SnackBarBehavior.floating,
-                  duration: const Duration(seconds: 4),
+                  duration: const Duration(seconds: 5),
                   content: Row(
                     children: [
-                      const Icon(Icons.file_download_done, color: Colors.white),
+                      const Icon(Icons.picture_as_pdf, color: Colors.white),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Certificate $certNum saved to Downloads folder!',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          'Saved official PDF certificate to: $path',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                         ),
                       ),
                     ],
@@ -476,36 +514,68 @@ class _QualityCertificateScreenState extends State<QualityCertificateScreen> {
                                   ),
                                   child: Column(
                                     children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFFF1F5F9),
+                                          borderRadius: BorderRadius.only(
+                                            topLeft: Radius.circular(5),
+                                            topRight: Radius.circular(5),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: const [
+                                            Text(
+                                              'Test Specification',
+                                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
+                                            ),
+                                            Text(
+                                              'Tested Result',
+                                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const Divider(height: 1, color: Color(0xFFCBD5E1)),
                                       _buildLabGridRow(
-                                        'Moisture Content',
+                                        'Moisture Content (%)',
                                         _certData!['moisturePercentage'] != null
                                             ? '${_certData!['moisturePercentage']}%'
                                             : '12.0%',
-                                        'Max Allowed: 14.0%',
-                                        true,
                                       ),
                                       const Divider(height: 1, color: Color(0xFFE2E8F0)),
                                       _buildLabGridRow(
-                                        'Grain Cleanliness / Purity',
+                                        'Grain Cleanliness / Purity (%)',
                                         _certData!['purityPercentage'] != null
                                             ? '${_certData!['purityPercentage']}%'
                                             : '99.5%',
-                                        'Min Required: 98.0%',
-                                        true,
                                       ),
                                       const Divider(height: 1, color: Color(0xFFE2E8F0)),
                                       _buildLabGridRow(
-                                        'Foreign Matter & Dust',
-                                        '0.5%',
-                                        'Max Allowed: 1.5%',
-                                        true,
+                                        'Foreign Matter & Dust (%)',
+                                        _certData!['foreignMatterPercentage'] != null
+                                            ? '${_certData!['foreignMatterPercentage']}%'
+                                            : '0.5%',
                                       ),
                                       const Divider(height: 1, color: Color(0xFFE2E8F0)),
                                       _buildLabGridRow(
-                                        'Insect / Pest Damage',
-                                        'Nil (Passed)',
-                                        'Zero Infestation',
-                                        true,
+                                        'Damaged & Discolored Grains (%)',
+                                        _certData!['damagedGrainsPercentage'] != null
+                                            ? '${_certData!['damagedGrainsPercentage']}%'
+                                            : '1.0%',
+                                      ),
+                                      const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                                      _buildLabGridRow(
+                                        'Immature & Shrivelled Grains (%)',
+                                        _certData!['immatureGrainsPercentage'] != null
+                                            ? '${_certData!['immatureGrainsPercentage']}%'
+                                            : '0.5%',
+                                      ),
+                                      const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                                      _buildLabGridRow(
+                                        'Insect / Pest Infestation',
+                                        _certData!['insectDamage']?.toString() ?? 'Nil (Passed)',
                                       ),
                                     ],
                                   ),
@@ -729,33 +799,25 @@ class _QualityCertificateScreenState extends State<QualityCertificateScreen> {
     );
   }
 
-  Widget _buildLabGridRow(String spec, String value, String standard, bool isPassed) {
+  Widget _buildLabGridRow(String spec, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(
-            flex: 4,
+            flex: 6,
             child: Text(
               spec,
               style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
             ),
           ),
           Expanded(
-            flex: 3,
+            flex: 4,
             child: Text(
               value,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Text(
-              standard,
               textAlign: TextAlign.right,
-              style: const TextStyle(fontSize: 9.5, color: Color(0xFF059669), fontWeight: FontWeight.w600),
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
             ),
           ),
         ],

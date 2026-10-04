@@ -34,6 +34,7 @@ public class AppDbContext : DbContext
     public DbSet<InventoryBatch> InventoryBatches => Set<InventoryBatch>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<Dispatch> Dispatches => Set<Dispatch>();
+    public DbSet<ShipmentIssue> ShipmentIssues => Set<ShipmentIssue>();
     public DbSet<FarmCrop> FarmCrops => Set<FarmCrop>();
 
 

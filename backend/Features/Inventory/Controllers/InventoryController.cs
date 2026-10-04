@@ -18,6 +18,7 @@ public class InventoryController : ControllerBase
     }
 
     [HttpGet]
+    [HttpGet("batches")]
     public async Task<ActionResult<List<InventoryBatchResponse>>> GetAllBatches()
     {
         var batches = await _inventoryService.GetAllBatchesAsync();

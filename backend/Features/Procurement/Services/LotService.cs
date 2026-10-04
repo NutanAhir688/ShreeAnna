@@ -157,6 +157,7 @@ public class LotService : ILotService
             "QUALITY_CERTIFICATE",
             "PROCUREMENT_AGREEMENT",
             "PICKUP",
+            "WAREHOUSE_RECEIPT",
             "PAYMENT"
         };
 
@@ -169,7 +170,8 @@ public class LotService : ILotService
             "QUALITY_CERTIFIED" or "QUALITY_CERTIFICATE" or "QUALITY_PASSED" or "CERTIFIED" or "APPROVED" => 2,
             "PROCUREMENT_AGREEMENT" or "AGREEMENT_PENDING" or "AGREEMENT_ACCEPTED" => 3,
             "PICKUP" or "PICKUP_SCHEDULED" or "PICKUP_COMPLETED" or "DISPATCHED" or "IN_TRANSIT" => 4,
-            "PAYMENT" or "PAYMENT_COMPLETED" or "READY_FOR_PAYMENT" or "SETTLED" or "COMPLETED" => 5,
+            "WAREHOUSE_RECEIPT" or "WAREHOUSE_RECEIVED" or "STORED" or "DELIVERED" or "RECEIVED" => 5,
+            "PAYMENT" or "PAYMENT_COMPLETED" or "READY_FOR_PAYMENT" or "SETTLED" or "COMPLETED" => 6,
             _ => 0
         };
 
@@ -389,8 +391,41 @@ public class LotService : ILotService
         return result;
     }
 
-    private static LotResponse MapToResponse(ProcurementLot lot)
+    private LotResponse MapToResponse(ProcurementLot lot)
     {
+        var dispatch = _context.Dispatches.FirstOrDefault(d => 
+            d.LotId == lot.LotNumber || 
+            d.LotId == lot.Id.ToString() ||
+            (d.LotId != null && lot.LotNumber != null && (d.LotId.Contains(lot.LotNumber) || lot.LotNumber.Contains(d.LotId))) ||
+            (d.AgreementId != null && lot.LotNumber != null && d.AgreementId.Contains(lot.LotNumber))
+        );
+
+        if (dispatch == null && (lot.Status == "DISPATCHED" || lot.Status == "VEHICLE_ASSIGNED" || lot.Status == "IN_TRANSIT" || lot.Status == "DELIVERED"))
+        {
+            dispatch = _context.Dispatches.OrderByDescending(d => d.CreatedAt).FirstOrDefault();
+        }
+
+        string? driverName;
+        string? driverPhone;
+        string? vehicleNumber;
+        string? verificationCode;
+
+        if (dispatch != null && !string.IsNullOrWhiteSpace(dispatch.DriverName))
+        {
+            driverName = dispatch.DriverName;
+            driverPhone = dispatch.DriverPhone;
+            vehicleNumber = dispatch.VehicleNumber;
+            var hash = Math.Abs(lot.Id.GetHashCode());
+            verificationCode = string.IsNullOrWhiteSpace(dispatch.VerificationCode) ? ((hash % 8999) + 1000).ToString() : dispatch.VerificationCode;
+        }
+        else
+        {
+            driverName = null;
+            driverPhone = null;
+            vehicleNumber = null;
+            verificationCode = null;
+        }
+
         return new LotResponse(
             lot.Id,
             lot.LotNumber,
@@ -421,7 +456,11 @@ public class LotService : ILotService
             lot.AgreementVersion ?? "v1.0",
             lot.LogisticsCost,
             lot.OtherAdjustments,
-            lot.NegotiationRemarks
+            lot.NegotiationRemarks,
+            driverName,
+            driverPhone,
+            vehicleNumber,
+            verificationCode
         );
     }
 }

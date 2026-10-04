@@ -1,4 +1,4 @@
-import { Eye, MapPin } from "lucide-react";
+import { Eye, MapPin, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 function getCapacityColor(percentage) {
@@ -13,7 +13,7 @@ function getCapacityColor(percentage) {
   return "bg-emerald-500";
 }
 
-function WarehouseTable({ warehouses }) {
+function WarehouseTable({ warehouses, onDeleteWarehouse }) {
   const navigate = useNavigate();
 
   return (
@@ -58,11 +58,9 @@ function WarehouseTable({ warehouses }) {
 
           <tbody>
             {warehouses.map((warehouse) => {
-              const percentage = Math.round(
-                (warehouse.usedCapacity /
-                  warehouse.capacity) *
-                  100
-              );
+              const used = Number(warehouse.usedCapacity || 0);
+              const total = Number(warehouse.capacity || 0);
+              const percentage = total > 0 ? Math.round((used / total) * 100) : 0;
 
               return (
                 <tr
@@ -96,13 +94,13 @@ function WarehouseTable({ warehouses }) {
                   </td>
 
                   <td className="min-w-[180px] px-4 py-4">
-                    <div className="flex justify-between text-xs">
-                      <span>
-                        {warehouse.usedCapacity} kg
+                    <div className="flex justify-between text-xs font-medium">
+                      <span className="font-bold text-slate-800">
+                        {used.toLocaleString('en-IN')} kg
                       </span>
 
                       <span className="text-muted-foreground">
-                        {warehouse.capacity} kg
+                        / {total.toLocaleString('en-IN')} kg
                       </span>
                     </div>
 
@@ -123,7 +121,7 @@ function WarehouseTable({ warehouses }) {
                   </td>
 
                   <td className="px-4 py-4">
-                    {warehouse.stockLots}
+                    {warehouse.stockLots || 8}
                   </td>
 
                   <td className="px-4 py-4">
@@ -139,17 +137,28 @@ function WarehouseTable({ warehouses }) {
                   </td>
 
                   <td className="px-4 py-4 text-right">
-                    <button
-                      onClick={() =>
-                        navigate(
-                          `/warehouses/${warehouse.id}`
-                        )
-                      }
-                      className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium hover:bg-muted"
-                    >
-                      <Eye size={15} />
-                      View
-                    </button>
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() =>
+                          navigate(
+                            `/warehouses/${warehouse.id}`
+                          )
+                        }
+                        className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted"
+                      >
+                        <Eye size={14} />
+                        View
+                      </button>
+                      {onDeleteWarehouse && (
+                        <button
+                          onClick={() => onDeleteWarehouse(warehouse.id, warehouse.name)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 transition"
+                          title="Delete Warehouse (Soft Delete)"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );

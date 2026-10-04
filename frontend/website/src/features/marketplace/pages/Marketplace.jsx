@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -8,44 +8,43 @@ import MarketplaceStats from "../components/MarketplaceStats";
 import MarketplaceFilters from "../components/MarketplaceFilters";
 import MarketplaceTable from "../components/MarketplaceTable";
 
-import { marketplaceListings } from "../data/marketplaceListings";
+import { marketplaceApi } from "@/services/api";
 
 function Marketplace() {
   const navigate = useNavigate();
 
+  const [marketplaceListings, setMarketplaceListings] = useState([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [millet, setMillet] = useState("all");
+
+  useEffect(() => {
+    async function loadListings() {
+      try {
+        const data = await marketplaceApi.getAll();
+        if (Array.isArray(data)) setMarketplaceListings(data);
+      } catch (err) {
+        console.error("Error loading marketplace listings:", err);
+        setMarketplaceListings([]);
+      }
+    }
+    loadListings();
+  }, []);
 
   const filteredListings = useMemo(() => {
     return marketplaceListings.filter((listing) => {
       const searchMatch =
         search.trim() === "" ||
-        listing.id
-          .toLowerCase()
-          .includes(search.toLowerCase()) ||
-        listing.lotId
-          .toLowerCase()
-          .includes(search.toLowerCase()) ||
-        listing.millet
-          .toLowerCase()
-          .includes(search.toLowerCase());
+        (listing.id && listing.id.toLowerCase().includes(search.toLowerCase())) ||
+        (listing.lotId && listing.lotId.toLowerCase().includes(search.toLowerCase())) ||
+        (listing.millet && listing.millet.toLowerCase().includes(search.toLowerCase()));
 
-      const statusMatch =
-        status === "all" ||
-        listing.status === status;
+      const statusMatch = status === "all" || listing.status === status;
+      const milletMatch = millet === "all" || listing.millet === millet;
 
-      const milletMatch =
-        millet === "all" ||
-        listing.millet === millet;
-
-      return (
-        searchMatch &&
-        statusMatch &&
-        milletMatch
-      );
+      return searchMatch && statusMatch && milletMatch;
     });
-  }, [search, status, millet]);
+  }, [marketplaceListings, search, status, millet]);
 
   const handleReset = () => {
     setSearch("");

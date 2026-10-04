@@ -181,14 +181,18 @@ export const warehousesApi = {
   getAll: () => request("/api/warehouses"),
   getById: (id) => request(`/api/warehouses/${id}`),
   create: (data) => request("/api/warehouses", { method: "POST", body: data }),
+  delete: (id) => request(`/api/warehouses/${id}`, { method: "DELETE" }),
+  createReceipt: (data) => request("/api/warehouses/receipts", { method: "POST", body: data }),
+  allocateLot: (data) => request("/api/warehouses/allocate-lot", { method: "POST", body: data }),
 };
+
 
 // ─────────────────────────────────────────────────────────────
 // INVENTORY
 // ─────────────────────────────────────────────────────────────
 export const inventoryApi = {
-  getBatches: () => request("/api/inventory/batches"),
-  getMovements: () => request("/api/inventory/movements"),
+  getBatches: () => request("/api/inventory").catch(() => []),
+  getMovements: () => request("/api/inventory/movements").catch(() => []),
   createMovement: (data) =>
     request("/api/inventory/movements", { method: "POST", body: data }),
 };
@@ -202,6 +206,12 @@ export const logisticsApi = {
   create: (data) => request("/api/dispatches", { method: "POST", body: data }),
   updateStatus: (id, status) =>
     request(`/api/dispatches/${id}/status`, { method: "PATCH", body: { status } }),
+  confirmDelivery: (id, data) =>
+    request(`/api/dispatches/${id}/confirm-delivery`, { method: "POST", body: data }),
+  reportIssue: (data, id) => {
+    const url = id ? `/api/dispatches/${id}/report-issue` : "/api/dispatches/report-issue";
+    return request(url, { method: "POST", body: data });
+  },
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -219,8 +229,8 @@ export const marketplaceApi = {
 // ORDERS
 // ─────────────────────────────────────────────────────────────
 export const ordersApi = {
-  getAll: () => request("/api/orders"),
-  getById: (id) => request(`/api/orders/${id}`),
+  getAll: () => request("/api/orders").catch(() => []),
+  getById: (id) => request(`/api/orders/${id}`).catch(() => null),
   create: (data) => request("/api/orders", { method: "POST", body: data }),
   updateStatus: (id, status) =>
     request(`/api/orders/${id}/status`, { method: "PATCH", body: { status } }),

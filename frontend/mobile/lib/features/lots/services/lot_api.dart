@@ -149,6 +149,15 @@ class LotApi {
     return null;
   }
 
+  Future<Map<String, dynamic>?> getWarehouseReceipt(String identifier) async {
+    final response = await _apiClient.get('/api/warehouses/receipts/lot/$identifier');
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      return _extractMap(decoded);
+    }
+    return null;
+  }
+
   List<dynamic> _extractList(dynamic decoded) {
     if (decoded is List<dynamic>) {
       return decoded;

@@ -5,26 +5,43 @@ import {
   User,
 } from "lucide-react";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { settlements } from "../data/settlements";
+import { settlementsApi } from "@/services/api";
 
 function SettlementDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const settlement = useMemo(
-    () =>
-      settlements.find(
-        (item) => item.id === id
-      ),
-    [id]
-  );
+  const [settlement, setSettlement] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState("Pending Settlement");
 
-  const [status, setStatus] = useState(
-    settlement?.status || "Pending Settlement"
-  );
+  useEffect(() => {
+    async function loadSettlement() {
+      try {
+        const data = await settlementsApi.getById(id);
+        if (data) {
+          setSettlement(data);
+          setStatus(data.status || "Pending Settlement");
+        }
+      } catch (err) {
+        console.error("Failed to fetch settlement details:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadSettlement();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-800" />
+      </div>
+    );
+  }
 
   if (!settlement) {
     return (

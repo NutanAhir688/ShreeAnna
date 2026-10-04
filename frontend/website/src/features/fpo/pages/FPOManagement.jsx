@@ -1,49 +1,45 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import FPOStats from "../components/FPOStats";
 import FPOFilters from "../components/FPOFilters";
 import FPOMemberTable from "../components/FPOMemberTable";
 
-import {
-  fpoMembers,
-} from "../data/fpoMembers";
+import { fpoApi } from "@/services/api";
 
 function FPOManagement() {
+  const [fpoMembers, setFpoMembers] = useState([]);
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("All");
-  const [department, setDepartment] =
-    useState("All");
+  const [department, setDepartment] = useState("All");
+
+  useEffect(() => {
+    async function loadMembers() {
+      try {
+        const data = await fpoApi.getAll();
+        if (Array.isArray(data)) setFpoMembers(data);
+      } catch (err) {
+        console.error("Error loading FPO members:", err);
+        setFpoMembers([]);
+      }
+    }
+    loadMembers();
+  }, []);
 
   const filteredMembers = useMemo(() => {
     const query = search.toLowerCase();
 
     return fpoMembers.filter((member) => {
       const matchesSearch =
-        member.name
-          .toLowerCase()
-          .includes(query) ||
-        member.role
-          .toLowerCase()
-          .includes(query) ||
-        member.department
-          .toLowerCase()
-          .includes(query);
+        (member.name && member.name.toLowerCase().includes(query)) ||
+        (member.role && member.role.toLowerCase().includes(query)) ||
+        (member.department && member.department.toLowerCase().includes(query));
 
-      const matchesRole =
-        role === "All" ||
-        member.role === role;
+      const matchesRole = role === "All" || member.role === role;
+      const matchesDepartment = department === "All" || member.department === department;
 
-      const matchesDepartment =
-        department === "All" ||
-        member.department === department;
-
-      return (
-        matchesSearch &&
-        matchesRole &&
-        matchesDepartment
-      );
+      return matchesSearch && matchesRole && matchesDepartment;
     });
-  }, [search, role, department]);
+  }, [fpoMembers, search, role, department]);
 
   return (
     <div className="space-y-6">

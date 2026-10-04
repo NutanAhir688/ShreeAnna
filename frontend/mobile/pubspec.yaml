@@ -42,8 +42,10 @@ dependencies:
   flutter_localizations:
       sdk: flutter
   intl: ^0.20.3
+  permission_handler: ^11.3.1
   shared_preferences: ^2.5.5
   path: ^1.9.0
+  pdf: ^3.11.1
 
 dev_dependencies:
   flutter_test:

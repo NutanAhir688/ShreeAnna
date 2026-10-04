@@ -26,3 +26,16 @@
 .idea/
 *.suo
 *.user
+
+graphify-out/
+# Ignore heavy local graph data and caches
+graphify-out/cache/
+graphify-out/*.json
+graphify-out/*.json.sig
+graphify-out/*.txt
+graphify-out/.graphify_*
+graphify-out/2026-*/
+
+# Keep the global rules so other agents know your guardrails
+!.agents/rules/graphify.md
+!.agents/workflows/graphify.md

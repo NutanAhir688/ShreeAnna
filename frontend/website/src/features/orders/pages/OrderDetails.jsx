@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -24,19 +24,36 @@ import BuyerDetails from "../components/BuyerDetails";
 import OrderItemDetails from "../components/OrderItemDetails";
 import OrderApproval from "../components/OrderApproval";
 
-import { orders } from "../data/orders";
+import { ordersApi } from "@/services/api";
 
 function OrderDetails() {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  const order = useMemo(
-    () =>
-      orders.find(
-        (item) => item.id === id
-      ),
-    [id]
-  );
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadOrder() {
+      try {
+        const data = await ordersApi.getById(id);
+        if (data) setOrder(data);
+      } catch (err) {
+        console.error("Failed to load order details:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadOrder();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-800" />
+      </div>
+    );
+  }
 
   const [decision, setDecision] = useState("");
   const [remarks, setRemarks] = useState("");

@@ -261,8 +261,40 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                   children: _timeline!.steps.asMap().entries.map((entry) {
                     final index = entry.key;
                     final step = entry.value;
-                    final isCompleted = step.status == 'COMPLETED';
-                    final isCurrent = step.status == 'IN_PROGRESS';
+                    final statusUpper = (_lot?.status ?? _currentStatus ?? widget.status).toUpperCase();
+                    final isDelivered = statusUpper.contains('DELIVER') || statusUpper.contains('COMPLETED') || statusUpper.contains('RECEIVED');
+                    final isDispatched = statusUpper.contains('DISPATCH') || statusUpper.contains('TRANSIT') || statusUpper.contains('VEHICLE') || statusUpper.contains('SCHEDULED');
+                    final isAgrAccepted = isDispatched || isDelivered || statusUpper.contains('AGREEMENT_ACCEPTED') || statusUpper.contains('ACCEPTED');
+                    final isAgrPending = !isAgrAccepted && (statusUpper.contains('AGREEMENT') || statusUpper.contains('FORMULATED'));
+                    final isCertified = isAgrAccepted || isAgrPending || statusUpper.contains('CERTIFIED') || statusUpper.contains('PASSED');
+                    final isInspected = isCertified || statusUpper.contains('INSPECTION') || statusUpper.contains('INSPECTED');
+
+                    bool isCompleted = false;
+                    bool isCurrent = false;
+
+                    if (step.step == 'SUBMITTED') {
+                      isCompleted = true;
+                      isCurrent = false;
+                    } else if (step.step == 'QUALITY_INSPECTION') {
+                      isCompleted = isCertified;
+                      isCurrent = !isCertified;
+                    } else if (step.step == 'QUALITY_CERTIFICATE') {
+                      isCompleted = isCertified;
+                      isCurrent = false;
+                    } else if (step.step == 'PROCUREMENT_AGREEMENT') {
+                      isCompleted = isAgrAccepted;
+                      isCurrent = !isAgrAccepted && isCertified;
+                    } else if (step.step == 'PICKUP') {
+                      isCompleted = isDelivered;
+                      isCurrent = !isDelivered && isAgrAccepted;
+                    } else if (step.step == 'PAYMENT') {
+                      isCompleted = isDelivered && (statusUpper.contains('PAYMENT') || statusUpper.contains('COMPLETED'));
+                      isCurrent = isDelivered && !isCompleted;
+                    } else {
+                      isCompleted = step.status == 'COMPLETED';
+                      isCurrent = step.status == 'IN_PROGRESS';
+                    }
+
                     final isLast = index == _timeline!.steps.length - 1;
 
                     return _buildTimelineItemFromModel(
@@ -276,118 +308,187 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                   }).toList(),
                 )
               else
-                Column(
-                  children: [
-                    _buildTimelineItem(
-                      title: l10n.lotSubmitted,
-                      subtitle: l10n.lotSubmittedSubtitle,
-                      isCompleted: true,
-                      isCurrent: false,
-                      isLast: false,
-                    ),
-                    _buildTimelineItem(
-                      title: l10n.qualityInspection,
-                      subtitle: l10n.qualityInspectionSubtitle,
-                      isCompleted: true,
-                      isCurrent: false,
-                      isLast: false,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => QualityResultsScreen(lotId: widget.lotId),
-                          ),
-                        );
-                      },
-                      actionLabel: l10n.viewResults,
-                    ),
-                    _buildTimelineItem(
-                      title: l10n.qualityCertificate,
-                      subtitle: l10n.qualityCertificateSubtitle,
-                      isCompleted: true,
-                      isCurrent: false,
-                      isLast: false,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => QualityCertificateScreen(lotId: widget.lotId),
-                          ),
-                        );
-                      },
-                      actionLabel: l10n.viewCertificate,
-                    ),
-                    _buildTimelineItem(
-                      title: l10n.procurementAgreement,
-                      subtitle: l10n.procurementAgreementSubtitle,
-                      isCompleted: true,
-                      isCurrent: false,
-                      isLast: false,
-                      onTap: () async {
-                        final refreshed = await Navigator.push<bool>(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ProcurementAgreementScreen(lotId: widget.lotId ?? ''),
-                          ),
-                        );
-                        if (refreshed == true) {
-                          _loadTimeline();
-                        }
-                      },
-                      actionLabel: l10n.viewAgreement,
-                    ),
-                    _buildTimelineItem(
-                      title: l10n.pickupDelivery,
-                      subtitle: l10n.pickupDeliverySubtitle,
-                      isCompleted: true,
-                      isCurrent: false,
-                      isLast: false,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const PickupDeliveryScreen(),
-                          ),
-                        );
-                      },
-                      actionLabel: l10n.trackDetails,
-                    ),
-                    _buildTimelineItem(
-                      title: l10n.warehouseReceipt,
-                      subtitle: l10n.warehouseReceiptSubtitle,
-                      isCompleted: true,
-                      isCurrent: false,
-                      isLast: false,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const WarehouseReceiptScreen(),
-                          ),
-                        );
-                      },
-                      actionLabel: l10n.viewReceipt,
-                    ),
-                    _buildTimelineItem(
-                      title: l10n.payment,
-                      subtitle: l10n.paymentSubtitle,
-                      isCompleted: true,
-                      isCurrent: true,
-                      isLast: true,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const PaymentStatusScreen(),
-                          ),
-                        );
-                      },
-                      actionLabel: l10n.viewPayment,
-                    ),
-                  ],
-                ),
+                Builder(
+                  builder: (context) {
+                    final statusUpper = (_lot?.status ?? _currentStatus ?? widget.status).toUpperCase();
+                    final isDelivered = statusUpper.contains('DELIVER') || statusUpper.contains('COMPLETED') || statusUpper.contains('RECEIVED');
+                    final isDispatched = statusUpper.contains('DISPATCH') || statusUpper.contains('TRANSIT') || statusUpper.contains('VEHICLE') || statusUpper.contains('SCHEDULED');
+                    final isAgrAccepted = isDispatched || isDelivered || statusUpper.contains('AGREEMENT_ACCEPTED') || statusUpper.contains('ACCEPTED');
+                    final isAgrPending = !isAgrAccepted && (statusUpper.contains('AGREEMENT') || statusUpper.contains('FORMULATED'));
+                    final isCertified = isAgrAccepted || isAgrPending || statusUpper.contains('CERTIFIED') || statusUpper.contains('PASSED');
+                    final isInspected = isCertified || statusUpper.contains('INSPECTION') || statusUpper.contains('INSPECTED');
 
-              const SizedBox(height: 16),
+                    final hasDriver = _lot?.driverName != null && _lot!.driverName!.trim().isNotEmpty;
+                    final driverName = _lot?.driverName;
+                    final driverPhone = _lot?.driverPhone;
+                    final vehicleNo = _lot?.vehicleNumber;
+                    final pickupCode = _lot?.verificationCode;
+
+                    return Column(
+                      children: [
+                        _buildTimelineItem(
+                          title: l10n.lotSubmitted,
+                          subtitle: l10n.lotSubmittedSubtitle,
+                          isCompleted: true,
+                          isCurrent: false,
+                          isLast: false,
+                        ),
+                        _buildTimelineItem(
+                          title: l10n.qualityInspection,
+                          subtitle: isCertified
+                              ? 'Quality inspection completed & verified.'
+                              : l10n.qualityInspectionSubtitle,
+                          isCompleted: isCertified,
+                          isCurrent: !isCertified,
+                          isLast: false,
+                          onTap: (isInspected || isCertified)
+                              ? () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => QualityResultsScreen(lotId: widget.lotId),
+                                    ),
+                                  );
+                                }
+                              : null,
+                          actionLabel: (isInspected || isCertified) ? l10n.viewResults : null,
+                          extraContent: (isInspected || isCertified) ? _buildCompactInspectorCard(context) : null,
+                        ),
+                        _buildTimelineItem(
+                          title: l10n.qualityCertificate,
+                          subtitle: isCertified ? 'Certificate issued.' : l10n.qualityCertificateSubtitle,
+                          isCompleted: isCertified,
+                          isCurrent: false,
+                          isLast: false,
+                          onTap: isCertified
+                              ? () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => QualityCertificateScreen(lotId: widget.lotId),
+                                    ),
+                                  );
+                                }
+                              : null,
+                          actionLabel: isCertified ? l10n.viewCertificate : null,
+                        ),
+                        _buildTimelineItem(
+                          title: l10n.procurementAgreement,
+                          subtitle: isAgrAccepted
+                              ? 'Agreement accepted & signed.'
+                              : (isAgrPending
+                                  ? 'Agreement formulated & awaiting acceptance.'
+                                  : l10n.procurementAgreementSubtitle),
+                          isCompleted: isAgrAccepted,
+                          isCurrent: !isAgrAccepted && isCertified,
+                          isLast: false,
+                          onTap: (isAgrPending || isAgrAccepted)
+                              ? () async {
+                                  final refreshed = await Navigator.push<bool>(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => ProcurementAgreementScreen(lotId: widget.lotId ?? ''),
+                                    ),
+                                  );
+                                  if (refreshed == true) {
+                                    _loadTimeline();
+                                  }
+                                }
+                              : null,
+                          actionLabel: (isAgrPending || isAgrAccepted) ? l10n.viewAgreement : null,
+                          extraContent: (isAgrPending || isAgrAccepted) ? _buildCompactAgreementCard(context) : null,
+                        ),
+                        _buildTimelineItem(
+                          title: l10n.pickupDelivery,
+                          subtitle: isDelivered
+                              ? 'Pickup Completed & Verified'
+                              : (hasDriver
+                                  ? 'Driver Assigned & Vehicle En Route (Verification Code: ${pickupCode ?? ""})'
+                                  : (isAgrAccepted
+                                      ? 'Pickup scheduled. Driver assignment in progress.'
+                                      : l10n.pickupDeliverySubtitle)),
+                          isCompleted: isDelivered,
+                          isCurrent: !isDelivered && isAgrAccepted,
+                          isLast: false,
+                          onTap: isAgrAccepted
+                              ? () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => PickupDeliveryScreen(
+                                        lotId: widget.lotId,
+                                        driverName: driverName,
+                                        driverPhone: driverPhone,
+                                        vehicleNumber: vehicleNo,
+                                        verificationCode: pickupCode,
+                                        milletName: _lot?.milletType ?? widget.milletName,
+                                        quantity: _lot?.agreedQuantityKg != null
+                                            ? '${_lot!.agreedQuantityKg!.toStringAsFixed(0)} kg'
+                                            : (_lot?.estimatedQuantityKg != null
+                                                ? '${_lot!.estimatedQuantityKg!.toStringAsFixed(0)} kg'
+                                                : widget.quantity),
+                                        farmName: _lot?.farmName ?? 'Registered Farm',
+                                        pickupLocation: _lot?.farmName != null ? '${_lot!.farmName}, Dahod' : 'Bordi Farm, Dahod Sector 2',
+                                        scheduledDate: _lot?.scheduledInspectionDate != null
+                                            ? _lot!.scheduledInspectionDate!.split('T')[0]
+                                            : 'Upcoming',
+                                        status: _lot?.status ?? 'Scheduled',
+                                        transportType: 'FPO Pickup',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              : null,
+                          actionLabel: isAgrAccepted ? l10n.trackDetails : null,
+                          extraContent: (isAgrAccepted && hasDriver) ? _buildCompactDriverCard(context) : null,
+                        ),
+                        _buildTimelineItem(
+                          title: l10n.warehouseReceipt,
+                          subtitle: isDelivered ? 'Warehouse receipt issued.' : l10n.warehouseReceiptSubtitle,
+                          isCompleted: isDelivered,
+                          isCurrent: false,
+                          isLast: false,
+                          onTap: isDelivered
+                              ? () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => WarehouseReceiptScreen(
+                                        lotId: widget.lotId ?? widget.lotNumber,
+                                        lotNumber: widget.lotNumber,
+                                        milletName: _lot?.milletType ?? widget.milletName,
+                                        farmerName: _lot?.farmerName ?? 'Ramesh Patel',
+                                        actualQty: _lot?.actualQuantityKg,
+                                        unitPrice: _lot?.offeredPricePerKg,
+                                      ),
+                                    ),
+                                  );
+                                }
+                              : null,
+                          actionLabel: isDelivered ? l10n.viewReceipt : null,
+                        ),
+                        _buildTimelineItem(
+                          title: l10n.payment,
+                          subtitle: l10n.paymentSubtitle,
+                          isCompleted: statusUpper.contains('PAYMENT') || statusUpper.contains('COMPLETED'),
+                          isCurrent: isDelivered && !(statusUpper.contains('PAYMENT') || statusUpper.contains('COMPLETED')),
+                          isLast: true,
+                          onTap: isDelivered
+                              ? () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const PaymentStatusScreen(),
+                                    ),
+                                  );
+                                }
+                              : null,
+                          actionLabel: isDelivered ? l10n.viewPayment : null,
+                        ),
+                      ],
+                    );
+                  },
+                ),
 
               // ==================================================
               // HARVEST DETAILS
@@ -477,6 +578,14 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
     required BuildContext context,
     required AppLocalizations l10n,
   }) {
+    final statusUpper = (_lot?.status ?? _currentStatus ?? widget.status).toUpperCase();
+    final isStored = statusUpper.contains('STORE') || statusUpper.contains('DELIVER') || statusUpper.contains('COMPLETED') || statusUpper.contains('RECEIVED');
+    final isDelivered = isStored || statusUpper.contains('DISPATCH') || statusUpper.contains('TRANSIT') || statusUpper.contains('VEHICLE') || statusUpper.contains('SCHEDULED');
+    final isAgrAccepted = isDelivered || statusUpper.contains('AGREEMENT_ACCEPTED') || statusUpper.contains('ACCEPTED');
+    final isAgrPending = !isAgrAccepted && (statusUpper.contains('AGREEMENT') || statusUpper.contains('FORMULATED'));
+    final isCertified = isAgrAccepted || isAgrPending || statusUpper.contains('CERTIFIED') || statusUpper.contains('PASSED');
+    final isInspected = isCertified || statusUpper.contains('INSPECTION') || statusUpper.contains('INSPECTED');
+
     String title = step.step;
     String subtitle = '';
     VoidCallback? onTap;
@@ -492,13 +601,11 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
       case 'QUALITY_INSPECTION':
         title = l10n.qualityInspection;
         subtitle = l10n.qualityInspectionSubtitle;
-        if (canInteract) {
-          actionLabel = l10n.viewResults;
-          onTap = () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => QualityResultsScreen(lotId: widget.lotId)),
-              );
-        }
+        actionLabel = l10n.viewResults;
+        onTap = () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => QualityResultsScreen(lotId: widget.lotId)),
+            );
         break;
       case 'QUALITY_CERTIFICATE':
         title = l10n.qualityCertificate;
@@ -525,26 +632,87 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
         break;
       case 'PICKUP':
         title = l10n.pickupDelivery;
-        subtitle = l10n.pickupDeliverySubtitle;
-        if (canInteract) {
-          actionLabel = l10n.trackDetails;
-          onTap = () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const PickupDeliveryScreen()),
-              );
+        final hasDriverStep = _lot?.driverName != null && _lot!.driverName!.trim().isNotEmpty;
+        final driverName = _lot?.driverName;
+        final driverPhone = _lot?.driverPhone;
+        final vehicleNo = _lot?.vehicleNumber;
+        final pickupCode = _lot?.verificationCode;
+
+        if (statusUpper.contains('DELIVER') || statusUpper.contains('COMPLETED')) {
+          subtitle = 'Pickup Completed & Verified';
+        } else if (hasDriverStep) {
+          subtitle = 'Driver Assigned & Vehicle En Route (Verification Code: ${pickupCode ?? ""})';
+        } else {
+          subtitle = 'Pickup scheduled. Driver assignment in progress.';
         }
+        actionLabel = l10n.trackDetails;
+        onTap = () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PickupDeliveryScreen(
+                  lotId: widget.lotId,
+                  driverName: driverName,
+                  driverPhone: driverPhone,
+                  vehicleNumber: vehicleNo,
+                  verificationCode: pickupCode,
+                  milletName: _lot?.milletType ?? widget.milletName,
+                  quantity: _lot?.agreedQuantityKg != null
+                      ? '${_lot!.agreedQuantityKg!.toStringAsFixed(0)} kg'
+                      : (_lot?.estimatedQuantityKg != null
+                          ? '${_lot!.estimatedQuantityKg!.toStringAsFixed(0)} kg'
+                          : widget.quantity),
+                  farmName: _lot?.farmName ?? 'Registered Farm',
+                  pickupLocation: _lot?.farmName != null ? '${_lot!.farmName}, Dahod' : 'Bordi Farm, Dahod Sector 2',
+                  scheduledDate: _lot?.scheduledInspectionDate != null
+                      ? _lot!.scheduledInspectionDate!.split('T')[0]
+                      : 'Upcoming',
+                  status: _lot?.status ?? 'Scheduled',
+                  transportType: 'FPO Pickup',
+                ),
+              ),
+            );
         break;
       case 'PAYMENT':
         title = l10n.payment;
         subtitle = l10n.paymentSubtitle;
-        if (canInteract) {
-          actionLabel = l10n.viewPayment;
-          onTap = () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const PaymentStatusScreen()),
-              );
-        }
+        actionLabel = l10n.viewPayment;
+        onTap = () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const PaymentStatusScreen()),
+            );
         break;
+      case 'WAREHOUSE_RECEIPT':
+      case 'WAREHOUSE_RECEIVED':
+      case 'STORED':
+        title = l10n.warehouseReceipt;
+        subtitle = isStored ? 'Millet received & verified at FPO warehouse.' : l10n.warehouseReceiptSubtitle;
+        actionLabel = l10n.viewReceipt;
+        onTap = () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => WarehouseReceiptScreen(
+                  lotId: widget.lotId ?? widget.lotNumber,
+                  lotNumber: widget.lotNumber,
+                  milletName: _lot?.milletType ?? widget.milletName,
+                  farmerName: _lot?.farmerName ?? 'Ramesh Patel',
+                  actualQty: _lot?.actualQuantityKg,
+                  unitPrice: _lot?.offeredPricePerKg,
+                ),
+              ),
+            );
+        break;
+    }
+
+    Widget? extraContent;
+    final hasDriverCard = _lot?.driverName != null && _lot!.driverName!.trim().isNotEmpty;
+    if (step.step == 'QUALITY_INSPECTION' && (isInspected || isCertified)) {
+      extraContent = _buildCompactInspectorCard(context);
+    } else if (step.step == 'PROCUREMENT_AGREEMENT' && (isAgrPending || isAgrAccepted)) {
+      extraContent = _buildCompactAgreementCard(context);
+    } else if (step.step == 'PICKUP' && isAgrAccepted && hasDriverCard) {
+      extraContent = _buildCompactDriverCard(context);
+    } else if ((step.step == 'WAREHOUSE_RECEIPT' || step.step == 'WAREHOUSE_RECEIVED' || step.step == 'STORED') && isStored) {
+      extraContent = _buildCompactWarehouseReceiptCard(context);
     }
 
     return _buildTimelineItem(
@@ -553,8 +721,9 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
       isCompleted: isCompleted,
       isCurrent: isCurrent,
       isLast: isLast,
-      onTap: onTap,
-      actionLabel: actionLabel,
+      onTap: canInteract ? onTap : null,
+      actionLabel: canInteract ? actionLabel : null,
+      extraContent: extraContent,
     );
   }
 
@@ -590,6 +759,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
     VoidCallback? onTap,
     String? actionLabel,
     VoidCallback? actionOnTap,
+    Widget? extraContent,
   }) {
     final Color circleColor;
 
@@ -601,84 +771,101 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
       circleColor = const Color(0xFFC7CEC7);
     }
 
-    final content = Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 28,
-          child: Column(
-            children: [
-              Container(
-                width: 20,
-                height: 20,
-                decoration: BoxDecoration(
-                  color: circleColor,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  isCompleted
-                      ? Icons.check
-                      : isCurrent
-                      ? Icons.circle
-                      : Icons.circle_outlined,
-                  color: Colors.white,
-                  size: isCurrent ? 8 : 13,
-                ),
-              ),
-
-              if (!isLast)
-                Container(width: 2, height: 52, color: const Color(0xFFD5DDD5)),
-            ],
-          ),
-        ),
-
-        const SizedBox(width: 10),
-
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 22),
+    final content = IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 28,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: isCurrent
-                        ? const Color(0xFFE97900)
-                        : const Color(0xFF303530),
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: circleColor,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isCompleted
+                        ? Icons.check
+                        : isCurrent
+                        ? Icons.circle
+                        : Icons.circle_outlined,
+                    color: Colors.white,
+                    size: isCurrent ? 8 : 13,
                   ),
                 ),
-
-                const SizedBox(height: 3),
-
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    height: 1.35,
-                    color: Color(0xFF707870),
+                if (!isLast)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      color: const Color(0xFFD5DDD5),
+                    ),
                   ),
-                ),
               ],
             ),
           ),
-        ),
-
-        if ((isCurrent || isCompleted) && actionLabel != null)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 22, left: 8),
-            child: ElevatedButton(
-              onPressed: actionOnTap ?? onTap,
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(0, 34),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 22),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: isCurrent
+                                    ? const Color(0xFFE97900)
+                                    : const Color(0xFF303530),
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              subtitle,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                height: 1.35,
+                                color: Color(0xFF707870),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (actionLabel != null)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8),
+                          child: ElevatedButton(
+                            onPressed: actionOnTap ?? onTap,
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: const Size(0, 34),
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                            ),
+                            child: Text(actionLabel, style: const TextStyle(fontSize: 12)),
+                          ),
+                        ),
+                    ],
+                  ),
+                  if (extraContent != null) ...[
+                    const SizedBox(height: 12),
+                    extraContent,
+                  ],
+                ],
               ),
-              child: Text(actionLabel, style: const TextStyle(fontSize: 12)),
             ),
           ),
-      ],
+        ],
+      ),
     );
 
     if (onTap != null) {
@@ -1088,6 +1275,94 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
     );
   }
 
+  Widget _buildCompactWarehouseReceiptCard(BuildContext context) {
+    final qty = _lot?.actualQuantityKg != null
+        ? '${_lot!.actualQuantityKg!.toStringAsFixed(0)} kg'
+        : widget.quantity;
+    final rate = _lot?.offeredPricePerKg != null
+        ? '₹${_lot!.offeredPricePerKg!.toStringAsFixed(0)} / kg'
+        : '₹35 / kg';
+    final totalPayable = _lot?.actualQuantityKg != null && _lot?.offeredPricePerKg != null
+        ? '₹${(_lot!.actualQuantityKg! * _lot!.offeredPricePerKg!).toStringAsFixed(0)}'
+        : '₹20,300';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F8EE),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFB8DCB9)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.warehouse, size: 16, color: ShreeAnnaTheme.primaryGreen),
+                  SizedBox(width: 6),
+                  Text(
+                    'RECEIVED & STORED',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: ShreeAnnaTheme.primaryGreen,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                'Bill: $totalPayable',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: ShreeAnnaTheme.primaryGreen,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Verified Net Weight: $qty · Rate: $rate',
+            style: const TextStyle(fontSize: 11, color: Color(0xFF404840), fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => WarehouseReceiptScreen(
+                      lotId: widget.lotId ?? widget.lotNumber,
+                      lotNumber: widget.lotNumber,
+                      milletName: _lot?.milletType ?? widget.milletName,
+                      farmerName: _lot?.farmerName ?? 'Ramesh Patel',
+                      actualQty: _lot?.actualQuantityKg,
+                      unitPrice: _lot?.offeredPricePerKg,
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.receipt_long, size: 14),
+              label: const Text('View Official Receipt & PDF', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ShreeAnnaTheme.primaryGreen,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                elevation: 0,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAgreementNotificationBanner(LotModel lot, BuildContext context) {
     final ver = lot.agreementVersion;
     final isRejected = lot.status.contains('REJECTED');
@@ -1294,4 +1569,336 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
       },
     );
   }
+
+  Widget _buildCompactDriverCard(BuildContext context) {
+    final driverName = _lot?.driverName;
+    final driverPhone = _lot?.driverPhone ?? '';
+    final vehicleNo = _lot?.vehicleNumber ?? '';
+    final pickupCode = _lot?.verificationCode ?? '';
+
+    if (driverName == null || driverName.trim().isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7FAF7),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFD0E0CE)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.person, color: ShreeAnnaTheme.primaryGreen, size: 16),
+                  const SizedBox(width: 6),
+                  Text(
+                    driverName,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF202420)),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF81C784)),
+                ),
+                child: const Text(
+                  'En Route',
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.green),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Vehicle: $vehicleNo | $driverPhone',
+            style: const TextStyle(fontSize: 11, color: Color(0xFF687068)),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _showContactInspectorModal(context, driverName, driverPhone),
+                  icon: const Icon(Icons.phone, size: 14, color: ShreeAnnaTheme.primaryGreen),
+                  label: const Text('Call', style: TextStyle(fontSize: 11, color: ShreeAnnaTheme.primaryGreen, fontWeight: FontWeight.bold)),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: ShreeAnnaTheme.primaryGreen),
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _showChatDialog(context, driverName),
+                  icon: const Icon(Icons.chat, size: 14, color: Colors.white),
+                  label: const Text('Live Chat', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ShreeAnnaTheme.primaryGreen,
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Pickup Code (OTP):',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF556055)),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: ShreeAnnaTheme.primaryGreen, width: 1.5),
+                ),
+                child: Text(
+                  pickupCode,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 2, color: ShreeAnnaTheme.primaryGreen),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactInspectorCard(BuildContext context) {
+    const inspectorName = 'Ananya Roy (Quality Inspector)';
+    const inspectorPhone = '+91 9876543210';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7FAF7),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFD0E0CE)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.verified_user, color: ShreeAnnaTheme.primaryGreen, size: 16),
+                  SizedBox(width: 6),
+                  Text(
+                    'Ananya Roy',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF202420)),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF81C784)),
+                ),
+                child: const Text(
+                  'Verified',
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.green),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Mobile: +91 9876543210 | Grade A Certified',
+            style: TextStyle(fontSize: 11, color: Color(0xFF687068)),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _showContactInspectorModal(context, 'Ananya Roy', inspectorPhone),
+                  icon: const Icon(Icons.phone, size: 14, color: ShreeAnnaTheme.primaryGreen),
+                  label: const Text('Call Inspector', style: TextStyle(fontSize: 11, color: ShreeAnnaTheme.primaryGreen, fontWeight: FontWeight.bold)),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: ShreeAnnaTheme.primaryGreen),
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _showChatDialog(context, 'Ananya Roy'),
+                  icon: const Icon(Icons.chat, size: 14, color: Colors.white),
+                  label: const Text('Chat Support', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ShreeAnnaTheme.primaryGreen,
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactAgreementCard(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7FAF7),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFD0E0CE)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.assignment_turned_in, color: ShreeAnnaTheme.primaryGreen, size: 16),
+                  SizedBox(width: 6),
+                  Text(
+                    'AGR-2026-001',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF202420)),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF81C784)),
+                ),
+                child: const Text(
+                  'Accepted',
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.green),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Rate: ₹28.50 / kg | Qty: 3,500 kg | Finger Millet',
+            style: TextStyle(fontSize: 11, color: Color(0xFF687068)),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  void _showChatDialog(BuildContext context, String driverName) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: Row(
+            children: [
+              const Icon(Icons.chat, color: ShreeAnnaTheme.primaryGreen),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Chat with $driverName',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF4F7F4),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const CircleAvatar(
+                      radius: 14,
+                      backgroundColor: ShreeAnnaTheme.primaryGreen,
+                      child: Text('R', style: TextStyle(color: Colors.white, fontSize: 12)),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text('Ravi (Driver)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          SizedBox(height: 2),
+                          Text('Hello! I am on my way to your farm location for pickup.', style: TextStyle(fontSize: 13)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  hintText: 'Type your message to driver...',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Close'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: ShreeAnnaTheme.primaryGreen),
+              onPressed: () {
+                if (controller.text.trim().isNotEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Message sent to driver successfully!')),
+                  );
+                }
+                Navigator.pop(ctx);
+              },
+              child: const Text('Send'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
+
+

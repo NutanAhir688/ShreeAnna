@@ -1,34 +1,44 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import SettlementStats from "../components/SettlementStats";
 import SettlementFilters from "../components/SettlementFilters";
 import SettlementTable from "../components/SettlementTable";
 
-import {
-  settlements as settlementData,
-} from "../data/settlements";
+import { settlementsApi } from "@/services/api";
 
 function Settlements() {
+  const [settlementData, setSettlementData] = useState([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
+
+  useEffect(() => {
+    async function loadSettlements() {
+      try {
+        const data = await settlementsApi.getAll();
+        if (Array.isArray(data)) setSettlementData(data);
+      } catch (err) {
+        console.error("Error loading settlements:", err);
+        setSettlementData([]);
+      }
+    }
+    loadSettlements();
+  }, []);
 
   const filteredSettlements = useMemo(() => {
     const query = search.toLowerCase();
 
     return settlementData.filter((item) => {
       const matchesSearch =
-        item.id.toLowerCase().includes(query) ||
-        item.orderId.toLowerCase().includes(query) ||
-        item.buyerName.toLowerCase().includes(query) ||
-        item.lotId.toLowerCase().includes(query);
+        (item.id && item.id.toLowerCase().includes(query)) ||
+        (item.orderId && item.orderId.toLowerCase().includes(query)) ||
+        (item.buyerName && item.buyerName.toLowerCase().includes(query)) ||
+        (item.lotId && item.lotId.toLowerCase().includes(query));
 
-      const matchesStatus =
-        status === "All" ||
-        item.status === status;
+      const matchesStatus = status === "All" || item.status === status;
 
       return matchesSearch && matchesStatus;
     });
-  }, [search, status]);
+  }, [settlementData, search, status]);
 
   return (
     <div className="space-y-6">
