@@ -14,6 +14,10 @@ public interface ILogisticsService
     Task<DispatchResponse> UpdateStatusAsync(Guid id, string status);
     Task<DispatchResponse> ConfirmDeliveryAsync(Guid id, ConfirmDeliveryRequest request);
     Task<ShipmentIssueResponse> ReportIssueAsync(Guid? id, ReportIssueRequest request);
+    Task<List<DriverResponse>> GetDriversAsync();
+    Task<DriverResponse> CreateDriverAsync(CreateDriverRequest request);
+    Task<DispatchResponse> VerifyPickupAsync(Guid dispatchId, string code);
+    Task<List<DispatchResponse>> GetDriverDispatchesAsync(string? phoneOrName);
 }
 
 public class LogisticsService : ILogisticsService
@@ -264,6 +268,104 @@ public class LogisticsService : ILogisticsService
             issue.Status,
             issue.ReportedAt
         );
+    }
+
+    public async Task<List<DriverResponse>> GetDriversAsync()
+    {
+        var drivers = await _context.Drivers
+            .OrderByDescending(d => d.CreatedAt)
+            .ToListAsync();
+        return drivers.Select(d => new DriverResponse(
+            d.Id,
+            d.DriverCode,
+            d.Name,
+            d.Phone,
+            d.LicenseNumber,
+            d.VehicleNumber,
+            d.VehicleCapacityKg,
+            d.Status,
+            d.CreatedAt
+        )).ToList();
+    }
+
+    public async Task<DriverResponse> CreateDriverAsync(CreateDriverRequest request)
+    {
+        var count = await _context.Drivers.CountAsync() + 1;
+        var code = $"DRV-{count:D3}";
+        var driver = new Driver
+        {
+            Id = Guid.NewGuid(),
+            DriverCode = code,
+            Name = request.Name,
+            Phone = request.Phone,
+            LicenseNumber = request.LicenseNumber ?? "",
+            VehicleNumber = request.VehicleNumber ?? "",
+            VehicleCapacityKg = request.VehicleCapacityKg ?? 7000,
+            Status = "AVAILABLE",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Drivers.Add(driver);
+        await _context.SaveChangesAsync();
+
+        return new DriverResponse(
+            driver.Id,
+            driver.DriverCode,
+            driver.Name,
+            driver.Phone,
+            driver.LicenseNumber,
+            driver.VehicleNumber,
+            driver.VehicleCapacityKg,
+            driver.Status,
+            driver.CreatedAt
+        );
+    }
+
+    public async Task<DispatchResponse> VerifyPickupAsync(Guid dispatchId, string code)
+    {
+        var dispatch = await _context.Dispatches
+            .Include(d => d.Warehouse)
+            .FirstOrDefaultAsync(d => d.Id == dispatchId);
+        if (dispatch is null) throw new KeyNotFoundException("Dispatch not found.");
+
+        if (dispatch.VerificationCode != code.Trim())
+        {
+            throw new InvalidOperationException("Invalid pickup code. Please enter the correct 4-digit code provided by the farmer.");
+        }
+
+        dispatch.Status = "IN_TRANSIT";
+
+        if (!string.IsNullOrWhiteSpace(dispatch.LotId))
+        {
+            var lot = await _context.ProcurementLots.FirstOrDefaultAsync(l => l.LotNumber == dispatch.LotId || l.Id.ToString() == dispatch.LotId);
+            if (lot != null)
+            {
+                lot.Status = "IN_TRANSIT";
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        return Map(dispatch);
+    }
+
+    public async Task<List<DispatchResponse>> GetDriverDispatchesAsync(string? phoneOrName)
+    {
+        var query = _context.Dispatches.Include(d => d.Warehouse).AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(phoneOrName))
+        {
+            var clean = phoneOrName.Trim().ToLower();
+            query = query.Where(d => d.DriverPhone.ToLower().Contains(clean) || d.DriverName.ToLower().Contains(clean));
+        }
+
+        var list = await query.OrderByDescending(d => d.CreatedAt).ToListAsync();
+
+        if (list.Count == 0)
+        {
+            list = await _context.Dispatches.Include(d => d.Warehouse).OrderByDescending(d => d.CreatedAt).ToListAsync();
+        }
+
+        return list.Select(Map).ToList();
     }
 
     private static DispatchResponse Map(Dispatch d)

@@ -36,6 +36,7 @@ public class AppDbContext : DbContext
     public DbSet<Dispatch> Dispatches => Set<Dispatch>();
     public DbSet<ShipmentIssue> ShipmentIssues => Set<ShipmentIssue>();
     public DbSet<FarmCrop> FarmCrops => Set<FarmCrop>();
+    public DbSet<Driver> Drivers => Set<Driver>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -49,6 +50,21 @@ public class AppDbContext : DbContext
         ConfigureFarmerOtp(modelBuilder);
         ConfigureProcurementLot(modelBuilder);
         ConfigureFarmCrop(modelBuilder);
+        ConfigureDriver(modelBuilder);
+    }
+
+    private static void ConfigureDriver(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Driver>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Name).IsRequired().HasMaxLength(150);
+            entity.Property(x => x.Phone).IsRequired().HasMaxLength(20);
+            entity.Property(x => x.LicenseNumber).HasMaxLength(50);
+            entity.Property(x => x.VehicleNumber).HasMaxLength(50);
+            entity.Property(x => x.VehicleCapacityKg).HasPrecision(10, 2);
+            entity.Property(x => x.Status).IsRequired().HasMaxLength(30);
+        });
     }
     private static void ConfigureFarmCrop(ModelBuilder modelBuilder)
     {
