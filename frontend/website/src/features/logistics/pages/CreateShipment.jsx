@@ -17,6 +17,7 @@ import {
   PackageCheck,
   Phone,
   Compass,
+  Plus,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -261,22 +268,45 @@ function CreateShipment() {
   const [inboundAgreements, setInboundAgreements] = useState([]);
   const [outboundAgreements, setOutboundAgreements] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
+  const [drivers, setDrivers] = useState([]);
 
   // Selection states
   const [selectedInboundId, setSelectedInboundId] = useState("");
   const [selectedOutboundId, setSelectedOutboundId] = useState("");
   const [selectedWarehouseId, setSelectedWarehouseId] = useState("");
+  const [selectedDriverId, setSelectedDriverId] = useState("");
+
+  const [isAddDriverOpen, setIsAddDriverOpen] = useState(false);
+  const [newDriverData, setNewDriverData] = useState({
+    name: "",
+    phone: "",
+    licenseNumber: "",
+    vehicleNumber: "",
+    vehicleCapacityKg: 7000,
+  });
 
   useEffect(() => {
     async function fetchAgreements() {
       try {
-        const [lots, farmers, farms, rawWarehouses, dispatches] = await Promise.all([
+        const [lots, farmers, farms, rawWarehouses, dispatches, driverList] = await Promise.all([
           lotsApi.getAll().catch(() => []),
           farmersApi.getAll().catch(() => []),
           farmsApi.getAll().catch(() => []),
           warehousesApi.getAll().catch(() => []),
           logisticsApi.getAll().catch(() => []),
+          logisticsApi.getDrivers().catch(() => []),
         ]);
+
+        if (Array.isArray(driverList) && driverList.length > 0) {
+          setDrivers(driverList);
+          setSelectedDriverId(driverList[0].id);
+          setInboundDriver(driverList[0].name || "");
+          setInboundDriverPhone(driverList[0].phone || "");
+          setInboundVehicle(driverList[0].vehicleNumber || "");
+          setOutboundDriver(driverList[0].name || "");
+          setOutboundDriverPhone(driverList[0].phone || "");
+          setOutboundVehicle(driverList[0].vehicleNumber || "");
+        }
 
         const shippedIds = new Set();
         if (Array.isArray(dispatches)) {
@@ -499,6 +529,44 @@ function CreateShipment() {
   const [outboundInstructions, setOutboundInstructions] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
+
+  const handleSelectDriver = (driverId) => {
+    setSelectedDriverId(driverId);
+    const found = drivers.find((d) => d.id === driverId);
+    if (found) {
+      setInboundDriver(found.name || "");
+      setInboundDriverPhone(found.phone || "");
+      setInboundVehicle(found.vehicleNumber || "");
+      setOutboundDriver(found.name || "");
+      setOutboundDriverPhone(found.phone || "");
+      setOutboundVehicle(found.vehicleNumber || "");
+    }
+  };
+
+  const handleSaveNewDriver = async () => {
+    if (!newDriverData.name || !newDriverData.phone) return;
+    try {
+      const created = await logisticsApi.createDriver({
+        name: newDriverData.name,
+        phone: newDriverData.phone,
+        licenseNumber: newDriverData.licenseNumber,
+        vehicleNumber: newDriverData.vehicleNumber,
+        vehicleCapacityKg: Number(newDriverData.vehicleCapacityKg || 7000),
+      });
+      setDrivers((prev) => [created, ...prev]);
+      setSelectedDriverId(created.id);
+      setInboundDriver(created.name);
+      setInboundDriverPhone(created.phone);
+      setInboundVehicle(created.vehicleNumber);
+      setOutboundDriver(created.name);
+      setOutboundDriverPhone(created.phone);
+      setOutboundVehicle(created.vehicleNumber);
+      setIsAddDriverOpen(false);
+      setNewDriverData({ name: "", phone: "", licenseNumber: "", vehicleNumber: "", vehicleCapacityKg: 7000 });
+    } catch (err) {
+      console.error("Failed to add driver:", err);
+    }
+  };
 
   const activeInbound = inboundAgreements.find((a) => a.id === selectedInboundId) || inboundAgreements[0] || {};
   const activeOutbound = outboundAgreements.find((a) => a.id === selectedOutboundId) || outboundAgreements[0] || {};
@@ -1051,55 +1119,94 @@ function CreateShipment() {
                 </div>
               )}
 
-              {/* Vehicle & Driver text inputs */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Vehicle Number
-                  </label>
-                  <Input
-                    type="text"
-                    placeholder="e.g. KA-09-AB-4521"
-                    value={direction === "INBOUND" ? inboundVehicle : outboundVehicle}
-                    onChange={(e) =>
-                      direction === "INBOUND"
-                        ? setInboundVehicle(e.target.value)
-                        : setOutboundVehicle(e.target.value)
-                    }
-                    className="h-9 text-xs border-slate-200 font-semibold bg-white"
-                  />
+              {/* Registered Driver Selection & Vehicle Details */}
+              <div className="space-y-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200/90">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-800">
+                      Select Assigned Driver from Registry
+                    </label>
+                    <p className="text-[11px] text-slate-500">
+                      Logistics officers can choose from registered drivers or register a new driver.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsAddDriverOpen(true)}
+                    className="h-8 text-xs font-bold text-emerald-800 border-emerald-300 hover:bg-emerald-50 shrink-0 flex items-center gap-1.5"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add New Driver
+                  </Button>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Driver Name</label>
-                  <Input
-                    type="text"
-                    placeholder="e.g. Mukesh Parmar"
-                    value={direction === "INBOUND" ? inboundDriver : outboundDriver}
-                    onChange={(e) =>
-                      direction === "INBOUND"
-                        ? setInboundDriver(e.target.value)
-                        : setOutboundDriver(e.target.value)
-                    }
-                    className="h-9 text-xs border-slate-200 font-semibold bg-white"
-                  />
-                </div>
+                <Select value={selectedDriverId} onValueChange={handleSelectDriver}>
+                  <SelectTrigger className="h-10 text-xs bg-white border-slate-300 font-bold text-slate-900">
+                    <SelectValue placeholder="Choose Driver from List..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {drivers.map((drv) => (
+                      <SelectItem key={drv.id} value={drv.id}>
+                        <div className="flex items-center justify-between gap-4 font-medium text-xs">
+                          <span className="font-bold text-slate-900">{drv.name} ({drv.phone})</span>
+                          <span className="text-emerald-700 font-mono text-[11px]">
+                            {drv.vehicleNumber ? `Vehicle: ${drv.vehicleNumber}` : "No Vehicle"}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Driver Phone Number
-                  </label>
-                  <Input
-                    type="text"
-                    placeholder="e.g. +91 98765 43210"
-                    value={direction === "INBOUND" ? inboundDriverPhone : outboundDriverPhone}
-                    onChange={(e) =>
-                      direction === "INBOUND"
-                        ? setInboundDriverPhone(e.target.value)
-                        : setOutboundDriverPhone(e.target.value)
-                    }
-                    className="h-9 text-xs border-slate-200 font-semibold bg-white"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Vehicle Number</label>
+                    <Input
+                      type="text"
+                      placeholder="e.g. KA-09-AB-4521"
+                      value={direction === "INBOUND" ? inboundVehicle : outboundVehicle}
+                      onChange={(e) =>
+                        direction === "INBOUND"
+                          ? setInboundVehicle(e.target.value)
+                          : setOutboundVehicle(e.target.value)
+                      }
+                      className="h-9 text-xs border-slate-200 font-semibold bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Driver Name</label>
+                    <Input
+                      type="text"
+                      placeholder="e.g. Mukesh Parmar"
+                      value={direction === "INBOUND" ? inboundDriver : outboundDriver}
+                      onChange={(e) =>
+                        direction === "INBOUND"
+                          ? setInboundDriver(e.target.value)
+                          : setOutboundDriver(e.target.value)
+                      }
+                      className="h-9 text-xs border-slate-200 font-semibold bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Driver Phone Number
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="e.g. +91 98765 43210"
+                      value={direction === "INBOUND" ? inboundDriverPhone : outboundDriverPhone}
+                      onChange={(e) =>
+                        direction === "INBOUND"
+                          ? setInboundDriverPhone(e.target.value)
+                          : setOutboundDriverPhone(e.target.value)
+                      }
+                      className="h-9 text-xs border-slate-200 font-semibold bg-white"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -1349,6 +1456,89 @@ function CreateShipment() {
           </Card>
         </div>
       </div>
+
+      {/* Add New Driver Modal */}
+      <Dialog open={isAddDriverOpen} onOpenChange={setIsAddDriverOpen}>
+        <DialogContent className="max-w-md bg-white p-6 rounded-2xl shadow-xl border border-slate-200">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <Truck className="h-5 w-5 text-emerald-800" />
+              Register New Driver
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-2 text-xs">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Driver Full Name *</label>
+              <Input
+                type="text"
+                placeholder="e.g. Anand Sharma"
+                value={newDriverData.name}
+                onChange={(e) => setNewDriverData({ ...newDriverData, name: e.target.value })}
+                className="h-9 text-xs border-slate-200"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Mobile Phone Number *</label>
+              <Input
+                type="text"
+                placeholder="e.g. 9876543219"
+                value={newDriverData.phone}
+                onChange={(e) => setNewDriverData({ ...newDriverData, phone: e.target.value })}
+                className="h-9 text-xs border-slate-200"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Driving License Number</label>
+              <Input
+                type="text"
+                placeholder="e.g. KA092023001122"
+                value={newDriverData.licenseNumber}
+                onChange={(e) => setNewDriverData({ ...newDriverData, licenseNumber: e.target.value })}
+                className="h-9 text-xs border-slate-200"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Assigned Vehicle Number</label>
+              <Input
+                type="text"
+                placeholder="e.g. KA-09-GH-3344"
+                value={newDriverData.vehicleNumber}
+                onChange={(e) => setNewDriverData({ ...newDriverData, vehicleNumber: e.target.value })}
+                className="h-9 text-xs border-slate-200"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Vehicle Capacity (kg)</label>
+              <Input
+                type="number"
+                placeholder="7000"
+                value={newDriverData.vehicleCapacityKg}
+                onChange={(e) => setNewDriverData({ ...newDriverData, vehicleCapacityKg: e.target.value })}
+                className="h-9 text-xs border-slate-200 font-bold"
+              />
+            </div>
+
+            <div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsAddDriverOpen(false)}
+                className="h-9 text-xs font-bold"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSaveNewDriver}
+                className="h-9 bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs"
+              >
+                Save Driver & Select
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

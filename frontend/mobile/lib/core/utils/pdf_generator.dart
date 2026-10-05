@@ -532,6 +532,221 @@ class PdfGenerator {
     return pdf.save();
   }
 
+  /// Generates a binary PDF for Warehouse Procurement Receipt
+  static Future<Uint8List> generateWarehouseReceiptPdf({
+    required String receiptNum,
+    required String lotNum,
+    required String milletType,
+    required String farmerName,
+    required String warehouseName,
+    required double expQty,
+    required double actQty,
+    required double unitPrice,
+    required double totalPayable,
+    required String dateReceived,
+  }) async {
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // Header Banner
+              pw.Container(
+                padding: const pw.EdgeInsets.all(16),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.green900,
+                  borderRadius: pw.BorderRadius.circular(8),
+                ),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          'SHREE ANNA WAREHOUSE & LOGISTICS',
+                          style: pw.TextStyle(
+                            color: PdfColors.white,
+                            fontSize: 13,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                        pw.SizedBox(height: 4),
+                        pw.Text(
+                          'OFFICIAL WAREHOUSE INWARD PROCUREMENT RECEIPT',
+                          style: pw.TextStyle(
+                            color: PdfColors.green100,
+                            fontSize: 8,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    pw.Container(
+                      padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: pw.BoxDecoration(
+                        color: PdfColors.white,
+                        borderRadius: pw.BorderRadius.circular(4),
+                      ),
+                      child: pw.Text(
+                        'CONFIRMED & STORED',
+                        style: pw.TextStyle(
+                          color: PdfColors.green900,
+                          fontSize: 9,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              pw.SizedBox(height: 20),
+
+              // Metadata Row
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('RECEIPT ID', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey700, fontWeight: pw.FontWeight.bold)),
+                      pw.Text(receiptNum, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.green900)),
+                    ],
+                  ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text('DATE RECEIVED', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey700, fontWeight: pw.FontWeight.bold)),
+                      pw.Text(dateReceived, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+                    ],
+                  ),
+                ],
+              ),
+
+              pw.SizedBox(height: 14),
+              pw.Divider(color: PdfColors.grey300),
+              pw.SizedBox(height: 14),
+
+              // Delivery Summary Card
+              pw.Container(
+                padding: const pw.EdgeInsets.all(12),
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(color: PdfColors.grey300),
+                  borderRadius: pw.BorderRadius.circular(6),
+                  color: PdfColors.grey50,
+                ),
+                child: pw.Column(
+                  children: [
+                    _pdfRow('Lot #:', lotNum),
+                    pw.SizedBox(height: 4),
+                    _pdfRow('Millet Crop Type:', milletType),
+                    pw.SizedBox(height: 4),
+                    _pdfRow('Farmer / Supplier:', farmerName),
+                    pw.SizedBox(height: 4),
+                    _pdfRow('Receiving Warehouse:', warehouseName),
+                  ],
+                ),
+              ),
+
+              pw.SizedBox(height: 18),
+              pw.Text('QUANTITY VERIFICATION SCHEDULE', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
+              pw.SizedBox(height: 6),
+
+              pw.Table(
+                border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.8),
+                children: [
+                  pw.TableRow(
+                    decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                    children: [
+                      pw.Padding(padding: const pw.EdgeInsets.all(8), child: pw.Text('Expected Quantity', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(8), child: pw.Text('Actual Received Weight', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(8), child: pw.Text('Agreed Unit Rate', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold))),
+                    ],
+                  ),
+                  pw.TableRow(
+                    children: [
+                      pw.Padding(padding: const pw.EdgeInsets.all(8), child: pw.Text('${expQty.toStringAsFixed(0)} kg', style: pw.TextStyle(fontSize: 9))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(8), child: pw.Text('${actQty.toStringAsFixed(0)} kg', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.green900))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(8), child: pw.Text('Rs. ${unitPrice.toStringAsFixed(2)} / kg', style: pw.TextStyle(fontSize: 9))),
+                    ],
+                  ),
+                ],
+              ),
+
+              pw.SizedBox(height: 16),
+
+              // Financial Payable Box
+              pw.Container(
+                padding: const pw.EdgeInsets.all(12),
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(color: PdfColors.green400),
+                  borderRadius: pw.BorderRadius.circular(6),
+                  color: PdfColors.green50,
+                ),
+                child: pw.Column(
+                  children: [
+                    _pdfRow('Actual Net Weight Received', '${actQty.toStringAsFixed(0)} kg'),
+                    pw.SizedBox(height: 4),
+                    _pdfRow('Agreed Rate per kg', 'Rs. ${unitPrice.toStringAsFixed(2)} / kg'),
+                    pw.SizedBox(height: 6),
+                    pw.Divider(color: PdfColors.green300),
+                    pw.SizedBox(height: 4),
+                    pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      children: [
+                        pw.Text('FINAL PAYABLE AMOUNT:', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.green900)),
+                        pw.Text('Rs. ${totalPayable.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.green900)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              pw.SizedBox(height: 16),
+              pw.Text('GOVERNANCE & CREDIT TERMS:', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
+              pw.SizedBox(height: 4),
+              pw.Bullet(text: 'This receipt certifies physical intake of millet into designated FPO warehouse storage.', style: const pw.TextStyle(fontSize: 8.5)),
+              pw.Bullet(text: 'Final bill is queued for FPO Account Officer approval prior to direct bank disbursement.', style: const pw.TextStyle(fontSize: 8.5)),
+
+              pw.Spacer(),
+
+              // Signatures
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('Warehouse Manager Signature', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
+                      pw.SizedBox(height: 2),
+                      pw.Text('Digitally Sealed at Inward Gate', style: pw.TextStyle(fontSize: 8, color: PdfColors.green800, fontWeight: pw.FontWeight.bold)),
+                    ],
+                  ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text('FPO Procurement Office', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
+                      pw.SizedBox(height: 2),
+                      pw.Text('System Generated Verification Seal', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    return pdf.save();
+  }
+
   static pw.Widget _pdfRow(String label, String value) {
     return pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,

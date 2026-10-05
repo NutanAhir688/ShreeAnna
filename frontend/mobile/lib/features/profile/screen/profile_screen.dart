@@ -8,6 +8,7 @@ import '../../../core/localization/app_language.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../auth/screen/welcome_screen.dart';
 import '../../support/screen/support_screen.dart';
+import '../../driver/screens/driver_journey_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -574,6 +575,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   trailingText: _languageName(context),
                   onTap: () {
                     _showLanguageSelector(context);
+                  },
+                ),
+
+                _buildDivider(),
+
+                _buildActionTile(
+                  icon: Icons.local_shipping_outlined,
+                  title: 'Driver Mode (Assigned Journeys)',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const DriverJourneyScreen()),
+                    );
                   },
                 ),
               ],

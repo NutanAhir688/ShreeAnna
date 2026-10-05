@@ -425,6 +425,45 @@ export default function WarehouseReceiving() {
   const unitPrice = Number(shipment?.unitPrice || shipment?.offeredPricePerKg || shipment?.pricePerKg || 35);
   const totalPayableAmount = actualQtyNum * unitPrice;
 
+  const handleDownloadReceipt = () => {
+    const receiptCode = confirmedReceiptData?.receiptNumber || (shipment ? `WR-${shipment.id?.toString().slice(0, 8).toUpperCase()}` : "WR-2026-001");
+    const receiptText = `
+============================================================
+       SHREE ANNA WAREHOUSE & LOGISTICS
+   OFFICIAL WAREHOUSE INWARD PROCUREMENT RECEIPT
+============================================================
+
+Receipt ID      : ${receiptCode}
+Lot ID          : ${shipment?.lotId || "-"}
+Shipment Code   : ${shipment?.dispatchCode || shipment?.id || "-"}
+Farmer Name     : ${shipment?.farmerOrProcessorName || shipment?.farmerName || "-"}
+Millet Type     : ${shipment?.milletType || "-"}
+Warehouse       : ${selectedWarehouse || shipment?.warehouseName || "-"}
+Date Received   : ${new Date().toLocaleDateString('en-IN')}
+
+------------------------------------------------------------
+QUANTITY & PAYABLE SUMMARY
+------------------------------------------------------------
+Expected Qty    : ${expectedQty} kg
+Actual Received : ${actualQtyNum} kg
+Agreed Rate     : ₹${unitPrice} / kg
+TOTAL PAYABLE   : ₹${totalPayableAmount}
+
+Status          : CONFIRMED & STORED IN WAREHOUSE
+============================================================
+`;
+
+    const blob = new Blob([receiptText], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${receiptCode}_Receipt.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {/* Top Bar with Back Button */}
@@ -887,6 +926,16 @@ export default function WarehouseReceiving() {
                   className="w-full h-9 border-slate-300 text-slate-700 font-bold text-xs"
                 >
                   Save as Draft
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleDownloadReceipt}
+                  className="w-full h-9 border-emerald-800 text-emerald-900 hover:bg-emerald-50 font-bold text-xs flex items-center justify-center gap-1.5"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  Download Receipt
                 </Button>
               </div>
 
