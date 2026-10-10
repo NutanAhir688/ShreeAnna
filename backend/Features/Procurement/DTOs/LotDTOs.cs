@@ -29,6 +29,7 @@ public record LotResponse(
     Guid FarmId,
     string FarmName,
     string FarmCrop,
+    string MilletType,
     decimal EstimatedQuantityKg,
     decimal? ActualQuantityKg,
     DateTime HarvestDate,

@@ -464,6 +464,7 @@ public class LotService : ILotService
             lot.FarmId,
             lot.Farm?.FarmName ?? "Farm",
             lot.FarmCrop?.CropName ?? "Crop",
+            lot.FarmCrop?.CropName ?? "Crop",
             lot.EstimatedQuantityKg,
             lot.ActualQuantityKg,
             lot.HarvestDate,

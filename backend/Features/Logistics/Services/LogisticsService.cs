@@ -18,6 +18,8 @@ public interface ILogisticsService
     Task<DriverResponse> CreateDriverAsync(CreateDriverRequest request);
     Task<DispatchResponse> VerifyPickupAsync(Guid dispatchId, string code);
     Task<List<DispatchResponse>> GetDriverDispatchesAsync(string? phoneOrName);
+    Task<DispatchResponse> ConfirmWarehouseReceiptAsync(Guid id);
+    Task<DispatchResponse?> GetByLotIdAsync(string lotId);
 }
 
 public class LogisticsService : ILogisticsService
@@ -403,4 +405,34 @@ public class LogisticsService : ILogisticsService
             d.CreatedAt
         );
     }
+    public async Task<DispatchResponse> ConfirmWarehouseReceiptAsync(Guid id)
+    {
+        var dispatch = await _context.Dispatches
+            .Include(d => d.Warehouse)
+            .FirstOrDefaultAsync(d => d.Id == id);
+
+        if (dispatch is null)
+            throw new KeyNotFoundException("Dispatch not found.");
+
+        if (dispatch.Status != "DELIVERED")
+            throw new InvalidOperationException(
+                "Delivery must be confirmed before warehouse receipt.");
+
+        dispatch.WarehouseReceiptStatus = "CONFIRMED";
+
+        await _context.SaveChangesAsync();
+
+        return Map(dispatch);
+    }
+    public async Task<DispatchResponse?> GetByLotIdAsync(string lotId)
+    {
+        var dispatch = await _context.Dispatches
+            .Include(d => d.Warehouse)
+            .Where(d => d.LotId == lotId)
+            .OrderByDescending(d => d.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        return dispatch == null ? null : Map(dispatch);
+    }
+    
 }

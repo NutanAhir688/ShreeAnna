@@ -17,6 +17,18 @@ public class LogisticsController : ControllerBase
         _logisticsService = logisticsService;
     }
 
+
+    [HttpGet("by-lot/{lotId:guid}")]
+    public async Task<ActionResult<DispatchResponse>> GetByLotId(Guid lotId)
+    {
+        var dispatch = await _logisticsService.GetByLotIdAsync(lotId.ToString());
+
+        if (dispatch is null)
+            return NotFound(new { message = "No dispatch found for this lot." });
+
+        return Ok(dispatch);
+    }
+
     [HttpGet]
     public async Task<ActionResult<List<DispatchResponse>>> GetAll()
     {
