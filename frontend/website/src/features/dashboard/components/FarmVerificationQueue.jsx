@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronRight, MoreHorizontal, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -51,14 +51,24 @@ function FarmVerificationQueue() {
     loadData();
   }, []);
 
-  const queueItems = farms
-    .filter(
-      (farm) =>
-        farm.status === "Pending Verification" ||
-        farm.status === "Under Review" ||
-        farm.status === "Pending"
-    )
-    .slice(0, 5);
+  const queueItems = useMemo(() => {
+    const getSubmittedTime = (farm) => {
+      const submittedValue = farm.createdAt || farm.submittedAt;
+      const time = submittedValue ? new Date(submittedValue).getTime() : 0;
+
+      return Number.isNaN(time) ? 0 : time;
+    };
+
+    return [...farms]
+      .filter(
+        (farm) =>
+          farm.status === "Pending Verification" ||
+          farm.status === "Under Review" ||
+          farm.status === "Pending"
+      )
+      .sort((left, right) => getSubmittedTime(right) - getSubmittedTime(left))
+      .slice(0, 5);
+  }, [farms]);
 
   return (
     <Card className="shadow-xs border-slate-200/80 bg-white">
@@ -77,6 +87,7 @@ function FarmVerificationQueue() {
           variant="outline"
           size="sm"
           className="h-8 text-xs font-medium text-slate-700 hover:text-slate-900 border-slate-200"
+          type="button"
           onClick={() => navigate("/farm-verification")}
         >
           View All

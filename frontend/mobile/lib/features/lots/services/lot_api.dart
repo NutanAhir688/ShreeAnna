@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_config.dart';
 import '../models/lot_model.dart';
+import 'package:flutter/foundation.dart'; // or 'package:flutter/material.dart'
 
 class LotApi {
   final ApiClient _apiClient = ApiClient();
@@ -36,6 +37,27 @@ class LotApi {
     }
 
     throw Exception('Failed to load lot details.');
+  }
+
+  Future<Map<String, dynamic>?> getDispatchByLotId(String lotId) async {
+    final url = ApiConfig.dispatchByLot(lotId);
+    debugPrint('Fetching dispatch: $url');
+
+    final response = await _apiClient.get(url);
+
+    debugPrint('Dispatch response: ${response.statusCode}');
+    debugPrint('Dispatch body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      return _extractMap(decoded);
+    }
+
+    if (response.statusCode == 404) {
+      return null;
+    }
+
+    throw Exception('Failed to load dispatch status: ${response.statusCode}');
   }
 
   Future<LotModel> createLot({
@@ -89,9 +111,7 @@ class LotApi {
   }
 
   Future<void> acceptAgreement(String lotId) async {
-    final response = await _apiClient.post(
-      ApiConfig.acceptAgreement(lotId),
-    );
+    final response = await _apiClient.post(ApiConfig.acceptAgreement(lotId));
 
     if (response.statusCode != 200) {
       throw Exception('Failed to accept agreement.');
@@ -150,7 +170,9 @@ class LotApi {
   }
 
   Future<Map<String, dynamic>?> getWarehouseReceipt(String identifier) async {
-    final response = await _apiClient.get('/api/warehouses/receipts/lot/$identifier');
+    final response = await _apiClient.get(
+      '/api/warehouses/receipts/lot/$identifier',
+    );
     if (response.statusCode == 200) {
       final decoded = jsonDecode(response.body);
       return _extractMap(decoded);

@@ -13,8 +13,17 @@ import RecentActivity from "../components/RecentActivity";
 import FarmsByDistrict from "../components/FarmsByDistrict";
 
 import { farmersApi, farmsApi } from "@/services/api";
+import { useAuth } from "@/context/AuthContext";
+import LogisticsDashboard from "@/features/logistics/pages/LogisticsDashboard";
 
 function Dashboard() {
+  const { user } = useAuth();
+  const userRole = user?.role || "FpoManager";
+
+  if (userRole === "LogisticsCoordinator") {
+    return <LogisticsDashboard />;
+  }
+
   const [stats, setStats] = useState({
     totalFarmers: "5",
     activeFarmers: "4",

@@ -32,6 +32,7 @@ class LotModel {
   final String? driverPhone;
   final String? vehicleNumber;
   final String? verificationCode;
+  final String? warehouseReceiptStatus;
 
   LotModel({
     required this.id,
@@ -67,6 +68,7 @@ class LotModel {
     this.driverPhone,
     this.vehicleNumber,
     this.verificationCode,
+    this.warehouseReceiptStatus,
   });
 
   factory LotModel.fromJson(Map<String, dynamic> json) {
@@ -77,7 +79,15 @@ class LotModel {
       farmerName: json['farmerName']?.toString() ?? '',
       farmId: json['farmId']?.toString() ?? '',
       farmName: json['farmName']?.toString() ?? '',
-      milletType: json['milletType']?.toString() ?? '',
+      milletType: (json['milletType'] != null && json['milletType'].toString().trim().isNotEmpty)
+          ? json['milletType'].toString()
+          : (json['farmCrop'] != null && json['farmCrop'].toString().trim().isNotEmpty)
+              ? json['farmCrop'].toString()
+              : (json['cropName'] != null && json['cropName'].toString().trim().isNotEmpty)
+                  ? json['cropName'].toString()
+                  : (json['millet'] != null && json['millet'].toString().trim().isNotEmpty)
+                      ? json['millet'].toString()
+                      : '',
       estimatedQuantityKg: (json['estimatedQuantityKg'] as num?)?.toDouble() ?? 0.0,
       actualQuantityKg: (json['actualQuantityKg'] as num?)?.toDouble(),
       harvestDate: json['harvestDate']?.toString() ?? '',
@@ -107,6 +117,7 @@ class LotModel {
       driverPhone: json['driverPhone']?.toString(),
       vehicleNumber: json['vehicleNumber']?.toString(),
       verificationCode: json['verificationCode']?.toString(),
+      warehouseReceiptStatus: json['warehouseReceiptStatus']?.toString(),
     );
   }
 

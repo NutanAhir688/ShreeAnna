@@ -1,3 +1,7 @@
+import { useEffect, useRef } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
 import {
   Card,
   CardContent,
@@ -15,6 +19,67 @@ function DetailItem({ label, value }) {
       <p className="mt-1 text-sm font-medium">
         {value || "Not provided"}
       </p>
+    </div>
+  );
+}
+
+function FarmLocationMap({ latitude, longitude, farmName }) {
+  const mapContainerRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const markerRef = useRef(null);
+
+  const lat = latitude ? Number(latitude) : null;
+  const lng = longitude ? Number(longitude) : null;
+  const hasCoordinates = Number.isFinite(lat) && Number.isFinite(lng);
+
+  useEffect(() => {
+    if (!mapContainerRef.current || !hasCoordinates) return undefined;
+
+    if (!mapInstanceRef.current) {
+      const map = L.map(mapContainerRef.current).setView([lat, lng], 15);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 18,
+      }).addTo(map);
+
+      const marker = L.marker([lat, lng]).addTo(map);
+      marker.bindPopup(`
+        <div style="font-family: system-ui, sans-serif; padding: 2px 4px;">
+          <div style="font-weight: 700; color: #0f172a; font-size: 12px;">${farmName || "Farm Location"}</div>
+          <div style="font-size: 11px; color: #475569; margin-top: 2px;">Latitude: ${lat.toFixed(6)}</div>
+          <div style="font-size: 11px; color: #475569;">Longitude: ${lng.toFixed(6)}</div>
+        </div>
+      `);
+
+      mapInstanceRef.current = map;
+      markerRef.current = marker;
+    } else {
+      mapInstanceRef.current.setView([lat, lng], 15);
+      if (markerRef.current) {
+        markerRef.current.setLatLng([lat, lng]);
+      }
+    }
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+        markerRef.current = null;
+      }
+    };
+  }, [farmName, hasCoordinates, lat, lng]);
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-md border bg-slate-100">
+      {hasCoordinates ? (
+        <div ref={mapContainerRef} className="h-56 w-full" />
+      ) : (
+        <div className="flex h-56 items-center justify-center px-4 text-center">
+          <p className="text-sm text-slate-500">Coordinates not captured</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -90,17 +155,11 @@ function SubmittedFarmDetails({ farm }) {
               GPS location captured from mobile submission.
             </p>
 
-            <div className="mt-4 flex h-32 flex-col items-center justify-center rounded-md bg-slate-900 text-white p-3 font-mono text-xs">
-              {farm.latitude && farm.longitude ? (
-                <>
-                  <p>Latitude: {farm.latitude}</p>
-                  <p>Longitude: {farm.longitude}</p>
-                  <p className="mt-2 text-[10px] text-emerald-400">GPS Location Verified</p>
-                </>
-              ) : (
-                <p className="text-slate-400">Coordinates not captured</p>
-              )}
-            </div>
+            <FarmLocationMap
+              latitude={farm.latitude}
+              longitude={farm.longitude}
+              farmName={farm.farmName}
+            />
           </div>
 
           <div className="rounded-lg border p-5">

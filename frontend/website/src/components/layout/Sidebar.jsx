@@ -9,7 +9,32 @@ function Sidebar() {
   const userRole = user?.role || "FpoManager";
   const roleConfig = ROLE_CONFIGS[userRole] || ROLE_CONFIGS.FpoManager;
 
-  const sectionsToRender = [...roleConfig.sections, COMMON_SYSTEM_SECTION];
+
+  const sectionsToRender = [
+    ...roleConfig.sections.filter((section) => {
+      const title = section.title?.trim().toUpperCase();
+
+      if (userRole === "FpoManager") {
+        const hiddenSections = [
+          "QUALITY MANAGEMENT",
+          "LOGISTICS OPERATIONS",
+          "BUSINESS",
+          "MANAGEMENT",
+        ];
+
+        return !hiddenSections.includes(title);
+      }
+
+      if (userRole === "QualityInspector") {
+        return title !== "REFERENCE";
+      }
+
+      return true;
+    }),
+    COMMON_SYSTEM_SECTION,
+  ];
+
+
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r bg-card shadow-xs">

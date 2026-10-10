@@ -48,9 +48,9 @@ export function calculateDistanceKm(lat1, lon1, lat2, lon2) {
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(Number(lat1) * (Math.PI / 180)) *
-      Math.cos(Number(lat2) * (Math.PI / 180)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos(Number(lat2) * (Math.PI / 180)) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return Math.round(R * c * 10) / 10;
 }
@@ -123,8 +123,8 @@ function ShipmentWarehouseMap({
         <div style="font-weight: 800; color: #065f46; font-size: 12px;">🌾 ORIGIN FARM</div>
         <div style="font-size: 11px; color: #1e293b; font-weight: 700; margin-top: 2px;">${farmName}</div>
         <div style="font-size: 10px; color: #64748b; margin-top: 2px;">GPS: ${validFarmLat.toFixed(
-          4
-        )}°, ${validFarmLng.toFixed(4)}°</div>
+      4
+    )}°, ${validFarmLng.toFixed(4)}°</div>
       </div>
     `);
     layerGroup.addLayer(farmMarker);
@@ -149,9 +149,8 @@ function ShipmentWarehouseMap({
       const whIcon = L.divIcon({
         className: "custom-wh-marker",
         html: `<div style="background-color: ${bgColor}; width: ${iconSize}px; height: ${iconSize}px; border-radius: 8px; border: 2.5px solid white; box-shadow: 0 4px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white;">
-                 <svg width="${isSelected ? 20 : 15}" height="${
-          isSelected ? 20 : 15
-        }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>
+                 <svg width="${isSelected ? 20 : 15}" height="${isSelected ? 20 : 15
+          }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>
                </div>`,
         iconSize: [iconSize, iconSize],
         iconAnchor: [iconSize / 2, iconSize / 2],
@@ -166,25 +165,20 @@ function ShipmentWarehouseMap({
 
       const whMarker = L.marker([wLat, wLng], { icon: whIcon }).bindPopup(`
         <div style="font-family: system-ui, sans-serif; padding: 4px; max-width: 220px;">
-          <div style="font-weight: 800; color: #0f172a; font-size: 13px;">${
-            w.name
-          }</div>
-          <div style="color: #047857; font-weight: 700; font-size: 11px;">📍 ${
-            w.district
-          }, ${w.village}</div>
-          <div style="font-size: 11px; margin-top: 4px; color: #1e293b;"><b>Distance from Farm:</b> ${
-            dist !== null ? dist + " km" : "N/A"
-          }</div>
-          ${
-            isNearest
-              ? '<div style="margin-top: 4px; background-color: #dcfce7; color: #15803d; font-weight: 800; font-size: 10px; padding: 2px 6px; border-radius: 4px; display: inline-block;">⚡ NEAREST WAREHOUSE</div>'
-              : ""
-          }
-          ${
-            isSelected
-              ? '<div style="margin-top: 4px; background-color: #dbeafe; color: #1e40af; font-weight: 800; font-size: 10px; padding: 2px 6px; border-radius: 4px; display: inline-block;">✓ SELECTED DESTINATION</div>'
-              : ""
-          }
+          <div style="font-weight: 800; color: #0f172a; font-size: 13px;">${w.name
+        }</div>
+          <div style="color: #047857; font-weight: 700; font-size: 11px;">📍 ${w.district
+        }, ${w.village}</div>
+          <div style="font-size: 11px; margin-top: 4px; color: #1e293b;"><b>Distance from Farm:</b> ${dist !== null ? dist + " km" : "N/A"
+        }</div>
+          ${isNearest
+          ? '<div style="margin-top: 4px; background-color: #dcfce7; color: #15803d; font-weight: 800; font-size: 10px; padding: 2px 6px; border-radius: 4px; display: inline-block;">⚡ NEAREST WAREHOUSE</div>'
+          : ""
+        }
+          ${isSelected
+          ? '<div style="margin-top: 4px; background-color: #dbeafe; color: #1e40af; font-weight: 800; font-size: 10px; padding: 2px 6px; border-radius: 4px; display: inline-block;">✓ SELECTED DESTINATION</div>'
+          : ""
+        }
         </div>
       `);
 
@@ -434,7 +428,7 @@ function CreateShipment() {
 
             const phone = l.farmerPhone || l.phone || l.phoneNumber || matchedFarmer?.phone || matchedFarmer?.phoneNumber || "+91 98765 43210";
             const addr = l.farmerAddress || l.address || matchedFarmer?.address || matchedFarmer?.location || l.farmName || "Bordi Farm, Dahod";
-            
+
             let rawLat = l.farmLatitude ?? l.latitude ?? matchedFarm?.latitude ?? matchedFarmer?.latitude;
             let rawLng = l.farmLongitude ?? l.longitude ?? matchedFarm?.longitude ?? matchedFarmer?.longitude;
 
@@ -513,9 +507,9 @@ function CreateShipment() {
   const [inboundVehicle, setInboundVehicle] = useState("");
   const [inboundDriver, setInboundDriver] = useState("");
   const [inboundDriverPhone, setInboundDriverPhone] = useState("");
-  const [inboundDate, setInboundDate] = useState(new Date().toISOString().split("T")[0]);
-  const [inboundStartTime, setInboundStartTime] = useState("09:00 AM");
-  const [inboundEndTime, setInboundEndTime] = useState("11:00 AM");
+  const [inboundDate, setInboundDate] = useState(new Date().toLocaleDateString("en-CA"));
+  const [inboundTime, setInboundTime] = useState("09:00");
+
   const [inboundInstructions, setInboundInstructions] = useState("");
 
   // Outbound Form fields
@@ -524,10 +518,9 @@ function CreateShipment() {
   const [outboundDriver, setOutboundDriver] = useState("");
   const [outboundDriverPhone, setOutboundDriverPhone] = useState("");
   const [outboundDispatchQty, setOutboundDispatchQty] = useState("");
-  const [outboundDate, setOutboundDate] = useState(new Date().toISOString().split("T")[0]);
-  const [outboundTime, setOutboundTime] = useState("11:00 AM");
+  const [outboundDate, setOutboundDate] = useState(new Date().toLocaleDateString("en-CA"));
+  const [outboundTime, setOutboundTime] = useState("11:00");
   const [outboundInstructions, setOutboundInstructions] = useState("");
-
   const [submitting, setSubmitting] = useState(false);
 
   const handleSelectDriver = (driverId) => {
@@ -625,8 +618,8 @@ function CreateShipment() {
           driverName: inboundDriver || "Mukesh Parmar",
           driverPhone: inboundDriverPhone || "+91 98765 43210",
           scheduledDate: inboundDate ? new Date(inboundDate).toISOString() : new Date().toISOString(),
-          scheduledStartTime: inboundStartTime || "09:00 AM",
-          scheduledEndTime: inboundEndTime || "11:00 AM",
+          scheduledDate: inboundDate,
+          scheduledStartTime: inboundTime,
           specialInstructions: inboundInstructions || "",
           status: "SCHEDULED",
         };
@@ -649,8 +642,8 @@ function CreateShipment() {
           vehicleCapacityKg: 7000,
           driverName: outboundDriver || "Suresh Deshmukh",
           driverPhone: outboundDriverPhone || "+91 98765 43210",
-          scheduledDate: outboundDate ? new Date(outboundDate).toISOString() : new Date().toISOString(),
-          scheduledStartTime: outboundTime || "11:00 AM",
+          scheduledDate: outboundDate,
+          scheduledStartTime: outboundTime,
           specialInstructions: outboundInstructions || "",
           status: "SCHEDULED",
         };
@@ -690,22 +683,20 @@ function CreateShipment() {
           <button
             type="button"
             onClick={() => setDirection("INBOUND")}
-            className={`px-5 py-1.5 text-xs font-bold rounded-md transition ${
-              direction === "INBOUND"
+            className={`px-5 py-1.5 text-xs font-bold rounded-md transition ${direction === "INBOUND"
                 ? "bg-white text-emerald-950 shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
-            }`}
+              }`}
           >
             INBOUND
           </button>
           <button
             type="button"
             onClick={() => setDirection("OUTBOUND")}
-            className={`px-5 py-1.5 text-xs font-bold rounded-md transition ${
-              direction === "OUTBOUND"
+            className={`px-5 py-1.5 text-xs font-bold rounded-md transition ${direction === "OUTBOUND"
                 ? "bg-white text-emerald-950 shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
-            }`}
+              }`}
           >
             OUTBOUND
           </button>
@@ -778,11 +769,10 @@ function CreateShipment() {
                           <tr
                             key={agr.id}
                             onClick={() => setSelectedInboundId(agr.id)}
-                            className={`cursor-pointer transition ${
-                              selectedInboundId === agr.id
+                            className={`cursor-pointer transition ${selectedInboundId === agr.id
                                 ? "bg-emerald-50/60"
                                 : "hover:bg-slate-50"
-                            }`}
+                              }`}
                           >
                             <td className="p-3 text-center">
                               <input
@@ -837,11 +827,10 @@ function CreateShipment() {
                           <tr
                             key={agr.id}
                             onClick={() => setSelectedOutboundId(agr.id)}
-                            className={`cursor-pointer transition ${
-                              selectedOutboundId === agr.id
+                            className={`cursor-pointer transition ${selectedOutboundId === agr.id
                                 ? "bg-emerald-50/60"
                                 : "hover:bg-slate-50"
-                            }`}
+                              }`}
                           >
                             <td className="p-3 text-center">
                               <input
@@ -1072,22 +1061,20 @@ function CreateShipment() {
                   <button
                     type="button"
                     onClick={() => setInboundTransport("FPO Pickup")}
-                    className={`px-4 py-1.5 font-bold rounded-md transition ${
-                      inboundTransport === "FPO Pickup"
+                    className={`px-4 py-1.5 font-bold rounded-md transition ${inboundTransport === "FPO Pickup"
                         ? "bg-white text-emerald-950 shadow-xs"
                         : "text-slate-600 hover:text-slate-900"
-                    }`}
+                      }`}
                   >
                     FPO Pickup
                   </button>
                   <button
                     type="button"
                     onClick={() => setInboundTransport("Farmer Delivery")}
-                    className={`px-4 py-1.5 font-bold rounded-md transition ${
-                      inboundTransport === "Farmer Delivery"
+                    className={`px-4 py-1.5 font-bold rounded-md transition ${inboundTransport === "Farmer Delivery"
                         ? "bg-white text-emerald-950 shadow-xs"
                         : "text-slate-600 hover:text-slate-900"
-                    }`}
+                      }`}
                   >
                     Farmer Delivery
                   </button>
@@ -1097,22 +1084,20 @@ function CreateShipment() {
                   <button
                     type="button"
                     onClick={() => setOutboundTransport("Processor Pickup")}
-                    className={`px-4 py-1.5 font-bold rounded-md transition ${
-                      outboundTransport === "Processor Pickup"
+                    className={`px-4 py-1.5 font-bold rounded-md transition ${outboundTransport === "Processor Pickup"
                         ? "bg-white text-emerald-950 shadow-xs"
                         : "text-slate-600 hover:text-slate-900"
-                    }`}
+                      }`}
                   >
                     Processor Pickup
                   </button>
                   <button
                     type="button"
                     onClick={() => setOutboundTransport("FPO Delivery")}
-                    className={`px-4 py-1.5 font-bold rounded-md transition ${
-                      outboundTransport === "FPO Delivery"
+                    className={`px-4 py-1.5 font-bold rounded-md transition ${outboundTransport === "FPO Delivery"
                         ? "bg-white text-emerald-950 shadow-xs"
                         : "text-slate-600 hover:text-slate-900"
-                    }`}
+                      }`}
                   >
                     FPO Delivery
                   </button>
@@ -1230,68 +1215,62 @@ function CreateShipment() {
             <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center gap-2">
               <Calendar className="h-4 w-4 text-emerald-800" />
               <CardTitle className="text-sm font-bold text-slate-900">
-                Schedule Pickup
+                Schedule Departure
               </CardTitle>
             </CardHeader>
+
             <CardContent className="pt-4 space-y-4 text-xs">
-              {direction === "INBOUND" ? (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">Date</label>
-                    <Input
-                      type="date"
-                      value={inboundDate}
-                      onChange={(e) => setInboundDate(e.target.value)}
-                      className="h-9 text-xs border-slate-200 font-medium"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">Start Time</label>
-                    <Input
-                      type="text"
-                      value={inboundStartTime}
-                      onChange={(e) => setInboundStartTime(e.target.value)}
-                      className="h-9 text-xs border-slate-200 font-medium"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">End Time</label>
-                    <Input
-                      type="text"
-                      value={inboundEndTime}
-                      onChange={(e) => setInboundEndTime(e.target.value)}
-                      className="h-9 text-xs border-slate-200 font-medium"
-                    />
-                  </div>
+              <p className="text-slate-500">
+                Select when the truck is scheduled to leave its origin.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Scheduled Date
+                  </label>
+                  <Input
+                    type="date"
+                    required
+                    value={direction === "INBOUND" ? inboundDate : outboundDate}
+                    onChange={(e) =>
+                      direction === "INBOUND"
+                        ? setInboundDate(e.target.value)
+                        : setOutboundDate(e.target.value)
+                    }
+                    className="h-9 text-xs border-slate-200"
+                  />
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">Date</label>
-                    <Input
-                      type="date"
-                      value={outboundDate}
-                      onChange={(e) => setOutboundDate(e.target.value)}
-                      className="h-9 text-xs border-slate-200 font-medium"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">Time</label>
-                    <Input
-                      type="text"
-                      value={outboundTime}
-                      onChange={(e) => setOutboundTime(e.target.value)}
-                      className="h-9 text-xs border-slate-200 font-medium"
-                    />
-                  </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Scheduled Departure Time
+                  </label>
+                  <Input
+                    type="time"
+                    required
+                    value={direction === "INBOUND" ? inboundTime : outboundTime}
+                    onChange={(e) =>
+                      direction === "INBOUND"
+                        ? setInboundTime(e.target.value)
+                        : setOutboundTime(e.target.value)
+                    }
+                    className="h-9 text-xs border-slate-200"
+                  />
                 </div>
-              )}
+              </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Special Instructions</label>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Special Instructions
+                </label>
                 <Textarea
-                  placeholder="Any specific pickup instructions..."
-                  value={direction === "INBOUND" ? inboundInstructions : outboundInstructions}
+                  placeholder="Any specific transport instructions..."
+                  value={
+                    direction === "INBOUND"
+                      ? inboundInstructions
+                      : outboundInstructions
+                  }
                   onChange={(e) =>
                     direction === "INBOUND"
                       ? setInboundInstructions(e.target.value)
@@ -1374,7 +1353,7 @@ function CreateShipment() {
                   <div className="flex justify-between">
                     <span className="text-slate-500">Scheduled</span>
                     <span className="font-bold text-slate-900">
-                      {inboundDate} ({inboundStartTime})
+                       {inboundDate} ({inboundTime})
                     </span>
                   </div>
                 </div>
@@ -1400,11 +1379,19 @@ function CreateShipment() {
                     <span className="text-slate-500">Dispatch Quantity</span>
                     <span className="font-bold text-slate-900">
                       {Number(outboundDispatchQty).toLocaleString("en-IN")} kg
-                    </span>
+                    </span> 
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Transport</span>
                     <span className="font-bold text-slate-900">{outboundTransport}</span>
+                  </div>
+
+                  {/* Scheduled departure date and time */}
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Scheduled Departure</span>
+                    <span className="font-bold text-slate-900">
+                      {outboundDate} ({outboundTime})
+                    </span>
                   </div>
                 </div>
               )}
