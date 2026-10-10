@@ -52,14 +52,20 @@ import {
 
 import { qualityApi, lotsApi } from "@/services/api";
 import { CertificateDocument } from "./VerifyCertificate";
+import { useAuth } from "@/context/AuthContext";
 
 
 function QualityManagement({ defaultTab = "assigned" }) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { user } = useAuth();
+
+  const userRole = user?.role || "FpoManager";
+  const isProcurementOfficer = userRole === "ProcurementOfficer";
 
   // Active tab: assigned | history | certifications
-  const activeTab = searchParams.get("tab") || defaultTab;
+  const rawTab = searchParams.get("tab") || defaultTab;
+  const activeTab = isProcurementOfficer ? "certifications" : rawTab;
 
   const setActiveTab = (tab) => {
     setSearchParams({ tab });
@@ -187,44 +193,50 @@ function QualityManagement({ defaultTab = "assigned" }) {
             Quality Management
           </h1>
           <p className="text-sm text-slate-500">
-            Conduct quality inspections, review inspection history, and issue certifications.
+            {isProcurementOfficer
+              ? "Review and view issued quality certifications."
+              : "Conduct quality inspections, review inspection history, and issue certifications."}
           </p>
         </div>
       </div>
 
       {/* Quick Stats Banner */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-slate-200/80 bg-white shadow-xs">
-          <CardContent className="flex items-center justify-between p-5">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Pending Inspections
-              </p>
-              <p className="mt-1 text-2xl font-bold text-slate-900">
-                {assignedLots.length}
-              </p>
-            </div>
-            <div className="rounded-lg bg-amber-50 p-3 text-amber-600">
-              <Clock className="h-5 w-5" />
-            </div>
-          </CardContent>
-        </Card>
+      <div className={`grid gap-4 sm:grid-cols-2 ${isProcurementOfficer ? "" : "lg:grid-cols-4"}`}>
+        {!isProcurementOfficer && (
+          <>
+            <Card className="border-slate-200/80 bg-white shadow-xs">
+              <CardContent className="flex items-center justify-between p-5">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    Pending Inspections
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-slate-900">
+                    {assignedLots.length}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-amber-50 p-3 text-amber-600">
+                  <Clock className="h-5 w-5" />
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card className="border-slate-200/80 bg-white shadow-xs">
-          <CardContent className="flex items-center justify-between p-5">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Total Inspections
-              </p>
-              <p className="mt-1 text-2xl font-bold text-slate-900">
-                {inspections.length}
-              </p>
-            </div>
-            <div className="rounded-lg bg-blue-50 p-3 text-blue-600">
-              <ClipboardCheck className="h-5 w-5" />
-            </div>
-          </CardContent>
-        </Card>
+            <Card className="border-slate-200/80 bg-white shadow-xs">
+              <CardContent className="flex items-center justify-between p-5">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    Total Inspections
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-slate-900">
+                    {inspections.length}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-blue-50 p-3 text-blue-600">
+                  <ClipboardCheck className="h-5 w-5" />
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
 
         <Card className="border-slate-200/80 bg-white shadow-xs">
           <CardContent className="flex items-center justify-between p-5">
@@ -267,37 +279,41 @@ function QualityManagement({ defaultTab = "assigned" }) {
 
       {/* Main Tabs Navigation */}
       <div className="flex border-b border-slate-200 bg-white px-2 pt-2 rounded-t-lg shadow-xs">
-        <button
-          onClick={() => setActiveTab("assigned")}
-          className={`flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-colors ${
-            activeTab === "assigned"
-              ? "border-emerald-600 text-emerald-700"
-              : "border-transparent text-slate-500 hover:text-slate-800"
-          }`}
-        >
-          <Clock className="h-4 w-4" />
-          Assigned Inspections
-          {assignedLots.length > 0 && (
-            <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-extrabold text-amber-800">
-              {assignedLots.length}
-            </span>
-          )}
-        </button>
+        {!isProcurementOfficer && (
+          <>
+            <button
+              onClick={() => setActiveTab("assigned")}
+              className={`flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-colors ${
+                activeTab === "assigned"
+                  ? "border-emerald-600 text-emerald-700"
+                  : "border-transparent text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <Clock className="h-4 w-4" />
+              Assigned Inspections
+              {assignedLots.length > 0 && (
+                <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-extrabold text-amber-800">
+                  {assignedLots.length}
+                </span>
+              )}
+            </button>
 
-        <button
-          onClick={() => setActiveTab("history")}
-          className={`flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-colors ${
-            activeTab === "history"
-              ? "border-emerald-600 text-emerald-700"
-              : "border-transparent text-slate-500 hover:text-slate-800"
-          }`}
-        >
-          <History className="h-4 w-4" />
-          Inspection History
-          <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700">
-            {inspections.length}
-          </span>
-        </button>
+            <button
+              onClick={() => setActiveTab("history")}
+              className={`flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-colors ${
+                activeTab === "history"
+                  ? "border-emerald-600 text-emerald-700"
+                  : "border-transparent text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <History className="h-4 w-4" />
+              Inspection History
+              <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700">
+                {inspections.length}
+              </span>
+            </button>
+          </>
+        )}
 
         <button
           onClick={() => setActiveTab("certifications")}
@@ -376,7 +392,7 @@ function QualityManagement({ defaultTab = "assigned" }) {
       )}
 
       {/* TAB 1: ASSIGNED INSPECTIONS */}
-      {!loading && !error && activeTab === "assigned" && (
+      {!loading && !error && !isProcurementOfficer && activeTab === "assigned" && (
         <div className="overflow-hidden rounded-lg border border-slate-200/80 bg-white shadow-xs">
           <Table>
             <TableHeader>
@@ -488,7 +504,7 @@ function QualityManagement({ defaultTab = "assigned" }) {
       )}
 
       {/* TAB 2: INSPECTION HISTORY */}
-      {!loading && !error && activeTab === "history" && (
+      {!loading && !error && !isProcurementOfficer && activeTab === "history" && (
         <div className="overflow-hidden rounded-lg border border-slate-200/80 bg-white shadow-xs">
           <Table>
             <TableHeader>

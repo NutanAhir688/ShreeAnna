@@ -163,6 +163,36 @@ public class LotService : ILotService
 
         string rawStatus = (lot.Status ?? "SUBMITTED").ToUpperInvariant();
 
+        var dispatch = await _context.Dispatches.FirstOrDefaultAsync(d =>
+            d.LotId == lot.LotNumber ||
+            d.LotId == lot.Id.ToString() ||
+            (d.LotId != null && lot.LotNumber != null && (d.LotId.Contains(lot.LotNumber) || lot.LotNumber.Contains(d.LotId))) ||
+            (d.AgreementId != null && lot.LotNumber != null && d.AgreementId.Contains(lot.LotNumber))
+        );
+
+        if (dispatch != null)
+        {
+            var dStatus = (dispatch.Status ?? "").ToUpperInvariant();
+            if (dStatus.Contains("DELIVER") || dStatus.Contains("COMPLETED") || dStatus.Contains("RECEIVED") || dStatus.Contains("STORE"))
+            {
+                rawStatus = "STORED";
+            }
+            else if (dStatus.Contains("DISPATCH") || dStatus.Contains("TRANSIT") || dStatus.Contains("IN_TRANSIT") || !string.IsNullOrWhiteSpace(dispatch.DriverName))
+            {
+                if (rawStatus != "STORED" && rawStatus != "DELIVERED")
+                {
+                    rawStatus = "PICKUP_COMPLETED";
+                }
+            }
+        }
+        else if (lot.Status == "AGREEMENT_ACCEPTED" || lot.Status == "AGREEMENT_PENDING")
+        {
+            if (rawStatus != "STORED" && rawStatus != "DELIVERED")
+            {
+                rawStatus = "PROCUREMENT_AGREEMENT";
+            }
+        }
+
         int currentIndex = rawStatus switch
         {
             "SUBMITTED" or "PENDING" => 0,
@@ -433,6 +463,7 @@ public class LotService : ILotService
             lot.Farmer?.FullName ?? "Farmer",
             lot.FarmId,
             lot.Farm?.FarmName ?? "Farm",
+            lot.FarmCrop?.CropName ?? "Crop",
             lot.FarmCrop?.CropName ?? "Crop",
             lot.EstimatedQuantityKg,
             lot.ActualQuantityKg,

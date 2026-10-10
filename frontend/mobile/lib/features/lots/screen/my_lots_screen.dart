@@ -353,7 +353,7 @@ class _MyLotsScreenState extends State<MyLotsScreen> {
           const SizedBox(height: 7),
 
           Text(
-            lot.milletType,
+            lot.milletType.trim().isNotEmpty ? lot.milletType : 'Millet Lot',
             style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,

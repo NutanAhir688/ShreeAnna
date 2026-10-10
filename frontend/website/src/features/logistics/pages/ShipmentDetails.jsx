@@ -775,12 +775,24 @@ function ShipmentDetails() {
             >
               <CheckCircle2 className="h-4 w-4 mr-1.5" /> Delivered
             </Button>
-          ) : (
+          ) : isInTransit ? (
             <Button
-              onClick={() => navigate(`/logistics/${shipment.id}/confirm`)}
+              onClick={() => handleStatusUpdate("DELIVERED")}
+              disabled={updating}
               className="h-10 bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs px-6"
             >
-              <Truck className="h-4 w-4 mr-1.5" /> Confirm Delivery
+              <CheckCircle2 className="h-4 w-4 mr-1.5" /> Confirm Delivery to Warehouse
+            </Button>
+          ) : (
+            <Button
+              onClick={() => {
+                setInputCode("");
+                setCodeError("");
+                setConfirmModalOpen(true);
+              }}
+              className="h-10 bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs px-6 shadow-xs"
+            >
+              <Truck className="h-4 w-4 mr-1.5" /> Confirm Pickup
             </Button>
           )}
         </div>
@@ -791,7 +803,7 @@ function ShipmentDetails() {
         <DialogContent className="max-w-md bg-white border border-slate-200">
           <DialogHeader>
             <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-emerald-700" /> Confirm Pickup & Delivery
+              <ShieldCheck className="h-5 w-5 text-emerald-700" /> Confirm Pickup
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
               Please enter the 4-digit verification code displayed on the farmer's mobile app lot details card to confirm pickup.

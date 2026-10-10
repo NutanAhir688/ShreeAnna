@@ -18,6 +18,19 @@ public static class DbSeeder
         try
         {
             await context.Database.ExecuteSqlRawAsync(@"
+                CREATE TABLE IF NOT EXISTS ""Drivers"" (
+                    ""Id"" uuid NOT NULL PRIMARY KEY,
+                    ""DriverCode"" text NOT NULL,
+                    ""Name"" text NOT NULL,
+                    ""Phone"" text NOT NULL,
+                    ""LicenseNumber"" text NOT NULL,
+                    ""VehicleNumber"" text NOT NULL,
+                    ""VehicleCapacityKg"" numeric(10,2) NOT NULL,
+                    ""Status"" text NOT NULL,
+                    ""CreatedAt"" timestamp with time zone NOT NULL
+                );
+            ");
+            await context.Database.ExecuteSqlRawAsync(@"
                 ALTER TABLE ""Dispatches"" ADD COLUMN IF NOT EXISTS ""VerificationCode"" text NOT NULL DEFAULT '4829';
             ");
         }
@@ -29,6 +42,7 @@ public static class DbSeeder
         await SeedUsersAsync(context);
         await SeedProcurementLotsAsync(context);
         await SeedWarehousesAsync(context);
+        await SeedDriversAsync(context);
     }
 
     private static async Task SeedFarmCropsAsync(AppDbContext context)
@@ -451,6 +465,57 @@ public static class DbSeeder
         };
 
         await context.Warehouses.AddRangeAsync(warehouses);
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task SeedDriversAsync(AppDbContext context)
+    {
+        if (await context.Drivers.AnyAsync())
+        {
+            return;
+        }
+
+        var drivers = new List<backend.Features.Logistics.Entities.Driver>
+        {
+            new backend.Features.Logistics.Entities.Driver
+            {
+                Id = Guid.Parse("d1111111-1111-1111-1111-111111111111"),
+                DriverCode = "DRV-001",
+                Name = "Ravi Kumar",
+                Phone = "9876543210",
+                LicenseNumber = "KA0920201234567",
+                VehicleNumber = "KA-09-AB-4521",
+                VehicleCapacityKg = 7000,
+                Status = "AVAILABLE",
+                CreatedAt = DateTime.UtcNow
+            },
+            new backend.Features.Logistics.Entities.Driver
+            {
+                Id = Guid.Parse("d2222222-2222-2222-2222-222222222222"),
+                DriverCode = "DRV-002",
+                Name = "Suresh Gowda",
+                Phone = "9876543211",
+                LicenseNumber = "KA0920217654321",
+                VehicleNumber = "KA-09-CD-8899",
+                VehicleCapacityKg = 10000,
+                Status = "AVAILABLE",
+                CreatedAt = DateTime.UtcNow
+            },
+            new backend.Features.Logistics.Entities.Driver
+            {
+                Id = Guid.Parse("d3333333-3333-3333-3333-333333333333"),
+                DriverCode = "DRV-003",
+                Name = "Mahesh Naik",
+                Phone = "9876543212",
+                LicenseNumber = "KA0920229988776",
+                VehicleNumber = "KA-09-EF-1122",
+                VehicleCapacityKg = 5000,
+                Status = "AVAILABLE",
+                CreatedAt = DateTime.UtcNow
+            }
+        };
+
+        await context.Drivers.AddRangeAsync(drivers);
         await context.SaveChangesAsync();
     }
 }

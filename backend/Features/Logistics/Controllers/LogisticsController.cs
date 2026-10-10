@@ -17,6 +17,18 @@ public class LogisticsController : ControllerBase
         _logisticsService = logisticsService;
     }
 
+
+    [HttpGet("by-lot/{lotId:guid}")]
+    public async Task<ActionResult<DispatchResponse>> GetByLotId(Guid lotId)
+    {
+        var dispatch = await _logisticsService.GetByLotIdAsync(lotId.ToString());
+
+        if (dispatch is null)
+            return NotFound(new { message = "No dispatch found for this lot." });
+
+        return Ok(dispatch);
+    }
+
     [HttpGet]
     public async Task<ActionResult<List<DispatchResponse>>> GetAll()
     {
@@ -84,6 +96,56 @@ public class LogisticsController : ControllerBase
             return Ok(issue);
         }
         catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("drivers")]
+    [AllowAnonymous]
+    public async Task<ActionResult<List<DriverResponse>>> GetDrivers()
+    {
+        var drivers = await _logisticsService.GetDriversAsync();
+        return Ok(drivers);
+    }
+
+    [HttpPost("drivers")]
+    [AllowAnonymous]
+    public async Task<ActionResult<DriverResponse>> CreateDriver([FromBody] CreateDriverRequest request)
+    {
+        try
+        {
+            var driver = await _logisticsService.CreateDriverAsync(request);
+            return Ok(driver);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("driver-journey")]
+    [AllowAnonymous]
+    public async Task<ActionResult<List<DispatchResponse>>> GetDriverJourney([FromQuery] string? phone)
+    {
+        var dispatches = await _logisticsService.GetDriverDispatchesAsync(phone);
+        return Ok(dispatches);
+    }
+
+    [HttpPost("{id:guid}/verify-pickup")]
+    [AllowAnonymous]
+    public async Task<ActionResult<DispatchResponse>> VerifyPickup(Guid id, [FromBody] VerifyPickupRequest request)
+    {
+        try
+        {
+            var dispatch = await _logisticsService.VerifyPickupAsync(id, request.VerificationCode);
+            return Ok(dispatch);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
         {
             return BadRequest(new { message = ex.Message });
         }

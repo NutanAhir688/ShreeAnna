@@ -17,6 +17,7 @@ import {
   PackageCheck,
   Phone,
   Compass,
+  Plus,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -41,9 +48,9 @@ export function calculateDistanceKm(lat1, lon1, lat2, lon2) {
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(Number(lat1) * (Math.PI / 180)) *
-      Math.cos(Number(lat2) * (Math.PI / 180)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos(Number(lat2) * (Math.PI / 180)) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return Math.round(R * c * 10) / 10;
 }
@@ -116,8 +123,8 @@ function ShipmentWarehouseMap({
         <div style="font-weight: 800; color: #065f46; font-size: 12px;">🌾 ORIGIN FARM</div>
         <div style="font-size: 11px; color: #1e293b; font-weight: 700; margin-top: 2px;">${farmName}</div>
         <div style="font-size: 10px; color: #64748b; margin-top: 2px;">GPS: ${validFarmLat.toFixed(
-          4
-        )}°, ${validFarmLng.toFixed(4)}°</div>
+      4
+    )}°, ${validFarmLng.toFixed(4)}°</div>
       </div>
     `);
     layerGroup.addLayer(farmMarker);
@@ -142,9 +149,8 @@ function ShipmentWarehouseMap({
       const whIcon = L.divIcon({
         className: "custom-wh-marker",
         html: `<div style="background-color: ${bgColor}; width: ${iconSize}px; height: ${iconSize}px; border-radius: 8px; border: 2.5px solid white; box-shadow: 0 4px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white;">
-                 <svg width="${isSelected ? 20 : 15}" height="${
-          isSelected ? 20 : 15
-        }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>
+                 <svg width="${isSelected ? 20 : 15}" height="${isSelected ? 20 : 15
+          }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>
                </div>`,
         iconSize: [iconSize, iconSize],
         iconAnchor: [iconSize / 2, iconSize / 2],
@@ -159,25 +165,20 @@ function ShipmentWarehouseMap({
 
       const whMarker = L.marker([wLat, wLng], { icon: whIcon }).bindPopup(`
         <div style="font-family: system-ui, sans-serif; padding: 4px; max-width: 220px;">
-          <div style="font-weight: 800; color: #0f172a; font-size: 13px;">${
-            w.name
-          }</div>
-          <div style="color: #047857; font-weight: 700; font-size: 11px;">📍 ${
-            w.district
-          }, ${w.village}</div>
-          <div style="font-size: 11px; margin-top: 4px; color: #1e293b;"><b>Distance from Farm:</b> ${
-            dist !== null ? dist + " km" : "N/A"
-          }</div>
-          ${
-            isNearest
-              ? '<div style="margin-top: 4px; background-color: #dcfce7; color: #15803d; font-weight: 800; font-size: 10px; padding: 2px 6px; border-radius: 4px; display: inline-block;">⚡ NEAREST WAREHOUSE</div>'
-              : ""
-          }
-          ${
-            isSelected
-              ? '<div style="margin-top: 4px; background-color: #dbeafe; color: #1e40af; font-weight: 800; font-size: 10px; padding: 2px 6px; border-radius: 4px; display: inline-block;">✓ SELECTED DESTINATION</div>'
-              : ""
-          }
+          <div style="font-weight: 800; color: #0f172a; font-size: 13px;">${w.name
+        }</div>
+          <div style="color: #047857; font-weight: 700; font-size: 11px;">📍 ${w.district
+        }, ${w.village}</div>
+          <div style="font-size: 11px; margin-top: 4px; color: #1e293b;"><b>Distance from Farm:</b> ${dist !== null ? dist + " km" : "N/A"
+        }</div>
+          ${isNearest
+          ? '<div style="margin-top: 4px; background-color: #dcfce7; color: #15803d; font-weight: 800; font-size: 10px; padding: 2px 6px; border-radius: 4px; display: inline-block;">⚡ NEAREST WAREHOUSE</div>'
+          : ""
+        }
+          ${isSelected
+          ? '<div style="margin-top: 4px; background-color: #dbeafe; color: #1e40af; font-weight: 800; font-size: 10px; padding: 2px 6px; border-radius: 4px; display: inline-block;">✓ SELECTED DESTINATION</div>'
+          : ""
+        }
         </div>
       `);
 
@@ -261,22 +262,45 @@ function CreateShipment() {
   const [inboundAgreements, setInboundAgreements] = useState([]);
   const [outboundAgreements, setOutboundAgreements] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
+  const [drivers, setDrivers] = useState([]);
 
   // Selection states
   const [selectedInboundId, setSelectedInboundId] = useState("");
   const [selectedOutboundId, setSelectedOutboundId] = useState("");
   const [selectedWarehouseId, setSelectedWarehouseId] = useState("");
+  const [selectedDriverId, setSelectedDriverId] = useState("");
+
+  const [isAddDriverOpen, setIsAddDriverOpen] = useState(false);
+  const [newDriverData, setNewDriverData] = useState({
+    name: "",
+    phone: "",
+    licenseNumber: "",
+    vehicleNumber: "",
+    vehicleCapacityKg: 7000,
+  });
 
   useEffect(() => {
     async function fetchAgreements() {
       try {
-        const [lots, farmers, farms, rawWarehouses, dispatches] = await Promise.all([
+        const [lots, farmers, farms, rawWarehouses, dispatches, driverList] = await Promise.all([
           lotsApi.getAll().catch(() => []),
           farmersApi.getAll().catch(() => []),
           farmsApi.getAll().catch(() => []),
           warehousesApi.getAll().catch(() => []),
           logisticsApi.getAll().catch(() => []),
+          logisticsApi.getDrivers().catch(() => []),
         ]);
+
+        if (Array.isArray(driverList) && driverList.length > 0) {
+          setDrivers(driverList);
+          setSelectedDriverId(driverList[0].id);
+          setInboundDriver(driverList[0].name || "");
+          setInboundDriverPhone(driverList[0].phone || "");
+          setInboundVehicle(driverList[0].vehicleNumber || "");
+          setOutboundDriver(driverList[0].name || "");
+          setOutboundDriverPhone(driverList[0].phone || "");
+          setOutboundVehicle(driverList[0].vehicleNumber || "");
+        }
 
         const shippedIds = new Set();
         if (Array.isArray(dispatches)) {
@@ -404,7 +428,7 @@ function CreateShipment() {
 
             const phone = l.farmerPhone || l.phone || l.phoneNumber || matchedFarmer?.phone || matchedFarmer?.phoneNumber || "+91 98765 43210";
             const addr = l.farmerAddress || l.address || matchedFarmer?.address || matchedFarmer?.location || l.farmName || "Bordi Farm, Dahod";
-            
+
             let rawLat = l.farmLatitude ?? l.latitude ?? matchedFarm?.latitude ?? matchedFarmer?.latitude;
             let rawLng = l.farmLongitude ?? l.longitude ?? matchedFarm?.longitude ?? matchedFarmer?.longitude;
 
@@ -483,9 +507,9 @@ function CreateShipment() {
   const [inboundVehicle, setInboundVehicle] = useState("");
   const [inboundDriver, setInboundDriver] = useState("");
   const [inboundDriverPhone, setInboundDriverPhone] = useState("");
-  const [inboundDate, setInboundDate] = useState(new Date().toISOString().split("T")[0]);
-  const [inboundStartTime, setInboundStartTime] = useState("09:00 AM");
-  const [inboundEndTime, setInboundEndTime] = useState("11:00 AM");
+  const [inboundDate, setInboundDate] = useState(new Date().toLocaleDateString("en-CA"));
+  const [inboundTime, setInboundTime] = useState("09:00");
+
   const [inboundInstructions, setInboundInstructions] = useState("");
 
   // Outbound Form fields
@@ -494,11 +518,48 @@ function CreateShipment() {
   const [outboundDriver, setOutboundDriver] = useState("");
   const [outboundDriverPhone, setOutboundDriverPhone] = useState("");
   const [outboundDispatchQty, setOutboundDispatchQty] = useState("");
-  const [outboundDate, setOutboundDate] = useState(new Date().toISOString().split("T")[0]);
-  const [outboundTime, setOutboundTime] = useState("11:00 AM");
+  const [outboundDate, setOutboundDate] = useState(new Date().toLocaleDateString("en-CA"));
+  const [outboundTime, setOutboundTime] = useState("11:00");
   const [outboundInstructions, setOutboundInstructions] = useState("");
-
   const [submitting, setSubmitting] = useState(false);
+
+  const handleSelectDriver = (driverId) => {
+    setSelectedDriverId(driverId);
+    const found = drivers.find((d) => d.id === driverId);
+    if (found) {
+      setInboundDriver(found.name || "");
+      setInboundDriverPhone(found.phone || "");
+      setInboundVehicle(found.vehicleNumber || "");
+      setOutboundDriver(found.name || "");
+      setOutboundDriverPhone(found.phone || "");
+      setOutboundVehicle(found.vehicleNumber || "");
+    }
+  };
+
+  const handleSaveNewDriver = async () => {
+    if (!newDriverData.name || !newDriverData.phone) return;
+    try {
+      const created = await logisticsApi.createDriver({
+        name: newDriverData.name,
+        phone: newDriverData.phone,
+        licenseNumber: newDriverData.licenseNumber,
+        vehicleNumber: newDriverData.vehicleNumber,
+        vehicleCapacityKg: Number(newDriverData.vehicleCapacityKg || 7000),
+      });
+      setDrivers((prev) => [created, ...prev]);
+      setSelectedDriverId(created.id);
+      setInboundDriver(created.name);
+      setInboundDriverPhone(created.phone);
+      setInboundVehicle(created.vehicleNumber);
+      setOutboundDriver(created.name);
+      setOutboundDriverPhone(created.phone);
+      setOutboundVehicle(created.vehicleNumber);
+      setIsAddDriverOpen(false);
+      setNewDriverData({ name: "", phone: "", licenseNumber: "", vehicleNumber: "", vehicleCapacityKg: 7000 });
+    } catch (err) {
+      console.error("Failed to add driver:", err);
+    }
+  };
 
   const activeInbound = inboundAgreements.find((a) => a.id === selectedInboundId) || inboundAgreements[0] || {};
   const activeOutbound = outboundAgreements.find((a) => a.id === selectedOutboundId) || outboundAgreements[0] || {};
@@ -557,8 +618,8 @@ function CreateShipment() {
           driverName: inboundDriver || "Mukesh Parmar",
           driverPhone: inboundDriverPhone || "+91 98765 43210",
           scheduledDate: inboundDate ? new Date(inboundDate).toISOString() : new Date().toISOString(),
-          scheduledStartTime: inboundStartTime || "09:00 AM",
-          scheduledEndTime: inboundEndTime || "11:00 AM",
+          scheduledDate: inboundDate,
+          scheduledStartTime: inboundTime,
           specialInstructions: inboundInstructions || "",
           status: "SCHEDULED",
         };
@@ -581,8 +642,8 @@ function CreateShipment() {
           vehicleCapacityKg: 7000,
           driverName: outboundDriver || "Suresh Deshmukh",
           driverPhone: outboundDriverPhone || "+91 98765 43210",
-          scheduledDate: outboundDate ? new Date(outboundDate).toISOString() : new Date().toISOString(),
-          scheduledStartTime: outboundTime || "11:00 AM",
+          scheduledDate: outboundDate,
+          scheduledStartTime: outboundTime,
           specialInstructions: outboundInstructions || "",
           status: "SCHEDULED",
         };
@@ -622,22 +683,20 @@ function CreateShipment() {
           <button
             type="button"
             onClick={() => setDirection("INBOUND")}
-            className={`px-5 py-1.5 text-xs font-bold rounded-md transition ${
-              direction === "INBOUND"
+            className={`px-5 py-1.5 text-xs font-bold rounded-md transition ${direction === "INBOUND"
                 ? "bg-white text-emerald-950 shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
-            }`}
+              }`}
           >
             INBOUND
           </button>
           <button
             type="button"
             onClick={() => setDirection("OUTBOUND")}
-            className={`px-5 py-1.5 text-xs font-bold rounded-md transition ${
-              direction === "OUTBOUND"
+            className={`px-5 py-1.5 text-xs font-bold rounded-md transition ${direction === "OUTBOUND"
                 ? "bg-white text-emerald-950 shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
-            }`}
+              }`}
           >
             OUTBOUND
           </button>
@@ -710,11 +769,10 @@ function CreateShipment() {
                           <tr
                             key={agr.id}
                             onClick={() => setSelectedInboundId(agr.id)}
-                            className={`cursor-pointer transition ${
-                              selectedInboundId === agr.id
+                            className={`cursor-pointer transition ${selectedInboundId === agr.id
                                 ? "bg-emerald-50/60"
                                 : "hover:bg-slate-50"
-                            }`}
+                              }`}
                           >
                             <td className="p-3 text-center">
                               <input
@@ -769,11 +827,10 @@ function CreateShipment() {
                           <tr
                             key={agr.id}
                             onClick={() => setSelectedOutboundId(agr.id)}
-                            className={`cursor-pointer transition ${
-                              selectedOutboundId === agr.id
+                            className={`cursor-pointer transition ${selectedOutboundId === agr.id
                                 ? "bg-emerald-50/60"
                                 : "hover:bg-slate-50"
-                            }`}
+                              }`}
                           >
                             <td className="p-3 text-center">
                               <input
@@ -1004,22 +1061,20 @@ function CreateShipment() {
                   <button
                     type="button"
                     onClick={() => setInboundTransport("FPO Pickup")}
-                    className={`px-4 py-1.5 font-bold rounded-md transition ${
-                      inboundTransport === "FPO Pickup"
+                    className={`px-4 py-1.5 font-bold rounded-md transition ${inboundTransport === "FPO Pickup"
                         ? "bg-white text-emerald-950 shadow-xs"
                         : "text-slate-600 hover:text-slate-900"
-                    }`}
+                      }`}
                   >
                     FPO Pickup
                   </button>
                   <button
                     type="button"
                     onClick={() => setInboundTransport("Farmer Delivery")}
-                    className={`px-4 py-1.5 font-bold rounded-md transition ${
-                      inboundTransport === "Farmer Delivery"
+                    className={`px-4 py-1.5 font-bold rounded-md transition ${inboundTransport === "Farmer Delivery"
                         ? "bg-white text-emerald-950 shadow-xs"
                         : "text-slate-600 hover:text-slate-900"
-                    }`}
+                      }`}
                   >
                     Farmer Delivery
                   </button>
@@ -1029,77 +1084,114 @@ function CreateShipment() {
                   <button
                     type="button"
                     onClick={() => setOutboundTransport("Processor Pickup")}
-                    className={`px-4 py-1.5 font-bold rounded-md transition ${
-                      outboundTransport === "Processor Pickup"
+                    className={`px-4 py-1.5 font-bold rounded-md transition ${outboundTransport === "Processor Pickup"
                         ? "bg-white text-emerald-950 shadow-xs"
                         : "text-slate-600 hover:text-slate-900"
-                    }`}
+                      }`}
                   >
                     Processor Pickup
                   </button>
                   <button
                     type="button"
                     onClick={() => setOutboundTransport("FPO Delivery")}
-                    className={`px-4 py-1.5 font-bold rounded-md transition ${
-                      outboundTransport === "FPO Delivery"
+                    className={`px-4 py-1.5 font-bold rounded-md transition ${outboundTransport === "FPO Delivery"
                         ? "bg-white text-emerald-950 shadow-xs"
                         : "text-slate-600 hover:text-slate-900"
-                    }`}
+                      }`}
                   >
                     FPO Delivery
                   </button>
                 </div>
               )}
 
-              {/* Vehicle & Driver text inputs */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Vehicle Number
-                  </label>
-                  <Input
-                    type="text"
-                    placeholder="e.g. KA-09-AB-4521"
-                    value={direction === "INBOUND" ? inboundVehicle : outboundVehicle}
-                    onChange={(e) =>
-                      direction === "INBOUND"
-                        ? setInboundVehicle(e.target.value)
-                        : setOutboundVehicle(e.target.value)
-                    }
-                    className="h-9 text-xs border-slate-200 font-semibold bg-white"
-                  />
+              {/* Registered Driver Selection & Vehicle Details */}
+              <div className="space-y-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200/90">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-800">
+                      Select Assigned Driver from Registry
+                    </label>
+                    <p className="text-[11px] text-slate-500">
+                      Logistics officers can choose from registered drivers or register a new driver.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsAddDriverOpen(true)}
+                    className="h-8 text-xs font-bold text-emerald-800 border-emerald-300 hover:bg-emerald-50 shrink-0 flex items-center gap-1.5"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add New Driver
+                  </Button>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Driver Name</label>
-                  <Input
-                    type="text"
-                    placeholder="e.g. Mukesh Parmar"
-                    value={direction === "INBOUND" ? inboundDriver : outboundDriver}
-                    onChange={(e) =>
-                      direction === "INBOUND"
-                        ? setInboundDriver(e.target.value)
-                        : setOutboundDriver(e.target.value)
-                    }
-                    className="h-9 text-xs border-slate-200 font-semibold bg-white"
-                  />
-                </div>
+                <Select value={selectedDriverId} onValueChange={handleSelectDriver}>
+                  <SelectTrigger className="h-10 text-xs bg-white border-slate-300 font-bold text-slate-900">
+                    <SelectValue placeholder="Choose Driver from List..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {drivers.map((drv) => (
+                      <SelectItem key={drv.id} value={drv.id}>
+                        <div className="flex items-center justify-between gap-4 font-medium text-xs">
+                          <span className="font-bold text-slate-900">{drv.name} ({drv.phone})</span>
+                          <span className="text-emerald-700 font-mono text-[11px]">
+                            {drv.vehicleNumber ? `Vehicle: ${drv.vehicleNumber}` : "No Vehicle"}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Driver Phone Number
-                  </label>
-                  <Input
-                    type="text"
-                    placeholder="e.g. +91 98765 43210"
-                    value={direction === "INBOUND" ? inboundDriverPhone : outboundDriverPhone}
-                    onChange={(e) =>
-                      direction === "INBOUND"
-                        ? setInboundDriverPhone(e.target.value)
-                        : setOutboundDriverPhone(e.target.value)
-                    }
-                    className="h-9 text-xs border-slate-200 font-semibold bg-white"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Vehicle Number</label>
+                    <Input
+                      type="text"
+                      placeholder="e.g. KA-09-AB-4521"
+                      value={direction === "INBOUND" ? inboundVehicle : outboundVehicle}
+                      onChange={(e) =>
+                        direction === "INBOUND"
+                          ? setInboundVehicle(e.target.value)
+                          : setOutboundVehicle(e.target.value)
+                      }
+                      className="h-9 text-xs border-slate-200 font-semibold bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Driver Name</label>
+                    <Input
+                      type="text"
+                      placeholder="e.g. Mukesh Parmar"
+                      value={direction === "INBOUND" ? inboundDriver : outboundDriver}
+                      onChange={(e) =>
+                        direction === "INBOUND"
+                          ? setInboundDriver(e.target.value)
+                          : setOutboundDriver(e.target.value)
+                      }
+                      className="h-9 text-xs border-slate-200 font-semibold bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Driver Phone Number
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="e.g. +91 98765 43210"
+                      value={direction === "INBOUND" ? inboundDriverPhone : outboundDriverPhone}
+                      onChange={(e) =>
+                        direction === "INBOUND"
+                          ? setInboundDriverPhone(e.target.value)
+                          : setOutboundDriverPhone(e.target.value)
+                      }
+                      className="h-9 text-xs border-slate-200 font-semibold bg-white"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -1123,68 +1215,62 @@ function CreateShipment() {
             <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center gap-2">
               <Calendar className="h-4 w-4 text-emerald-800" />
               <CardTitle className="text-sm font-bold text-slate-900">
-                Schedule Pickup
+                Schedule Departure
               </CardTitle>
             </CardHeader>
+
             <CardContent className="pt-4 space-y-4 text-xs">
-              {direction === "INBOUND" ? (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">Date</label>
-                    <Input
-                      type="date"
-                      value={inboundDate}
-                      onChange={(e) => setInboundDate(e.target.value)}
-                      className="h-9 text-xs border-slate-200 font-medium"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">Start Time</label>
-                    <Input
-                      type="text"
-                      value={inboundStartTime}
-                      onChange={(e) => setInboundStartTime(e.target.value)}
-                      className="h-9 text-xs border-slate-200 font-medium"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">End Time</label>
-                    <Input
-                      type="text"
-                      value={inboundEndTime}
-                      onChange={(e) => setInboundEndTime(e.target.value)}
-                      className="h-9 text-xs border-slate-200 font-medium"
-                    />
-                  </div>
+              <p className="text-slate-500">
+                Select when the truck is scheduled to leave its origin.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Scheduled Date
+                  </label>
+                  <Input
+                    type="date"
+                    required
+                    value={direction === "INBOUND" ? inboundDate : outboundDate}
+                    onChange={(e) =>
+                      direction === "INBOUND"
+                        ? setInboundDate(e.target.value)
+                        : setOutboundDate(e.target.value)
+                    }
+                    className="h-9 text-xs border-slate-200"
+                  />
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">Date</label>
-                    <Input
-                      type="date"
-                      value={outboundDate}
-                      onChange={(e) => setOutboundDate(e.target.value)}
-                      className="h-9 text-xs border-slate-200 font-medium"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">Time</label>
-                    <Input
-                      type="text"
-                      value={outboundTime}
-                      onChange={(e) => setOutboundTime(e.target.value)}
-                      className="h-9 text-xs border-slate-200 font-medium"
-                    />
-                  </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Scheduled Departure Time
+                  </label>
+                  <Input
+                    type="time"
+                    required
+                    value={direction === "INBOUND" ? inboundTime : outboundTime}
+                    onChange={(e) =>
+                      direction === "INBOUND"
+                        ? setInboundTime(e.target.value)
+                        : setOutboundTime(e.target.value)
+                    }
+                    className="h-9 text-xs border-slate-200"
+                  />
                 </div>
-              )}
+              </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Special Instructions</label>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Special Instructions
+                </label>
                 <Textarea
-                  placeholder="Any specific pickup instructions..."
-                  value={direction === "INBOUND" ? inboundInstructions : outboundInstructions}
+                  placeholder="Any specific transport instructions..."
+                  value={
+                    direction === "INBOUND"
+                      ? inboundInstructions
+                      : outboundInstructions
+                  }
                   onChange={(e) =>
                     direction === "INBOUND"
                       ? setInboundInstructions(e.target.value)
@@ -1267,7 +1353,7 @@ function CreateShipment() {
                   <div className="flex justify-between">
                     <span className="text-slate-500">Scheduled</span>
                     <span className="font-bold text-slate-900">
-                      {inboundDate} ({inboundStartTime})
+                       {inboundDate} ({inboundTime})
                     </span>
                   </div>
                 </div>
@@ -1293,11 +1379,19 @@ function CreateShipment() {
                     <span className="text-slate-500">Dispatch Quantity</span>
                     <span className="font-bold text-slate-900">
                       {Number(outboundDispatchQty).toLocaleString("en-IN")} kg
-                    </span>
+                    </span> 
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Transport</span>
                     <span className="font-bold text-slate-900">{outboundTransport}</span>
+                  </div>
+
+                  {/* Scheduled departure date and time */}
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Scheduled Departure</span>
+                    <span className="font-bold text-slate-900">
+                      {outboundDate} ({outboundTime})
+                    </span>
                   </div>
                 </div>
               )}
@@ -1349,6 +1443,89 @@ function CreateShipment() {
           </Card>
         </div>
       </div>
+
+      {/* Add New Driver Modal */}
+      <Dialog open={isAddDriverOpen} onOpenChange={setIsAddDriverOpen}>
+        <DialogContent className="max-w-md bg-white p-6 rounded-2xl shadow-xl border border-slate-200">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <Truck className="h-5 w-5 text-emerald-800" />
+              Register New Driver
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-2 text-xs">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Driver Full Name *</label>
+              <Input
+                type="text"
+                placeholder="e.g. Anand Sharma"
+                value={newDriverData.name}
+                onChange={(e) => setNewDriverData({ ...newDriverData, name: e.target.value })}
+                className="h-9 text-xs border-slate-200"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Mobile Phone Number *</label>
+              <Input
+                type="text"
+                placeholder="e.g. 9876543219"
+                value={newDriverData.phone}
+                onChange={(e) => setNewDriverData({ ...newDriverData, phone: e.target.value })}
+                className="h-9 text-xs border-slate-200"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Driving License Number</label>
+              <Input
+                type="text"
+                placeholder="e.g. KA092023001122"
+                value={newDriverData.licenseNumber}
+                onChange={(e) => setNewDriverData({ ...newDriverData, licenseNumber: e.target.value })}
+                className="h-9 text-xs border-slate-200"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Assigned Vehicle Number</label>
+              <Input
+                type="text"
+                placeholder="e.g. KA-09-GH-3344"
+                value={newDriverData.vehicleNumber}
+                onChange={(e) => setNewDriverData({ ...newDriverData, vehicleNumber: e.target.value })}
+                className="h-9 text-xs border-slate-200"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Vehicle Capacity (kg)</label>
+              <Input
+                type="number"
+                placeholder="7000"
+                value={newDriverData.vehicleCapacityKg}
+                onChange={(e) => setNewDriverData({ ...newDriverData, vehicleCapacityKg: e.target.value })}
+                className="h-9 text-xs border-slate-200 font-bold"
+              />
+            </div>
+
+            <div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsAddDriverOpen(false)}
+                className="h-9 text-xs font-bold"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSaveNewDriver}
+                className="h-9 bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs"
+              >
+                Save Driver & Select
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

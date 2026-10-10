@@ -107,7 +107,7 @@ export const ROLE_CONFIGS = {
       {
         title: "QUALITY",
         items: [
-          { to: "/quality?tab=history", icon: ClipboardCheck, label: "Quality Results" },
+          { to: "/quality?tab=certifications", icon: FileCheck, label: "Certifications" },
         ],
       },
       {

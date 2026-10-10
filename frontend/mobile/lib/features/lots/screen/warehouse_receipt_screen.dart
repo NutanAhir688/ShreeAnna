@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../core/utils/document_downloader.dart';
+import '../../../core/utils/pdf_generator.dart';
 import '../models/lot_model.dart';
 import '../services/lot_api.dart';
 
@@ -62,6 +64,75 @@ class _WarehouseReceiptScreenState extends State<WarehouseReceiptScreen> {
       });
     } catch (_) {
       setState(() => _isLoading = false);
+    }
+  }
+  Future<void> _downloadReceipt({
+    required String receiptId,
+    required String lotNo,
+    required String millet,
+    required String farmer,
+    required String warehouse,
+    required double expQty,
+    required double actQty,
+    required double rate,
+    required double totalPayable,
+  }) async {
+    try {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Generating Warehouse Receipt PDF...'),
+          backgroundColor: ShreeAnnaTheme.primaryGreen,
+          duration: Duration(seconds: 1),
+        ),
+      );
+
+      final pdfBytes = await PdfGenerator.generateWarehouseReceiptPdf(
+        receiptNum: receiptId,
+        lotNum: lotNo,
+        milletType: millet,
+        farmerName: farmer,
+        warehouseName: warehouse,
+        expQty: expQty,
+        actQty: actQty,
+        unitPrice: rate,
+        totalPayable: totalPayable,
+        dateReceived: DateTime.now().toString().split(' ').first,
+      );
+
+      final cleanReceiptId = receiptId.replaceAll('/', '_').replaceAll('\\', '_');
+      final filename = '${cleanReceiptId}_Receipt.pdf';
+      final savedFile = await DocumentDownloader.downloadBytes(
+        filename: filename,
+        bytes: pdfBytes,
+      );
+
+      if (!mounted) return;
+
+      if (savedFile != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Receipt downloaded: ${savedFile.path}'),
+            backgroundColor: ShreeAnnaTheme.primaryGreen,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to save receipt PDF to Downloads.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Download failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -271,14 +342,17 @@ class _WarehouseReceiptScreenState extends State<WarehouseReceiptScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Downloading Warehouse Receipt PDF...'),
-                              backgroundColor: ShreeAnnaTheme.primaryGreen,
-                            ),
-                          );
-                        },
+                        onPressed: () => _downloadReceipt(
+                          receiptId: receiptId,
+                          lotNo: lotNo,
+                          millet: millet,
+                          farmer: farmer,
+                          warehouse: warehouse,
+                          expQty: expQty,
+                          actQty: actQty,
+                          rate: rate,
+                          totalPayable: totalPayable,
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: ShreeAnnaTheme.primaryGreen,
                           foregroundColor: Colors.white,

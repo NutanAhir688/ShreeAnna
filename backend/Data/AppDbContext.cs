@@ -9,8 +9,29 @@ using backend.Features.Inventory.Entities;
 using backend.Features.Logistics.Entities;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace backend.Data;
+
+public class UtcDateTimeConverter : ValueConverter<DateTime, DateTime>
+{
+    public UtcDateTimeConverter()
+        : base(
+            v => v.Kind == DateTimeKind.Utc ? v : DateTime.SpecifyKind(v, DateTimeKind.Utc),
+            v => DateTime.SpecifyKind(v, DateTimeKind.Utc))
+    {
+    }
+}
+
+public class NullableUtcDateTimeConverter : ValueConverter<DateTime?, DateTime?>
+{
+    public NullableUtcDateTimeConverter()
+        : base(
+            v => !v.HasValue ? v : (v.Value.Kind == DateTimeKind.Utc ? v.Value : DateTime.SpecifyKind(v.Value, DateTimeKind.Utc)),
+            v => !v.HasValue ? v : DateTime.SpecifyKind(v.Value, DateTimeKind.Utc))
+    {
+    }
+}
 
 public class AppDbContext : DbContext
 {
@@ -36,7 +57,20 @@ public class AppDbContext : DbContext
     public DbSet<Dispatch> Dispatches => Set<Dispatch>();
     public DbSet<ShipmentIssue> ShipmentIssues => Set<ShipmentIssue>();
     public DbSet<FarmCrop> FarmCrops => Set<FarmCrop>();
+    public DbSet<Driver> Drivers => Set<Driver>();
 
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        base.ConfigureConventions(configurationBuilder);
+
+        configurationBuilder
+            .Properties<DateTime>()
+            .HaveConversion<UtcDateTimeConverter>();
+
+        configurationBuilder
+            .Properties<DateTime?>()
+            .HaveConversion<NullableUtcDateTimeConverter>();
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -49,6 +83,21 @@ public class AppDbContext : DbContext
         ConfigureFarmerOtp(modelBuilder);
         ConfigureProcurementLot(modelBuilder);
         ConfigureFarmCrop(modelBuilder);
+        ConfigureDriver(modelBuilder);
+    }
+
+    private static void ConfigureDriver(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Driver>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Name).IsRequired().HasMaxLength(150);
+            entity.Property(x => x.Phone).IsRequired().HasMaxLength(20);
+            entity.Property(x => x.LicenseNumber).HasMaxLength(50);
+            entity.Property(x => x.VehicleNumber).HasMaxLength(50);
+            entity.Property(x => x.VehicleCapacityKg).HasPrecision(10, 2);
+            entity.Property(x => x.Status).IsRequired().HasMaxLength(30);
+        });
     }
     private static void ConfigureFarmCrop(ModelBuilder modelBuilder)
     {

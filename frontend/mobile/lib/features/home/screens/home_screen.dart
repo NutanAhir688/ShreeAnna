@@ -13,6 +13,7 @@ import '../../lots/screen/sell_millet_screen.dart';
 import '../../lots/services/lot_api.dart';
 import '../../profile/screen/profile_screen.dart';
 import '../../support/screen/support_screen.dart';
+import '../../driver/screens/driver_journey_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -212,6 +213,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 Row(
                   children: [
+                    IconButton(
+                      tooltip: 'Driver Journey',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const DriverJourneyScreen()),
+                        );
+                      },
+                      icon: const Icon(Icons.local_shipping_outlined, color: ShreeAnnaTheme.primaryGreen),
+                    ),
                     IconButton(
                       onPressed: () {
                         Navigator.push(

@@ -212,6 +212,9 @@ export const logisticsApi = {
     const url = id ? `/api/dispatches/${id}/report-issue` : "/api/dispatches/report-issue";
     return request(url, { method: "POST", body: data });
   },
+  getDrivers: () => request("/api/dispatches/drivers"),
+  createDriver: (data) => request("/api/dispatches/drivers", { method: "POST", body: data }),
+  verifyPickup: (id, code) => request(`/api/dispatches/${id}/verify-pickup`, { method: "POST", body: { verificationCode: code } }),
 };
 
 // ─────────────────────────────────────────────────────────────

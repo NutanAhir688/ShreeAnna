@@ -99,3 +99,27 @@ public record ShipmentIssueResponse(
     string Status,
     DateTime ReportedAt
 );
+
+public record CreateDriverRequest(
+    string Name,
+    string Phone,
+    string? LicenseNumber,
+    string? VehicleNumber,
+    decimal? VehicleCapacityKg
+);
+
+public record DriverResponse(
+    Guid Id,
+    string DriverCode,
+    string Name,
+    string Phone,
+    string LicenseNumber,
+    string VehicleNumber,
+    decimal VehicleCapacityKg,
+    string Status,
+    DateTime CreatedAt
+);
+
+public record VerifyPickupRequest(
+    string VerificationCode
+);

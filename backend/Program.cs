@@ -15,6 +15,9 @@ using backend.Features.Warehouses.Services;
 using backend.Features.Inventory.Services;
 using backend.Features.Logistics.Services;
 
+// Enable legacy timestamp behavior for Npgsql to prevent ArgumentException with DateTimeKind.Unspecified
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 // Load .env file (if present) into environment variables before configuration is built.
 // ASP.NET Core's config system reads environment variables automatically,
 // and the double-underscore (__) maps to nested JSON keys, e.g.

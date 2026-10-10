@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import {
+  ArrowDownWideNarrow,
+  ArrowUpWideNarrow,
   CheckCircle2,
   Clock3,
   Search,
@@ -45,6 +47,7 @@ function FarmVerificationList() {
 
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
+  const [sortOrder, setSortOrder] = useState("newest");
 
   useEffect(() => {
     async function loadData() {
@@ -88,6 +91,24 @@ function FarmVerificationList() {
     });
   }, [farms, farmersMap, search, status]);
 
+  const sortedFarms = useMemo(() => {
+    const getSubmittedTime = (farm) => {
+      const submittedValue = farm.createdAt || farm.submittedAt;
+      const time = submittedValue ? new Date(submittedValue).getTime() : 0;
+
+      return Number.isNaN(time) ? 0 : time;
+    };
+
+    return [...filteredFarms].sort((left, right) => {
+      const leftTime = getSubmittedTime(left);
+      const rightTime = getSubmittedTime(right);
+
+      return sortOrder === "newest"
+        ? rightTime - leftTime
+        : leftTime - rightTime;
+    });
+  }, [filteredFarms, sortOrder]);
+
   const pendingCount = farms.filter(
     (farm) => farm.status === "Pending Verification" || farm.status === "Pending"
   ).length;
@@ -108,6 +129,7 @@ function FarmVerificationList() {
   const handleReset = () => {
     setSearch("");
     setStatus("all");
+    setSortOrder("newest");
   };
 
 
@@ -210,6 +232,24 @@ function FarmVerificationList() {
             </Select>
 
 
+            {/* Sort */}
+            <Button
+              variant="outline"
+              onClick={() =>
+                setSortOrder((current) =>
+                  current === "newest" ? "oldest" : "newest"
+                )
+              }
+            >
+              {sortOrder === "newest" ? (
+                <ArrowDownWideNarrow className="mr-2 h-4 w-4" />
+              ) : (
+                <ArrowUpWideNarrow className="mr-2 h-4 w-4" />
+              )}
+              {sortOrder === "newest" ? "Newest first" : "Oldest first"}
+            </Button>
+
+
             {/* Reset */}
             <Button
               variant="outline"
@@ -262,7 +302,7 @@ function FarmVerificationList() {
                   </TableCell>
                 </TableRow>
               ) : filteredFarms.length > 0 ? (
-                filteredFarms.map((farm) => (
+                sortedFarms.map((farm) => (
                   <TableRow key={farm.id}>
                     {/* Farm */}
                     <TableCell>

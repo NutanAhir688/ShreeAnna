@@ -41,6 +41,12 @@ class ApiConfig {
   /// Usage: GET [uploadSasUrl]?ext=jpg
   static const String uploadSasUrl = '$baseUrl/api/upload/sas';
 
+  static String driverJourney(String phone) => '$baseUrl/api/dispatches/driver-journey?phone=$phone';
+  static String verifyPickup(String dispatchId) => '$baseUrl/api/dispatches/$dispatchId/verify-pickup';
+  static const String driverList = '$baseUrl/api/dispatches/drivers';
+  static String dispatchByLot(String lotId) =>
+    '$baseUrl/api/dispatches/by-lot/${Uri.encodeComponent(lotId)}';
+
   static const String azureBlobBaseUrl =
       'https://shreeannafarmimages.blob.core.windows.net/farm-images';
 
