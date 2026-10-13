@@ -19,6 +19,11 @@ class DriverDispatchModel {
   final String scheduledStartTime;
   final String scheduledEndTime;
   final String specialInstructions;
+  final String lotId;
+  final double? pickupLatitude;
+  final double? pickupLongitude;
+  final double? destinationLatitude;
+  final double? destinationLongitude;
 
   DriverDispatchModel({
     required this.id,
@@ -41,11 +46,17 @@ class DriverDispatchModel {
     required this.scheduledStartTime,
     required this.scheduledEndTime,
     required this.specialInstructions,
+    this.lotId = '',
+    this.pickupLatitude,
+    this.pickupLongitude,
+    this.destinationLatitude,
+    this.destinationLongitude,
   });
 
   factory DriverDispatchModel.fromJson(Map<String, dynamic> json) {
     return DriverDispatchModel(
       id: json['id']?.toString() ?? '',
+      lotId: json['lotId']?.toString() ?? json['id']?.toString() ?? '',
       dispatchCode: json['dispatchCode']?.toString() ?? '',
       direction: json['direction']?.toString() ?? 'INBOUND',
       farmerOrProcessorName: json['farmerOrProcessorName']?.toString() ?? 'Ramesh Patel',
@@ -65,6 +76,10 @@ class DriverDispatchModel {
       scheduledStartTime: json['scheduledStartTime']?.toString() ?? '09:00 AM',
       scheduledEndTime: json['scheduledEndTime']?.toString() ?? '11:00 AM',
       specialInstructions: json['specialInstructions']?.toString() ?? '',
+      pickupLatitude: (json['pickupLatitude'] as num?)?.toDouble(),
+      pickupLongitude: (json['pickupLongitude'] as num?)?.toDouble(),
+      destinationLatitude: (json['destinationLatitude'] as num?)?.toDouble(),
+      destinationLongitude: (json['destinationLongitude'] as num?)?.toDouble(),
     );
   }
 }
@@ -74,6 +89,7 @@ class RegisteredDriver {
   final String driverCode;
   final String name;
   final String phone;
+  final String licenseNumber;
   final String vehicleNumber;
   final double vehicleCapacityKg;
   final String status;
@@ -83,6 +99,7 @@ class RegisteredDriver {
     required this.driverCode,
     required this.name,
     required this.phone,
+    this.licenseNumber = 'DL-GJ-2024-8891',
     required this.vehicleNumber,
     required this.vehicleCapacityKg,
     required this.status,
@@ -94,6 +111,9 @@ class RegisteredDriver {
       driverCode: json['driverCode']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
       phone: json['phone']?.toString() ?? '',
+      licenseNumber: (json['licenseNumber'] != null && json['licenseNumber'].toString().isNotEmpty)
+          ? json['licenseNumber'].toString()
+          : 'DL-GJ-2024-8891',
       vehicleNumber: json['vehicleNumber']?.toString() ?? '',
       vehicleCapacityKg: (json['vehicleCapacityKg'] as num?)?.toDouble() ?? 7000.0,
       status: json['status']?.toString() ?? 'AVAILABLE',

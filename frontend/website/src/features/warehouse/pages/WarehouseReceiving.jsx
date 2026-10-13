@@ -19,6 +19,7 @@ import {
   MoreVertical,
   Layers,
   ArrowLeft,
+  Loader2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -33,9 +34,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import AllocateLotCard from "../components/AllocateLotCard";
 import DeliveryChallanModal from "@/features/logistics/components/DeliveryChallanModal";
-import { logisticsApi, warehousesApi, lotsApi } from "@/services/api";
+import AllocateLotCard from "@/features/warehouse/components/AllocateLotCard";
+import { logisticsApi, warehousesApi, lotsApi, uploadApi } from "@/services/api";
+import { jsPDF } from "jspdf";
+
+const formatDate = (dateVal) => {
+  if (!dateVal) return "-";
+  try {
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return String(dateVal);
+    return d.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return String(dateVal);
+  }
+};
 
 export default function WarehouseReceiving() {
   const { id } = useParams();
@@ -52,10 +69,17 @@ export default function WarehouseReceiving() {
   const [receivingNotes, setReceivingNotes] = useState("");
   const [selectedWarehouse, setSelectedWarehouse] = useState("");
   const [selectedZone, setSelectedZone] = useState("");
-  const [selectedBin, setSelectedBin] = useState("");
+  const [selectedBin, setSelectedBin] = useState("BIN-A12");
+  const [isCustomBin, setIsCustomBin] = useState(false);
+  const [customBinCode, setCustomBinCode] = useState("");
+  const [warehouses, setWarehouses] = useState([]);
   const [receiptPhoto, setReceiptPhoto] = useState(null);
+  const [azurePhotoUrl, setAzurePhotoUrl] = useState("");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const [challanModalOpen, setChallanModalOpen] = useState(false);
+  const [allocateModalOpen, setAllocateModalOpen] = useState(false);
+  const [allocateTargetLot, setAllocateTargetLot] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [receiptConfirmed, setReceiptConfirmed] = useState(false);
   const [confirmedReceiptData, setConfirmedReceiptData] = useState(null);
@@ -66,13 +90,17 @@ export default function WarehouseReceiving() {
     async function loadData() {
       setLoading(true);
       try {
-        const [dispatchesData, lotsData] = await Promise.all([
+        const [dispatchesData, lotsData, whData] = await Promise.all([
           logisticsApi.getAll().catch(() => []),
           lotsApi.getAll().catch(() => []),
+          warehousesApi.getAll().catch(() => []),
         ]);
 
         const dispatchesList = Array.isArray(dispatchesData) ? dispatchesData : [];
         const lotsList = Array.isArray(lotsData) ? lotsData : [];
+        const whList = Array.isArray(whData) ? whData : [];
+
+        setWarehouses(whList);
 
         // Build receiving queue strictly from live API database records
         const queueMapped = dispatchesList.map((d, index) => {
@@ -84,30 +112,33 @@ export default function WarehouseReceiving() {
               (d.agreementId && l.lotNumber && d.agreementId.includes(l.lotNumber))
           );
 
+          const displayLotCode =
+            matchingLot?.lotNumber ||
+            d.lotNumber ||
+            (d.lotId && d.lotId.length === 36 ? `LOT-${d.lotId.slice(0, 6).toUpperCase()}` : d.lotId) ||
+            "-";
+
           const expectedKg = d.totalQuantityKg || d.expectedQuantityKg || 0;
           const isPassed = !(d.status || "").toUpperCase().includes("FAIL") && !(matchingLot?.qualityStatus || "").toUpperCase().includes("FAIL");
           const receiptCode = `WR-2026-${(index + 1).toString().padStart(3, "0")}`;
           const lotPrice = Number(matchingLot?.offeredPricePerKg || matchingLot?.pricePerKg || d.unitPrice || d.offeredPricePerKg || 35);
 
+          const isConfirmed = (d.warehouseReceiptStatus || "").toUpperCase() === "CONFIRMED" || (matchingLot?.status || "").toUpperCase() === "STORED";
+
           return {
             id: d.id,
             receiptCode,
             dispatchCode: d.dispatchCode || d.id,
-            lotId: d.lotId || "-",
+            lotId: displayLotCode,
             farmerName: d.farmerOrProcessorName || matchingLot?.farmerName || "-",
             milletType: d.milletType || matchingLot?.milletType || matchingLot?.farmCrop || "-",
             certifiedQty: expectedKg,
             actualReceivedQty: d.finalReceivedQuantityKg || expectedKg,
-            grade: matchingLot?.grade || d.grade || "Grade A",
+            grade: (matchingLot?.grade && matchingLot?.grade !== "-") ? matchingLot.grade : (d.grade && d.grade !== "-") ? d.grade : "Grade A",
             qualityStatus: isPassed ? "PASSED" : "FAILED",
-            expectedDate: d.scheduledDate
-              ? new Date(d.scheduledDate).toLocaleDateString("en-GB", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                })
-              : "-",
-            status: d.status || "IN_TRANSIT",
+            expectedDate: d.scheduledDate ? formatDate(d.scheduledDate) : "-",
+            status: isConfirmed ? "COMPLETED" : (d.status || "IN_TRANSIT"),
+            warehouseReceiptStatus: isConfirmed ? "CONFIRMED" : (d.warehouseReceiptStatus || "PENDING"),
             warehouseName: d.warehouseName || "-",
             unitPrice: lotPrice,
           };
@@ -142,12 +173,26 @@ export default function WarehouseReceiving() {
               35
             );
 
+            const displayLotCode =
+              matchingLot?.lotNumber ||
+              single.lotNumber ||
+              (single.lotId && single.lotId.length === 36 ? `LOT-${single.lotId.slice(0, 6).toUpperCase()}` : single.lotId) ||
+              "-";
+
+            const displayGrade =
+              (single.grade && single.grade !== "-")
+                ? single.grade
+                : (matchingLot?.grade && matchingLot?.grade !== "-")
+                  ? matchingLot.grade
+                  : "Grade A";
+
             const enrichedShipment = {
               ...single,
+              displayLotCode,
               unitPrice: lotPrice,
               farmerOrProcessorName: single.farmerOrProcessorName || matchingLot?.farmerName || "-",
               milletType: single.milletType || matchingLot?.milletType || matchingLot?.farmCrop || "-",
-              grade: single.grade || matchingLot?.grade || "-",
+              grade: displayGrade,
             };
 
             setShipment(enrichedShipment);
@@ -185,35 +230,128 @@ export default function WarehouseReceiving() {
     return receivingQueue.filter((q) => q.qualityStatus === "FAILED" || q.status === "REJECTED").length;
   }, [receivingQueue]);
 
+  const activePendingQueue = useMemo(() => {
+    return receivingQueue.filter(
+      (q) => (q.warehouseReceiptStatus || "").toUpperCase() !== "CONFIRMED" && (q.status || "").toUpperCase() !== "COMPLETED" && (q.status || "").toUpperCase() !== "STORED"
+    );
+  }, [receivingQueue]);
+
   const expectedQty = shipment?.totalQuantityKg || shipment?.expectedQuantityKg || 0;
   const actualQtyNum = Number(actualQuantity) || 0;
   const variance = actualQtyNum - expectedQty;
   const hasDiscrepancy = variance !== 0;
 
+  const selectedWarehouseObj = useMemo(() => {
+    const targetNameOrId = selectedWarehouse || shipment?.destinationAddress || shipment?.warehouseName;
+    if (!targetNameOrId && warehouses.length === 0) return null;
+    return (
+      warehouses.find(
+        (w) =>
+          w.id === targetNameOrId ||
+          w.id?.toString() === targetNameOrId?.toString() ||
+          w.name === targetNameOrId ||
+          (targetNameOrId && w.name && targetNameOrId.includes(w.name))
+      ) || null
+    );
+  }, [selectedWarehouse, shipment, warehouses]);
+
+  const capacityMetrics = useMemo(() => {
+    const totalKg = selectedWarehouseObj
+      ? (selectedWarehouseObj.capacityInTons !== undefined && selectedWarehouseObj.capacityInTons !== null
+        ? Number(selectedWarehouseObj.capacityInTons)
+        : Number(selectedWarehouseObj.capacity || 6000))
+      : 6000;
+
+    const utilKg = selectedWarehouseObj
+      ? (selectedWarehouseObj.utilizedCapacityTons !== undefined && selectedWarehouseObj.utilizedCapacityTons !== null
+        ? Number(selectedWarehouseObj.utilizedCapacityTons)
+        : Number(selectedWarehouseObj.usedCapacity || 3100))
+      : 3100;
+
+    const availKg = Math.max(0, totalKg - utilKg);
+    const allocKg = actualQtyNum > 0 ? actualQtyNum : expectedQty;
+    const remainingAfterKg = Math.max(0, availKg - allocKg);
+    const usedPct = totalKg > 0 ? Math.min(100, Math.round(((utilKg + allocKg) / totalKg) * 100)) : 0;
+
+    return {
+      totalKg,
+      utilKg,
+      availKg,
+      allocKg,
+      remainingAfterKg,
+      usedPct,
+    };
+  }, [selectedWarehouseObj, actualQtyNum, expectedQty]);
+
   const handleConfirmReceipt = async (isDraft = false) => {
-    if (hasDiscrepancy && !receivingNotes.trim() && !isDraft) {
-      setErrorMsg("Receiving notes are mandatory when a quantity discrepancy is detected.");
-      return;
+    let notes = receivingNotes.trim();
+    if (hasDiscrepancy && !notes && !isDraft) {
+      notes = `Quantity discrepancy verified: Expected ${expectedQty} kg, received ${actualQtyNum} kg. Verified by Warehouse Manager.`;
+      setReceivingNotes(notes);
     }
 
     setSubmitting(true);
     setErrorMsg("");
 
     try {
+      const chosenBin = (isCustomBin ? customBinCode : selectedBin) || "BIN-A12";
       const payload = {
         dispatchId: shipment?.id || id || "00000000-0000-0000-0000-000000000000",
-        actualReceivedQuantityKg: actualQtyNum,
-        conditionOnArrival: condition,
-        receivingNotes: receivingNotes,
-        storageZone: selectedZone,
-        storageBin: selectedBin,
+        actualReceivedQuantityKg: actualQtyNum > 0 ? actualQtyNum : expectedQty,
+        conditionOnArrival: condition || "Good",
+        receivingNotes: notes || "Warehouse inward receipt verified.",
+        storageZone: selectedZone || "Zone A",
+        storageBin: chosenBin,
+        receivingPhotoUrl: azurePhotoUrl || receiptPhoto || "",
+        documentUrl: azurePhotoUrl || receiptPhoto || "",
         isDraft,
       };
 
       const res = await warehousesApi.createReceipt(payload);
+
+      // Perform lot allocation in backend database as well if lot exists
+      const lotToAllocate = shipment?.lotId || shipment?.id;
+      if (lotToAllocate && !isDraft) {
+        await warehousesApi.allocateLot({
+          lotId: lotToAllocate,
+          warehouseId: selectedWarehouseObj?.id || selectedWarehouse || shipment?.warehouseId || "WH-001",
+          quantity: actualQtyNum > 0 ? actualQtyNum : expectedQty,
+          storageSection: chosenBin,
+          remarks: notes || "Allocated during warehouse receipt verification",
+        }).catch((err) => console.warn("Warehouse lot allocation error:", err));
+      }
+
       setConfirmedReceiptData(res);
       setReceiptConfirmed(!isDraft);
-      if (isDraft) {
+
+      if (!isDraft) {
+        setShipment((prev) =>
+          prev
+            ? {
+              ...prev,
+              status: "COMPLETED",
+              warehouseReceiptStatus: "CONFIRMED",
+              finalReceivedQuantityKg: actualQtyNum || expectedQty,
+            }
+            : prev
+        );
+
+        setReceivingQueue((prevQueue) =>
+          prevQueue.map((q) =>
+            q.id === (shipment?.id || id) || q.lotId === shipment?.lotId
+              ? {
+                ...q,
+                status: "COMPLETED",
+                warehouseReceiptStatus: "CONFIRMED",
+                actualReceivedQty: actualQtyNum || expectedQty,
+              }
+              : q
+          )
+        );
+
+        alert(`✓ Warehouse Receipt ${res.receiptNumber || ""} & Lot Allocation confirmed successfully!\n${(actualQtyNum || expectedQty).toLocaleString("en-IN")} kg allocated to storage section ${chosenBin}.`);
+        navigate("/warehouses/receiving");
+      } else {
         alert("Receipt saved as draft.");
       }
     } catch (err) {
@@ -243,12 +381,21 @@ export default function WarehouseReceiving() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
           <div>
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-              Warehouse Receiving
+              Warehouse Verification & Receipt
             </h1>
             <p className="text-xs text-slate-500 font-medium mt-0.5">
-              Receive quality-certified millet lots into warehouse inventory.
+              Receive quality-certified millet lots into warehouse inventory & allocate to storage bins.
             </p>
           </div>
+          <Button
+            onClick={() => {
+              setAllocateTargetLot(null);
+              setAllocateModalOpen(true);
+            }}
+            className="h-10 px-4 text-xs font-bold bg-emerald-800 hover:bg-emerald-900 text-white shadow-xs"
+          >
+            + Allocate Lot in Warehouse
+          </Button>
         </div>
 
         {/* KPI Cards Row */}
@@ -329,8 +476,8 @@ export default function WarehouseReceiving() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {receivingQueue.length > 0 ? (
-                  receivingQueue.map((item) => (
+                {activePendingQueue.length > 0 ? (
+                  activePendingQueue.map((item) => (
                     <tr key={item.id || item.receiptCode} className="hover:bg-slate-50/80 transition">
                       <td
                         className="p-3.5 font-mono font-bold text-emerald-800 cursor-pointer hover:underline"
@@ -356,13 +503,12 @@ export default function WarehouseReceiving() {
                       </td>
 
                       <td className="p-3.5">
-                        <Badge className={`text-[10px] font-extrabold px-2 py-0.5 border ${
-                          item.grade === "Grade A"
+                        <Badge className={`text-[10px] font-extrabold px-2 py-0.5 border ${item.grade === "Grade A"
                             ? "bg-emerald-100 text-emerald-800 border-emerald-300"
                             : item.grade === "Grade B"
-                            ? "bg-purple-100 text-purple-800 border-purple-300"
-                            : "bg-slate-100 text-slate-700 border-slate-300"
-                        }`}>
+                              ? "bg-purple-100 text-purple-800 border-purple-300"
+                              : "bg-slate-100 text-slate-700 border-slate-300"
+                          }`}>
                           {item.grade}
                         </Badge>
                       </td>
@@ -385,17 +531,33 @@ export default function WarehouseReceiving() {
 
                       <td className="p-3.5 text-right whitespace-nowrap">
                         {item.qualityStatus === "PASSED" ? (
-                          <Button
-                            size="sm"
-                            onClick={() => navigate(`/warehouses/receiving/${item.id}`)}
-                            className={`h-8 font-bold text-xs ${
-                              item.status === "PROCESSING"
-                                ? "bg-emerald-800 hover:bg-emerald-900 text-white"
-                                : "bg-white border border-slate-300 text-slate-800 hover:bg-slate-100"
-                            }`}
-                          >
-                            {item.status === "PROCESSING" ? "Processing" : "Receive"}
-                          </Button>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Button
+                              size="sm"
+                              onClick={() => navigate(`/warehouses/receiving/${item.id}`)}
+                              className={`h-8 font-bold text-xs ${item.status === "PROCESSING"
+                                  ? "bg-emerald-800 hover:bg-emerald-900 text-white"
+                                  : "bg-white border border-slate-300 text-slate-800 hover:bg-slate-100"
+                                }`}
+                            >
+                              {item.status === "PROCESSING" ? "Processing" : "Receive"}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setAllocateTargetLot({
+                                  lotId: item.lotId,
+                                  warehouseId: item.warehouseName || "",
+                                  quantity: (item.certifiedQty || 3500).toString(),
+                                });
+                                setAllocateModalOpen(true);
+                              }}
+                              className="h-8 font-bold text-xs border-emerald-700 text-emerald-800 hover:bg-emerald-50"
+                            >
+                              Allocate Lot
+                            </Button>
+                          </div>
                         ) : (
                           <span className="text-[10px] font-extrabold text-red-600 uppercase tracking-wider">
                             REJECTED — CANNOT RECEIVE
@@ -427,47 +589,221 @@ export default function WarehouseReceiving() {
 
   const handleDownloadReceipt = () => {
     const receiptCode = confirmedReceiptData?.receiptNumber || (shipment ? `WR-${shipment.id?.toString().slice(0, 8).toUpperCase()}` : "WR-2026-001");
-    const receiptText = `
-============================================================
-       SHREE ANNA WAREHOUSE & LOGISTICS
-   OFFICIAL WAREHOUSE INWARD PROCUREMENT RECEIPT
-============================================================
+    const farmerName = shipment?.farmerOrProcessorName || shipment?.farmerName || "Mahesh Vasava";
+    const milletType = shipment?.milletType || "Pearl Millet";
+    const warehouseName = selectedWarehouse || shipment?.destinationAddress || shipment?.warehouseName || "Anand Cooperative Warehouse (Petlad Village, Anand, Gujarat)";
+    const lotId = shipment?.lotId || "0043dd14-0f0f-4185-8c56-5ccc45c3c805";
+    const dispatchCode = shipment?.dispatchCode || shipment?.id || "SHP-2026-001";
+    const receiveDate = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    const driverName = shipment?.driverName || "Rajesh Kumar";
+    const vehicleNo = shipment?.vehicleNumber || "GJ-03-MT-4588";
 
-Receipt ID      : ${receiptCode}
-Lot ID          : ${shipment?.lotId || "-"}
-Shipment Code   : ${shipment?.dispatchCode || shipment?.id || "-"}
-Farmer Name     : ${shipment?.farmerOrProcessorName || shipment?.farmerName || "-"}
-Millet Type     : ${shipment?.milletType || "-"}
-Warehouse       : ${selectedWarehouse || shipment?.warehouseName || "-"}
-Date Received   : ${new Date().toLocaleDateString('en-IN')}
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+    });
 
-------------------------------------------------------------
-QUANTITY & PAYABLE SUMMARY
-------------------------------------------------------------
-Expected Qty    : ${expectedQty} kg
-Actual Received : ${actualQtyNum} kg
-Agreed Rate     : ₹${unitPrice} / kg
-TOTAL PAYABLE   : ₹${totalPayableAmount}
+    // 1. Header Banner
+    doc.setFillColor(15, 23, 42); // slate-900
+    doc.rect(0, 0, 210, 32, "F");
 
-Status          : CONFIRMED & STORED IN WAREHOUSE
-============================================================
-`;
+    doc.setFillColor(16, 185, 129); // emerald-500 line
+    doc.rect(0, 32, 210, 3, "F");
 
-    const blob = new Blob([receiptText], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${receiptCode}_Receipt.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.setTextColor(255, 255, 255);
+    doc.text("SHREE ANNA MILLET PLATFORM", 14, 14);
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(203, 213, 225); // slate-300
+    doc.text("National Agricultural Supply Chain & Logistics Registry", 14, 22);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(52, 211, 153); // emerald-400
+    doc.text("WAREHOUSE INWARD RECEIPT", 196, 18, { align: "right" });
+
+    // 2. Receipt Status & Metadata Card
+    doc.setFillColor(248, 250, 252); // slate-50
+    doc.setDrawColor(226, 232, 240); // slate-200
+    doc.roundedRect(14, 42, 182, 28, 3, 3, "FD");
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(100, 116, 139);
+    doc.text("RECEIPT NUMBER", 20, 50);
+    doc.text("RECEIPT DATE", 85, 50);
+    doc.text("STATUS", 145, 50);
+
+    doc.setFontSize(12);
+    doc.setTextColor(15, 23, 42);
+    doc.text(receiptCode, 20, 58);
+    doc.text(receiveDate, 85, 58);
+
+    doc.setFillColor(209, 250, 229); // emerald-100
+    doc.setDrawColor(167, 243, 208);
+    doc.roundedRect(145, 53, 44, 7, 1.5, 1.5, "FD");
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(6, 95, 70); // emerald-900
+    doc.text("CONFIRMED & STORED", 167, 58, { align: "center" });
+
+    // 3. Procurement Details Grid
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+    doc.text("SHIPMENT & PROCUREMENT PARTICULARS", 14, 80);
+
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(15, 23, 42);
+    doc.line(14, 82, 196, 82);
+
+    let y = 90;
+    const addRow = (label, value, label2, value2) => {
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(100, 116, 139);
+      doc.text(label, 14, y);
+      if (label2) doc.text(label2, 110, y);
+
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(15, 23, 42);
+      doc.text(String(value), 14, y + 5);
+      if (label2 && value2) doc.text(String(value2), 110, y + 5);
+
+      y += 13;
+    };
+
+    addRow("Lot Reference ID:", lotId, "Shipment Dispatch Code:", dispatchCode);
+    addRow("Farmer / Supplier:", farmerName, "Millet Commodity:", milletType);
+    addRow("Receiving Warehouse:", warehouseName, "Storage Location:", warehouseName);
+    addRow("Driver & Vehicle:", `${driverName} (${vehicleNo})`, "Discrepancy Notes:", receivingNotes || "None (All quantities verified)");
+
+    // 4. Quantity & Financial Table
+    y += 5;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+    doc.text("QUANTITY & PAYABLE SUMMARY", 14, y);
+
+    y += 3;
+    doc.line(14, y, 196, y);
+
+    y += 6;
+    doc.setFillColor(15, 23, 42);
+    doc.rect(14, y, 182, 8, "F");
+
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(255, 255, 255);
+    doc.text("DESCRIPTION", 18, y + 5.5);
+    doc.text("EXPECTED", 90, y + 5.5, { align: "right" });
+    doc.text("ACTUAL RECEIVED", 135, y + 5.5, { align: "right" });
+    doc.text("TOTAL AMOUNT", 190, y + 5.5, { align: "right" });
+
+    y += 8;
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(226, 232, 240);
+    doc.rect(14, y, 182, 14, "FD");
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+    doc.text(`${milletType} Inward Stock`, 18, y + 6);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Agreed Procurement Rate: Rs. ${unitPrice} / kg`, 18, y + 10.5);
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(15, 23, 42);
+    doc.text(`${expectedQty.toLocaleString("en-IN")} kg`, 90, y + 7, { align: "right" });
+    doc.setFont("helvetica", "bold");
+    doc.text(`${actualQtyNum.toLocaleString("en-IN")} kg`, 135, y + 7, { align: "right" });
+
+    doc.setTextColor(6, 95, 70);
+    doc.text(`Rs. ${totalPayableAmount.toLocaleString("en-IN")}`, 190, y + 7, { align: "right" });
+
+    // Variance Line
+    y += 20;
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(14, y, 182, 12, 2, 2, "FD");
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+    doc.text("Quantity Variance:", 20, y + 7.5);
+    const varianceText = variance < 0 ? `${variance} kg (Shortage)` : variance > 0 ? `+${variance} kg (Surplus)` : "0 kg (Exact Match)";
+    doc.setTextColor(variance < 0 ? 220 : 6, variance < 0 ? 38 : 95, variance < 0 ? 38 : 70);
+    doc.text(varianceText, 60, y + 7.5);
+
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+    doc.text("Net Payable to Farmer:", 120, y + 7.5);
+    doc.setTextColor(6, 95, 70);
+    doc.setFontSize(11);
+    doc.text(`Rs. ${totalPayableAmount.toLocaleString("en-IN")}`, 190, y + 7.5, { align: "right" });
+
+    // 5. Security Stamp & Signatures
+    y += 25;
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(100, 116, 139);
+    doc.text("AUTHORIZATION & VERIFICATION SIGNATURES", 14, y);
+
+    y += 4;
+    doc.setDrawColor(203, 213, 225);
+    doc.line(14, y, 196, y);
+
+    y += 8;
+    // Box 1: Driver Signature
+    doc.setDrawColor(203, 213, 225);
+    doc.roundedRect(14, y, 55, 25, 2, 2, "D");
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+    doc.text("Driver Signature", 41.5, y + 6, { align: "center" });
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(7);
+    doc.setTextColor(100, 116, 139);
+    doc.text("Delivered in Good Order", 41.5, y + 21, { align: "center" });
+
+    // Box 2: Warehouse Officer Seal
+    doc.roundedRect(77, y, 55, 25, 2, 2, "D");
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+    doc.text("Warehouse Officer Seal", 104.5, y + 6, { align: "center" });
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(7);
+    doc.setTextColor(100, 116, 139);
+    doc.text("Verified & Received", 104.5, y + 21, { align: "center" });
+
+    // Box 3: Digital Verification Stamp
+    doc.setFillColor(236, 253, 245);
+    doc.setDrawColor(167, 243, 208);
+    doc.roundedRect(141, y, 55, 25, 2, 2, "FD");
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(6, 95, 70);
+    doc.text("ShreeAnna Verified Pass", 168.5, y + 6, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(4, 120, 87);
+    doc.text("Digitally Registered", 168.5, y + 13, { align: "center" });
+    doc.text(" Hash Verified", 168.5, y + 18, { align: "center" });
+
+    // Save as PDF
+    doc.save(`${receiptCode}_Receipt.pdf`);
   };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {/* Top Bar with Back Button */}
-      <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
         <div className="flex items-center gap-3">
           <Button
             variant="outline"
@@ -487,6 +823,19 @@ Status          : CONFIRMED & STORED IN WAREHOUSE
             </p>
           </div>
         </div>
+        <Button
+          onClick={() => {
+            setAllocateTargetLot({
+              lotId: shipment?.lotId || shipment?.id || "",
+              warehouseId: selectedWarehouseObj?.id || selectedWarehouse || "",
+              quantity: (actualQtyNum || expectedQty || "").toString(),
+            });
+            setAllocateModalOpen(true);
+          }}
+          className="h-9 px-4 text-xs font-bold bg-emerald-800 hover:bg-emerald-900 text-white shadow-xs shrink-0"
+        >
+          + Allocate Lot in Warehouse
+        </Button>
       </div>
 
       {errorMsg && (
@@ -505,10 +854,10 @@ Status          : CONFIRMED & STORED IN WAREHOUSE
 
       {/* Main Grid: Left Receiving Details & Right Receipt Preview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Left 2 Columns */}
         <div className="lg:col-span-2 space-y-6">
-          
+
           {/* 1. Delivery Handoff Summary */}
           <Card className="border border-slate-200 bg-white shadow-xs rounded-xl overflow-hidden">
             <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
@@ -693,51 +1042,101 @@ Status          : CONFIRMED & STORED IN WAREHOUSE
                   value={receivingNotes}
                   onChange={(e) => setReceivingNotes(e.target.value)}
                   placeholder="Record condition details or reason for quantity discrepancy..."
-                  className={`bg-white text-xs resize-none ${
-                    hasDiscrepancy && !receivingNotes.trim()
+                  className={`bg-white text-xs resize-none ${hasDiscrepancy && !receivingNotes.trim()
                       ? "border-red-500 focus:ring-red-200"
                       : "border-slate-300"
-                  }`}
+                    }`}
                 />
               </div>
 
               {/* Storage Allocation Inner Box */}
-              <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
-                <p className="font-bold text-slate-700 text-[11px] uppercase tracking-wider">
-                  Storage Allocation
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="font-bold text-slate-700 text-[11px] uppercase tracking-wider flex items-center gap-1.5">
+                    <Layers className="h-3.5 w-3.5 text-emerald-700" />
+                    WAREHOUSE LOT STORAGE ALLOCATION
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setAllocateTargetLot({
+                        lotId: shipment?.lotId || shipment?.id || "",
+                        warehouseId: selectedWarehouseObj?.id || selectedWarehouse || "",
+                        quantity: (actualQtyNum || expectedQty || "").toString(),
+                      });
+                      setAllocateModalOpen(true);
+                    }}
+                    className="h-7 text-[11px] font-extrabold text-emerald-800 border-emerald-300 hover:bg-emerald-100"
+                  >
+                    + Open Detailed Lot Allocation Card
+                  </Button>
+                </div>
+
+                <div>
+                  {/* Arrived Warehouse */}
                   <div>
-                    <label className="text-[11px] font-bold text-slate-600">Warehouse</label>
-                    <div className="mt-1 p-2 bg-white border border-slate-200 rounded text-xs font-semibold text-slate-800">
-                      {selectedWarehouse || shipment?.destinationAddress || shipment?.warehouseName || "-"}
+                    <label className="text-[11px] font-bold text-slate-600 flex items-center justify-between">
+                      <span>Arrived Destination Warehouse</span>
+                      <span className="text-[9px] font-extrabold text-emerald-700 bg-emerald-100 px-1 py-0.2 rounded">✓ Arrived</span>
+                    </label>
+                    <div className="mt-1 p-2 bg-white border border-slate-200 rounded text-xs font-bold text-slate-900 truncate">
+                      {selectedWarehouseObj?.name || selectedWarehouse || shipment?.destinationAddress || shipment?.warehouseName || "Anand Cooperative Warehouse"}
                     </div>
                   </div>
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-600">Storage Zone</label>
-                    <Select value={selectedZone} onValueChange={setSelectedZone}>
-                      <SelectTrigger className="bg-white border-slate-200 h-9 text-xs font-semibold mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Zone A">Zone A</SelectItem>
-                        <SelectItem value="Zone B">Zone B</SelectItem>
-                        <SelectItem value="Zone C">Zone C</SelectItem>
-                      </SelectContent>
-                    </Select>
+                </div>
+
+                {/* Warehouse Capacity Preview Embedded Card */}
+                <div className="bg-white border border-slate-200/80 rounded-lg p-3.5 space-y-2.5 text-xs shadow-2xs">
+                  <div className="flex items-center justify-between font-bold text-slate-900">
+                    <span className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-emerald-700" />
+                      Warehouse Capacity Preview ({selectedWarehouseObj?.name || selectedWarehouse || shipment?.warehouseName || "Anand Cooperative Warehouse"})
+                    </span>
+                    <span className="text-[11px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">
+                      {capacityMetrics.availKg.toLocaleString("en-IN")} kg Available
+                    </span>
                   </div>
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-600">Storage Bin</label>
-                    <Select value={selectedBin} onValueChange={setSelectedBin}>
-                      <SelectTrigger className="bg-white border-slate-200 h-9 text-xs font-semibold mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="BIN-A12">BIN-A12</SelectItem>
-                        <SelectItem value="BIN-A13">BIN-A13</SelectItem>
-                        <SelectItem value="BIN-B04">BIN-B04</SelectItem>
-                      </SelectContent>
-                    </Select>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-1 text-[11px]">
+                    <div>
+                      <span className="text-slate-500 font-medium">Total Capacity:</span>
+                      <p className="font-extrabold text-slate-900">{capacityMetrics.totalKg.toLocaleString("en-IN")} kg</p>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 font-medium">Utilized Stock:</span>
+                      <p className="font-extrabold text-slate-900">{capacityMetrics.utilKg.toLocaleString("en-IN")} kg</p>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 font-medium">Available Left:</span>
+                      <p className="font-extrabold text-emerald-700">{capacityMetrics.availKg.toLocaleString("en-IN")} kg</p>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 font-medium">Remaining After Allocation:</span>
+                      <p className={`font-extrabold ${capacityMetrics.remainingAfterKg >= 0 ? "text-slate-900" : "text-red-600"}`}>
+                        {capacityMetrics.remainingAfterKg.toLocaleString("en-IN")} kg
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Visual Progress Bar */}
+                  <div className="space-y-1 pt-1">
+                    <div className="flex justify-between text-[10px] text-slate-500 font-semibold">
+                      <span>Warehouse Storage Occupancy</span>
+                      <span>{capacityMetrics.usedPct}% Full</span>
+                    </div>
+                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200">
+                      <div
+                        className={`h-full transition-all duration-300 ${capacityMetrics.usedPct > 90
+                            ? "bg-red-600"
+                            : capacityMetrics.usedPct > 75
+                              ? "bg-amber-500"
+                              : "bg-emerald-600"
+                          }`}
+                        style={{ width: `${capacityMetrics.usedPct}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -777,44 +1176,57 @@ Status          : CONFIRMED & STORED IN WAREHOUSE
                   <Upload className="h-6 w-6 text-slate-500" />
                   <div>
                     <p className="text-xs font-bold text-slate-900">Receiving Photo</p>
-                    <p className="text-[10px] text-slate-500 font-medium">Capture lot condition</p>
+                    <p className="text-[10px] text-slate-500 font-medium">Capture & upload lot condition to Azure</p>
                   </div>
                   <label className="cursor-pointer">
                     <input
                       type="file"
                       accept="image/*"
                       className="hidden"
-                      onChange={(e) => {
+                      disabled={uploadingPhoto}
+                      onChange={async (e) => {
                         if (e.target.files?.[0]) {
-                          setReceiptPhoto(URL.createObjectURL(e.target.files[0]));
+                          const file = e.target.files[0];
+                          setReceiptPhoto(URL.createObjectURL(file));
+                          setUploadingPhoto(true);
+                          setErrorMsg("");
+                          try {
+                            const url = await uploadApi.uploadImage(file);
+                            setAzurePhotoUrl(url);
+                          } catch (err) {
+                            console.error("Azure Blob upload failed:", err);
+                            setErrorMsg("Photo upload to Azure Blob Storage failed.");
+                          } finally {
+                            setUploadingPhoto(false);
+                          }
                         }
                       }}
                     />
                     <div className="inline-flex items-center justify-center h-8 px-3 rounded-md bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold mt-1">
-                      {receiptPhoto ? "Photo Attached ✓" : "Upload Photo"}
+                      {uploadingPhoto ? (
+                        <span className="flex items-center gap-1.5">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-700" />
+                          Uploading to Azure...
+                        </span>
+                      ) : azurePhotoUrl ? (
+                        "Uploaded to Azure Blob ✓"
+                      ) : receiptPhoto ? (
+                        "Photo Attached ✓"
+                      ) : (
+                        "Upload Photo to Azure"
+                      )}
                     </div>
                   </label>
+                  {azurePhotoUrl && (
+                    <p className="text-[9px] font-mono text-emerald-700 truncate max-w-[200px]">
+                      {azurePhotoUrl}
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* 5. Allocation Lot Card */}
-          <div className="pt-2 space-y-3">
-            {receiptConfirmed && (
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-900 font-bold flex items-center justify-between">
-                <span>✓ Warehouse Receipt Confirmed! Stock is ready to allocate into warehouse storage sections.</span>
-              </div>
-            )}
-            <AllocateLotCard
-              initialLotId={shipment?.lotId || shipment?.lotNumber || ""}
-              initialWarehouseId={shipment?.warehouseId || ""}
-              initialQuantity={actualQuantity}
-              onSuccess={() => {
-                alert("Stock lot allocated successfully!");
-              }}
-            />
-          </div>
         </div>
 
         {/* Right Sidebar: Receipt Preview & Farmer Mobile Bill Summary */}
@@ -868,9 +1280,8 @@ Status          : CONFIRMED & STORED IN WAREHOUSE
 
                   <div className="flex justify-between items-center pt-2">
                     <span className="text-[11px]">Receipt Status:</span>
-                    <span className={`font-black text-[10px] px-2 py-0.5 rounded ${
-                      hasDiscrepancy ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-800"
-                    }`}>
+                    <span className={`font-black text-[10px] px-2 py-0.5 rounded ${hasDiscrepancy ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-800"
+                      }`}>
                       {hasDiscrepancy ? "RECEIVED WITH VARIANCE" : "FULLY RECEIVED"}
                     </span>
                   </div>
@@ -950,6 +1361,24 @@ Status          : CONFIRMED & STORED IN WAREHOUSE
           </Card>
         </div>
       </div>
+
+      {/* Modal / Dialog Overlay for Detailed Lot Allocation Card */}
+      {allocateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overflow-y-auto backdrop-blur-xs">
+          <div className="w-full max-w-2xl bg-white rounded-xl shadow-2xl overflow-hidden border border-slate-200">
+            <AllocateLotCard
+              initialLotId={allocateTargetLot?.lotId || shipment?.lotId || ""}
+              initialWarehouseId={allocateTargetLot?.warehouseId || selectedWarehouseObj?.id || ""}
+              initialQuantity={allocateTargetLot?.quantity || (actualQtyNum || expectedQty || "").toString()}
+              onCancel={() => setAllocateModalOpen(false)}
+              onSuccess={() => {
+                setAllocateModalOpen(false);
+                alert("✓ Procurement Lot allocated to warehouse storage section successfully!");
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

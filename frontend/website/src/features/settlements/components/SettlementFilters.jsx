@@ -16,7 +16,7 @@ function SettlementFilters({
 
         <input
           type="text"
-          placeholder="Search settlement, order or buyer..."
+          placeholder="Search settlement, order, farmer or lot..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full rounded-lg border bg-background py-2 pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
@@ -26,16 +26,12 @@ function SettlementFilters({
       <select
         value={status}
         onChange={(e) => setStatus(e.target.value)}
-        className="rounded-lg border bg-background px-3 py-2 text-sm outline-none"
+        className="rounded-lg border bg-background px-3 py-2 text-sm outline-none font-medium"
       >
         <option value="All">All Status</option>
-        <option value="Awaiting Delivery">
-          Awaiting Delivery
-        </option>
-        <option value="Pending Settlement">
-          Pending Settlement
-        </option>
+        <option value="Pending">Pending Settlement</option>
         <option value="Paid">Paid</option>
+        <option value="Awaiting Delivery">Awaiting Delivery</option>
       </select>
     </div>
   );

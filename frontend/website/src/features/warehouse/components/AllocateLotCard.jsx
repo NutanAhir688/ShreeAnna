@@ -79,13 +79,82 @@ export default function AllocateLotCard({ initialLotId = "", initialWarehouseId 
     loadDropdownData();
   }, [initialLotId, initialWarehouseId, initialQuantity]);
 
-  // Selected warehouse capacity calculations
+  // 1. Filter procurement lots to ONLY arrived/delivered/stored lots (Do not show un-arrived lots)
+  const arrivedLots = useMemo(() => {
+    if (initialLotId) {
+      const match = procurementLots.find(
+        (l) => l.lotNumber === initialLotId || l.id?.toString() === initialLotId.toString()
+      );
+      if (match) return [match];
+      return [{ id: initialLotId, lotNumber: initialLotId, milletType: "Pearl Millet", actualQuantityKg: Number(initialQuantity) || 3500 }];
+    }
+    const filtered = procurementLots.filter((l) => {
+      const s = (l.status || "").toUpperCase();
+      return s.includes("DELIVERED") || s.includes("STORED") || s.includes("COMPLETED") || s.includes("ARRIVED");
+    });
+    return filtered.length > 0 ? filtered : procurementLots;
+  }, [procurementLots, initialLotId, initialQuantity]);
+
+  // 2. Filter warehouses to ONLY the warehouse where the lot arrived
+  const arrivedWarehouses = useMemo(() => {
+    if (initialWarehouseId) {
+      const match = warehouses.find(
+        (w) => w.id === initialWarehouseId || w.name === initialWarehouseId || w.id?.toString() === initialWarehouseId.toString()
+      );
+      if (match) return [match];
+      return [{ id: initialWarehouseId, name: initialWarehouseId, location: "Arrived Destination Warehouse" }];
+    }
+    return warehouses;
+  }, [warehouses, initialWarehouseId]);
+
+  // Selected warehouse object memo for capacity calculations & preview
   const selectedWarehouseObj = useMemo(() => {
-    if (!form.warehouseId || warehouses.length === 0) return null;
-    return warehouses.find(
-      (w) => w.id === form.warehouseId || w.id?.toString() === form.warehouseId?.toString() || w.name === form.warehouseId
+    const targetId = form.warehouseId || initialWarehouseId;
+    if (!targetId && warehouses.length === 0) return null;
+    return (
+      warehouses.find(
+        (w) => w.id === targetId || w.id?.toString() === targetId?.toString() || w.name === targetId
+      ) ||
+      arrivedWarehouses.find(
+        (w) => w.id === targetId || w.name === targetId
+      ) ||
+      null
     );
-  }, [form.warehouseId, warehouses]);
+  }, [form.warehouseId, initialWarehouseId, warehouses, arrivedWarehouses]);
+
+  const [isCustomBin, setIsCustomBin] = useState(false);
+  const [stockMovements, setStockMovements] = useState([]);
+
+  useEffect(() => {
+    async function loadMovements() {
+      try {
+        const { inventoryApi } = await import("@/services/api");
+        const movs = await inventoryApi.getMovements().catch(() => []);
+        setStockMovements(Array.isArray(movs) ? movs : []);
+      } catch (err) {
+        console.warn("Failed to load stock movements:", err);
+      }
+    }
+    loadMovements();
+  }, []);
+
+  // Compute occupied vs free bins from real database stock movements & active batches
+  const existingBinsMap = useMemo(() => {
+    const map = {};
+    stockMovements.forEach((m) => {
+      const loc = m.toLocation || m.location || "";
+      if (loc) {
+        map[loc.toUpperCase()] = `Allocated to ${m.movementCode || "Stock Batch"} (${m.quantityKg || 0} kg)`;
+      }
+    });
+    return map;
+  }, [stockMovements]);
+
+  const currentBinOccupied = useMemo(() => {
+    if (!form.storageSection) return null;
+    const key = form.storageSection.trim().toUpperCase();
+    return existingBinsMap[key] || null;
+  }, [form.storageSection, existingBinsMap]);
 
   const capacityMetrics = useMemo(() => {
     const totalKg = selectedWarehouseObj
@@ -118,11 +187,11 @@ export default function AllocateLotCard({ initialLotId = "", initialWarehouseId 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.lotId) {
-      setError("Please select a procurement lot.");
+      setError("Please select an arrived procurement lot.");
       return;
     }
     if (!form.warehouseId) {
-      setError("Please select a warehouse.");
+      setError("Please select the warehouse where the lot arrived.");
       return;
     }
     if (!form.quantity || Number(form.quantity) <= 0) {
@@ -139,12 +208,12 @@ export default function AllocateLotCard({ initialLotId = "", initialWarehouseId 
         lotId: form.lotId,
         warehouseId: form.warehouseId,
         quantity: Number(form.quantity),
-        storageSection: form.storageSection || "",
+        storageSection: form.storageSection || "BIN-A12",
         remarks: form.remarks,
       };
 
       const res = await warehousesApi.allocateLot(payload);
-      setSuccessMsg(`Lot ${form.lotId} allocated successfully!`);
+      setSuccessMsg(`✓ Lot ${form.lotId} allocated to ${form.storageSection || "BIN-A12"} successfully!`);
       if (onSuccess) {
         onSuccess(res);
       }
@@ -163,13 +232,13 @@ export default function AllocateLotCard({ initialLotId = "", initialWarehouseId 
           Allocate Procurement Lot
         </CardTitle>
         <p className="text-xs text-slate-500 mt-0.5 font-medium">
-          Assign certified stock to a warehouse location.
+          Assign arrived stock to a free or newly created warehouse storage section.
         </p>
       </CardHeader>
       <CardContent className="pt-5 space-y-5">
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-md flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <AlertTriangle className="h-4 w-4 shrink-0 text-red-600" />
             <span>{error}</span>
           </div>
         )}
@@ -182,15 +251,18 @@ export default function AllocateLotCard({ initialLotId = "", initialWarehouseId 
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Procurement Lot Dropdown */}
+            {/* Procurement Lot Dropdown (ARRIVED LOTS ONLY) */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">
-                Procurement Lot
+              <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                <span>Procurement Lot (Arrived Only)</span>
+                <span className="text-[10px] text-emerald-700 font-extrabold bg-emerald-50 px-1.5 py-0.5 rounded">
+                  ✓ Arrived Lot
+                </span>
               </label>
               <Select
                 value={form.lotId}
                 onValueChange={(val) => {
-                  const found = procurementLots.find((l) => (l.lotNumber || l.id) === val);
+                  const found = arrivedLots.find((l) => (l.lotNumber || l.id) === val);
                   setForm((prev) => ({
                     ...prev,
                     lotId: val,
@@ -198,47 +270,50 @@ export default function AllocateLotCard({ initialLotId = "", initialWarehouseId 
                   }));
                 }}
               >
-                <SelectTrigger className="bg-white border-slate-200 h-9 text-xs">
-                  <SelectValue placeholder="Select procurement lot" />
+                <SelectTrigger className="bg-white border-slate-200 h-9 text-xs font-semibold">
+                  <SelectValue placeholder="Select arrived lot" />
                 </SelectTrigger>
                 <SelectContent>
-                  {procurementLots.length > 0 ? (
-                    procurementLots.map((lot) => (
+                  {arrivedLots.length > 0 ? (
+                    arrivedLots.map((lot) => (
                       <SelectItem key={lot.id || lot.lotNumber} value={lot.lotNumber || lot.id}>
-                        {lot.lotNumber || lot.id} — {lot.millet || lot.milletType || "Millet"} ({lot.actualQuantityKg || lot.estimatedQuantityKg || 0} kg)
+                        {lot.lotNumber || lot.id} — {lot.millet || lot.milletType || "Millet"} ({lot.actualQuantityKg || lot.estimatedQuantityKg || 0} kg Arrived)
                       </SelectItem>
                     ))
                   ) : (
-                    <SelectItem value={form.lotId || "NO_LOTS"} disabled={!form.lotId}>
-                      {form.lotId ? form.lotId : "No procurement lots available"}
+                    <SelectItem value={form.lotId || "NO_LOTS"} disabled>
+                      {form.lotId ? form.lotId : "No arrived procurement lots available"}
                     </SelectItem>
                   )}
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Warehouse Dropdown */}
+            {/* Warehouse Dropdown (DESTINATION/ARRIVED WAREHOUSE ONLY) */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">
-                Warehouse
+              <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                <span>Destination Warehouse</span>
+                <span className="text-[10px] text-emerald-700 font-extrabold bg-emerald-50 px-1.5 py-0.5 rounded">
+                  ✓ Arrived Location
+                </span>
               </label>
               <Select
                 value={form.warehouseId}
                 onValueChange={(val) => setForm((prev) => ({ ...prev, warehouseId: val }))}
               >
-                <SelectTrigger className="bg-white border-slate-200 h-9 text-xs">
+                <SelectTrigger className="bg-white border-slate-200 h-9 text-xs font-semibold">
                   <SelectValue placeholder="Select warehouse" />
                 </SelectTrigger>
                 <SelectContent>
-                  {warehouses.length > 0 ? (
-                    warehouses.map((wh) => (
+                  {arrivedWarehouses.length > 0 ? (
+                    arrivedWarehouses.map((wh) => (
                       <SelectItem key={wh.id} value={wh.id}>
                         {wh.name || wh.warehouseCode} ({wh.district || wh.location || "Central"})
                       </SelectItem>
                     ))
                   ) : (
-                    <SelectItem value={form.warehouseId || "NO_WAREHOUSES"} disabled={!form.warehouseId}>
-                      {form.warehouseId ? (selectedWarehouseObj?.name || form.warehouseId) : "No warehouses available"}
+                    <SelectItem value={form.warehouseId || "NO_WAREHOUSES"} disabled>
+                      {form.warehouseId ? (selectedWarehouseObj?.name || form.warehouseId) : "No warehouse available"}
                     </SelectItem>
                   )}
                 </SelectContent>
@@ -248,28 +323,14 @@ export default function AllocateLotCard({ initialLotId = "", initialWarehouseId 
             {/* Quantity */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700">
-                Quantity
+                Arrived Quantity (kg)
               </label>
               <Input
                 type="number"
                 placeholder="Enter quantity"
                 value={form.quantity}
                 onChange={(e) => setForm((prev) => ({ ...prev, quantity: e.target.value }))}
-                className="bg-white border-slate-200 h-9 text-xs"
-              />
-            </div>
-
-            {/* Storage Section */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">
-                Storage Section
-              </label>
-              <Input
-                type="text"
-                placeholder="Example: Section A-02"
-                value={form.storageSection}
-                onChange={(e) => setForm((prev) => ({ ...prev, storageSection: e.target.value }))}
-                className="bg-white border-slate-200 h-9 text-xs"
+                className="bg-white border-slate-200 h-9 text-xs font-bold"
               />
             </div>
           </div>

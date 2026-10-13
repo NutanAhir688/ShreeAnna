@@ -1,38 +1,190 @@
 import {
   ArrowLeft,
+  Boxes,
+  Building2,
+  CheckCircle2,
+  FileText,
+  Loader2,
   MapPin,
   Package,
+  Plus,
+  Search,
   Thermometer,
-  User,
   Trash2,
+  User,
   Warehouse as WarehouseIcon,
 } from "lucide-react";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { warehousesApi } from "@/services/api";
+import AllocateLotCard from "../components/AllocateLotCard";
+import { inventoryApi, logisticsApi, lotsApi, warehousesApi } from "@/services/api";
+
+const STATUS_STYLES = {
+  SUBMITTED: "bg-slate-100 text-slate-700 border-slate-300",
+  QUALITY_INSPECTION: "bg-amber-100 text-amber-800 border-amber-300",
+  QUALITY_CERTIFIED: "bg-emerald-100 text-emerald-800 border-emerald-300",
+  QUALITY_CERTIFICATE: "bg-emerald-100 text-emerald-800 border-emerald-300",
+  PROCUREMENT_AGREEMENT: "bg-blue-100 text-blue-800 border-blue-300",
+  AGREEMENT_PENDING: "bg-blue-100 text-blue-800 border-blue-300",
+  AGREEMENT_ACCEPTED: "bg-blue-100 text-blue-800 border-blue-300",
+  PICKUP: "bg-purple-100 text-purple-800 border-purple-300",
+  PICKUP_RESCHEDULED: "bg-orange-100 text-orange-800 border-orange-300",
+  WAREHOUSE_RECEIVED: "bg-emerald-100 text-emerald-800 border-emerald-300",
+  DELIVERED: "bg-purple-100 text-purple-800 border-purple-300",
+  STORED: "bg-emerald-100 text-emerald-800 border-emerald-300",
+  PAYMENT: "bg-indigo-100 text-indigo-800 border-indigo-300",
+  COMPLETED: "bg-emerald-100 text-emerald-800 border-emerald-300",
+  REJECTED: "bg-red-100 text-red-800 border-red-300",
+  QUALITY_FAILED: "bg-red-100 text-red-800 border-red-300",
+};
+
+function formatStatus(status) {
+  const raw = String(status || "SUBMITTED").toUpperCase();
+  const labels = {
+    QUALITY_CERTIFIED: "Certified",
+    QUALITY_CERTIFICATE: "Certified",
+    QUALITY_INSPECTION: "Quality Inspection",
+    PROCUREMENT_AGREEMENT: "Agreement Pending",
+    AGREEMENT_PENDING: "Agreement Pending",
+    AGREEMENT_ACCEPTED: "Agreement Accepted",
+    WAREHOUSE_RECEIVED: "Warehouse Received",
+    PICKUP_RESCHEDULED: "Pickup Rescheduled",
+    DELIVERED: "Delivered",
+    STORED: "Stored in Warehouse",
+    COMPLETED: "Completed & Stored",
+  };
+
+  if (labels[raw]) return labels[raw];
+
+  return raw
+    .toLowerCase()
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
 
 function WarehouseDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const [warehouse, setWarehouse] = useState(null);
+  const [allocatedLots, setAllocatedLots] = useState([]);
+  const [stockMovements, setStockMovements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [search, setSearch] = useState("");
+  const [showAllocateModal, setShowAllocateModal] = useState(false);
+
+  const loadWarehouseData = async () => {
+    try {
+      setLoading(true);
+      const [whData, lotsData, dispatchesData, movementsData, serverLots] = await Promise.all([
+        warehousesApi.getById(id).catch(() => null),
+        lotsApi.getAll().catch(() => []),
+        logisticsApi.getAll().catch(() => []),
+        inventoryApi.getMovements().catch(() => []),
+        warehousesApi.getAllocatedLots(id).catch(() => []),
+      ]);
+
+      if (whData) setWarehouse(whData);
+
+      const allLots = Array.isArray(lotsData) ? lotsData : [];
+      const allDispatches = Array.isArray(dispatchesData) ? dispatchesData : [];
+      const allMovs = Array.isArray(movementsData) ? movementsData : [];
+      setStockMovements(allMovs);
+
+      const matched = [];
+      const seenIds = new Set();
+
+      // 1. Lots returned directly by backend allocation endpoint
+      if (Array.isArray(serverLots) && serverLots.length > 0) {
+        for (const lot of serverLots) {
+          const key = String(lot.id || lot.lotNumber).toLowerCase();
+          if (!seenIds.has(key)) {
+            seenIds.add(key);
+            matched.push({
+              id: lot.id,
+              lotNumber: lot.lotNumber,
+              farmerName: lot.farmerName || "Farmer",
+              farmName: lot.farmName || "Farm",
+              millet: lot.milletType || lot.millet || "Millet",
+              grade: lot.grade || "Grade A",
+              quantityKg: Number(lot.quantityKg || lot.actualQuantityKg || 0),
+              status: lot.status || "STORED",
+              dispatchCode: lot.dispatchCode,
+            });
+          }
+        }
+      }
+
+      // 2. Dispatches assigned to this warehouse
+      const whDispatches = allDispatches.filter((d) => {
+        if (!d.warehouseId && !d.warehouseName) return false;
+        const matchesId = id && String(d.warehouseId).toLowerCase() === String(id).toLowerCase();
+        const matchesName = whData?.name && d.warehouseName &&
+          d.warehouseName.toLowerCase().trim().includes(whData.name.toLowerCase().trim());
+        return matchesId || matchesName;
+      });
+
+      for (const d of whDispatches) {
+        const foundLot = allLots.find(
+          (l) => l.id === d.lotId || l.lotNumber === d.lotId || String(l.id).toLowerCase() === String(d.lotId).toLowerCase()
+        );
+
+        const lotKey = String(foundLot?.id || d.lotId || d.id).toLowerCase();
+        if (!seenIds.has(lotKey)) {
+          seenIds.add(lotKey);
+          matched.push({
+            id: foundLot?.id || d.lotId || d.id,
+            lotNumber: foundLot?.lotNumber || (d.lotId ? `LOT-${d.lotId.slice(0, 8).toUpperCase()}` : d.dispatchCode || "LOT-ALLOCATED"),
+            farmerName: d.farmerOrProcessorName || foundLot?.farmerName || "Farmer",
+            farmName: foundLot?.farmName || d.sourceAddress || "Registered Farm",
+            millet: d.milletType || foundLot?.milletType || foundLot?.farmCrop || "Millet",
+            grade: foundLot?.farmCrop || foundLot?.grade || "Grade A",
+            quantityKg: Number(d.finalReceivedQuantityKg || d.totalQuantityKg || foundLot?.actualQuantityKg || foundLot?.estimatedQuantityKg || 0),
+            status: d.status === "COMPLETED" || foundLot?.status === "STORED" ? "STORED" : (d.status || foundLot?.status || "STORED"),
+            dispatchCode: d.dispatchCode,
+          });
+        }
+      }
+
+      // 3. Any lots directly matched by warehouseId or warehouseName
+      for (const lot of allLots) {
+        const lotKey = String(lot.id).toLowerCase();
+        if (seenIds.has(lotKey)) continue;
+
+        const matchesWh =
+          (lot.warehouseId && id && String(lot.warehouseId).toLowerCase() === String(id).toLowerCase()) ||
+          (lot.warehouseName && whData?.name && lot.warehouseName.toLowerCase().includes(whData.name.toLowerCase()));
+
+        if (matchesWh) {
+          seenIds.add(lotKey);
+          matched.push({
+            id: lot.id,
+            lotNumber: lot.lotNumber,
+            farmerName: lot.farmerName || "Farmer",
+            farmName: lot.farmName || "Farm",
+            millet: lot.milletType || lot.farmCrop || "Millet",
+            grade: lot.grade || lot.farmCrop || "Grade A",
+            quantityKg: Number(lot.actualQuantityKg ?? lot.agreedQuantityKg ?? lot.estimatedQuantityKg ?? 0),
+            status: lot.status || "STORED",
+            dispatchCode: null,
+          });
+        }
+      }
+
+      setAllocatedLots(matched);
+    } catch (err) {
+      console.error("Failed to fetch warehouse details & allocated lots:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function loadWarehouse() {
-      try {
-        const data = await warehousesApi.getById(id);
-        if (data) setWarehouse(data);
-      } catch (err) {
-        console.error("Failed to fetch warehouse details:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadWarehouse();
+    loadWarehouseData();
   }, [id]);
 
   const handleDelete = async () => {
@@ -54,24 +206,73 @@ function WarehouseDetails() {
     }
   };
 
+  const processedLots = useMemo(() => {
+    return allocatedLots.map((lot) => {
+      const lotNumber =
+        lot.lotNumber ||
+        (lot.id ? `LOT-${lot.id.slice(0, 8).toUpperCase()}` : "LOT-UNKNOWN");
+      const farmerName = lot.farmerName || "Ramesh Patel";
+      const farmName = lot.farmName || "Primary Farm";
+      const millet = lot.milletType || lot.millet || "Pearl Millet";
+      const grade = lot.farmCrop || lot.grade || "Grade A";
+      const quantityKg = Number(
+        lot.actualQuantityKg ?? lot.quantityKg ?? lot.estimatedQuantityKg ?? lot.quantity ?? 0
+      );
+      const statusRaw = String(lot.status || "STORED").toUpperCase();
+
+      return {
+        ...lot,
+        lotNumber,
+        farmerName,
+        farmName,
+        millet,
+        grade,
+        quantityKg,
+        statusRaw,
+      };
+    });
+  }, [allocatedLots]);
+
+  const filteredLots = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return processedLots;
+
+    return processedLots.filter(
+      (lot) =>
+        lot.lotNumber.toLowerCase().includes(query) ||
+        lot.farmerName.toLowerCase().includes(query) ||
+        lot.millet.toLowerCase().includes(query)
+    );
+  }, [processedLots, search]);
+
+  const totalAllocatedKg = useMemo(() => {
+    return processedLots.reduce(
+      (sum, lot) => sum + (Number(lot.quantityKg) || 0),
+      0
+    );
+  }, [processedLots]);
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-800" />
+      <div className="flex h-64 items-center justify-center gap-3">
+        <Loader2 className="h-7 w-7 animate-spin text-emerald-800" />
+        <span className="text-sm font-semibold text-slate-600">
+          Loading warehouse details & allocated lots...
+        </span>
       </div>
     );
   }
 
   if (!warehouse) {
     return (
-      <div className="rounded-xl border bg-white p-8 text-center">
-        <h2 className="font-semibold">
+      <div className="rounded-xl border bg-white p-8 text-center shadow-xs">
+        <h2 className="font-semibold text-slate-900 text-lg">
           Warehouse not found
         </h2>
 
         <button
           onClick={() => navigate("/warehouses")}
-          className="mt-4 rounded-lg border px-4 py-2 text-sm"
+          className="mt-4 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-4 py-2 text-xs transition"
         >
           Back to Warehouses
         </button>
@@ -79,24 +280,33 @@ function WarehouseDetails() {
     );
   }
 
-  const rawCap = warehouse.capacityInTons !== undefined && warehouse.capacityInTons !== null
-    ? Number(warehouse.capacityInTons)
-    : (warehouse.capacity !== undefined && warehouse.capacity !== null ? Number(warehouse.capacity) : 0);
+  const rawCap =
+    warehouse.capacityInTons !== undefined && warehouse.capacityInTons !== null
+      ? Number(warehouse.capacityInTons)
+      : warehouse.capacity !== undefined && warehouse.capacity !== null && Number(warehouse.capacity) > 0
+      ? Number(warehouse.capacity)
+      : 5000;
 
-  const rawUsed = warehouse.utilizedCapacityTons !== undefined && warehouse.utilizedCapacityTons !== null
-    ? Number(warehouse.utilizedCapacityTons)
-    : (warehouse.usedCapacity !== undefined && warehouse.usedCapacity !== null ? Number(warehouse.usedCapacity) : 0);
+  const rawUsed =
+    warehouse.utilizedCapacityTons !== undefined &&
+    warehouse.utilizedCapacityTons !== null
+      ? Number(warehouse.utilizedCapacityTons)
+      : warehouse.usedCapacity !== undefined && warehouse.usedCapacity !== null
+      ? Number(warehouse.usedCapacity)
+      : 0;
 
-  const capKg = rawCap;
-  const usedKg = rawUsed;
+  const capKg = rawCap > 0 ? rawCap : 5000;
+  const usedKg = totalAllocatedKg > 0 ? totalAllocatedKg : rawUsed;
   const availKg = Math.max(0, capKg - usedKg);
   const utilization = capKg > 0 ? Math.round((usedKg / capKg) * 100) : 0;
+  const stockLotsCount = processedLots.length > 0 ? processedLots.length : (usedKg > 0 ? Math.ceil(usedKg / 450) : 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto pb-16">
+      {/* Navigation Top Bar */}
       <button
         onClick={() => navigate("/warehouses")}
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+        className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors"
       >
         <ArrowLeft size={16} />
         Back to Warehouses
@@ -105,23 +315,34 @@ function WarehouseDetails() {
       {/* Header */}
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-2xl font-semibold">
-            {warehouse.name || warehouse.Name || "Warehouse Details"}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              {warehouse.name || warehouse.Name || "Warehouse Details"}
+            </h1>
+            <span className="rounded-md bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800 border border-emerald-300">
+              {warehouse.status || "ACTIVE"}
+            </span>
+          </div>
 
-          <p className="text-sm text-muted-foreground">
-            {warehouse.code || warehouse.warehouseCode || "WH-GUJ"}
+          <p className="text-xs text-slate-500 font-medium mt-1">
+            {warehouse.code || warehouse.warehouseCode || "WH-GUJ-001"} ·{" "}
+            {warehouse.location ||
+              `${warehouse.district || "District"}, Gujarat`}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="w-fit rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700">
-            {warehouse.status || "ACTIVE"}
-          </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowAllocateModal(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-800 hover:bg-emerald-900 px-4 py-2 text-xs font-bold text-white transition shadow-xs"
+          >
+            <Plus size={16} />
+            Allocate Lot to Warehouse
+          </button>
           <button
             onClick={handleDelete}
             disabled={deleting}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 transition shadow-xs"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2 text-xs font-bold text-red-700 hover:bg-red-100 transition shadow-xs"
           >
             <Trash2 size={15} />
             {deleting ? "Deleting..." : "Delete Warehouse"}
@@ -129,158 +350,294 @@ function WarehouseDetails() {
         </div>
       </div>
 
-      {/* Capacity */}
-      <div className="rounded-xl border bg-white p-5">
+      {/* Capacity Card */}
+      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-blue-100 p-2">
-              <Package
-                size={20}
-                className="text-blue-600"
-              />
+            <div className="rounded-lg bg-emerald-100 p-2.5">
+              <Package size={20} className="text-emerald-800" />
             </div>
 
             <div>
-              <h2 className="font-semibold">
-                Storage Capacity
+              <h2 className="font-bold text-slate-900 text-sm">
+                Storage Capacity & Inventory Utilization
               </h2>
 
-              <p className="text-sm text-muted-foreground">
-                Current warehouse utilization
+              <p className="text-xs text-slate-500 font-medium">
+                Live warehouse capacity allocated to certified procurement lots
               </p>
             </div>
           </div>
 
-          <span className="text-xl font-semibold">
+          <span className="text-2xl font-black text-slate-900">
             {utilization}%
           </span>
         </div>
 
-        <div className="mt-5 h-4 overflow-hidden rounded-full bg-muted">
+        <div className="mt-4 h-3.5 overflow-hidden rounded-full bg-slate-100 border border-slate-200">
           <div
-            className="h-full rounded-full bg-primary"
+            className={`h-full rounded-full transition-all duration-300 ${
+              utilization > 90
+                ? "bg-red-600"
+                : utilization > 75
+                ? "bg-amber-500"
+                : "bg-emerald-700"
+            }`}
             style={{
               width: `${utilization}%`,
             }}
           />
         </div>
 
-        <div className="mt-3 flex justify-between text-sm">
-          <span>
-            Used:{" "}
-            <strong>
-              {usedKg.toLocaleString('en-IN')} kg
+        <div className="mt-3 flex justify-between text-xs font-semibold">
+          <span className="text-slate-800">
+            Occupied Stock:{" "}
+            <strong className="text-slate-900 font-black">
+              {usedKg.toLocaleString("en-IN")} kg
             </strong>
           </span>
 
-          <span className="text-muted-foreground">
-            Available:{" "}
-            {availKg.toLocaleString('en-IN')} kg
+          <span className="text-emerald-700">
+            Available Capacity:{" "}
+            <strong className="font-extrabold">
+              {availKg.toLocaleString("en-IN")} kg
+            </strong>
           </span>
         </div>
       </div>
 
-      {/* Details */}
+      {/* Info Details Grid */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border bg-white p-5">
-          <h2 className="font-semibold">
-            Warehouse Information
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
+          <h2 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-emerald-800" />
+            Warehouse Location & Manager Info
           </h2>
 
-          <div className="mt-5 grid gap-5 sm:grid-cols-2">
-            <Info
+          <div className="grid gap-4 sm:grid-cols-2 pt-1">
+            <InfoItem
               icon={WarehouseIcon}
-              label="Warehouse"
+              label="Warehouse Name"
               value={warehouse.name || warehouse.Name}
             />
 
-            <Info
-              icon={Package}
-              label="Stock Lots"
-              value={warehouse.stockLots || 8}
+            <InfoItem
+              icon={Boxes}
+              label="Allocated Stock Lots"
+              value={`${stockLotsCount} Certified Lots`}
             />
 
-            <Info
+            <InfoItem
               icon={MapPin}
-              label="Location"
-              value={warehouse.location || `${warehouse.district || warehouse.District || ""}, Gujarat`}
+              label="District / Region"
+              value={
+                warehouse.location ||
+                `${warehouse.district || warehouse.District || ""}, Gujarat`
+              }
             />
 
-            <Info
+            <InfoItem
               icon={MapPin}
-              label="Address"
-              value={warehouse.address || warehouse.location || `${warehouse.village || ""}, ${warehouse.taluka || ""}, ${warehouse.district || ""}`}
+              label="Full Address"
+              value={
+                warehouse.address ||
+                warehouse.location ||
+                `${warehouse.village || ""}, ${warehouse.district || ""}`
+              }
             />
 
-            <Info
+            <InfoItem
               icon={User}
-              label="Manager"
+              label="Warehouse Manager"
               value={warehouse.managerName || warehouse.manager || "N/A"}
             />
 
-            <Info
+            <InfoItem
               icon={User}
-              label="Contact"
+              label="Contact Number"
               value={warehouse.contactPhone || warehouse.contact || "N/A"}
             />
           </div>
         </div>
 
-        <div className="rounded-xl border bg-white p-5">
-          <h2 className="font-semibold">
-            Storage Conditions
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
+          <h2 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+            <Thermometer className="h-4 w-4 text-emerald-800" />
+            Storage Conditions & Supported Grains
           </h2>
 
-          <div className="mt-5 space-y-5">
-            <Info
+          <div className="space-y-4 pt-1">
+            <InfoItem
               icon={Thermometer}
               label="Storage Condition"
-              value={warehouse.storageCondition || "Dry Grain, Aerated"}
+              value={warehouse.storageCondition || "Dry Grain, Aerated & Fumigated"}
             />
 
-            <Info
+            <InfoItem
               icon={Package}
-              label="Supported Millet"
-              value={Array.isArray(warehouse.milletTypes) ? warehouse.milletTypes.join(", ") : warehouse.milletTypes || "Pearl Millet (Bajra), Sorghum (Jowar), Finger Millet (Ragi)"}
+              label="Supported Millet Types"
+              value={
+                Array.isArray(warehouse.milletTypes)
+                  ? warehouse.milletTypes.join(", ")
+                  : warehouse.milletTypes ||
+                    "Pearl Millet (Bajra), Sorghum (Jowar), Finger Millet (Ragi)"
+              }
             />
 
-            <Info
+            <InfoItem
               icon={Package}
-              label="Total Capacity"
-              value={`${capKg.toLocaleString('en-IN')} kg`}
-            />
-
-            <Info
-              icon={Package}
-              label="Last Inspection"
-              value={warehouse.lastInspection || "2026-09-28"}
+              label="Total Capacity Limit"
+              value={`${capKg.toLocaleString("en-IN")} kg`}
             />
           </div>
         </div>
       </div>
+
+      {/* ALLOCATED PROCUREMENT LOTS TABLE */}
+      <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden space-y-4 p-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-100">
+          <div>
+            <h2 className="font-bold text-slate-900 text-base flex items-center gap-2">
+              <Boxes className="h-5 w-5 text-emerald-800" />
+              Allocated Procurement Lots in Warehouse
+            </h2>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
+              Certified procurement lots assigned and stored in this warehouse facility.
+            </p>
+          </div>
+
+          <div className="relative w-full md:w-72">
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+            <input
+              type="text"
+              placeholder="Search lot or farmer..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-9 pr-3 text-xs text-slate-900 outline-none focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-100 transition"
+            />
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 uppercase tracking-wider text-[11px]">
+              <tr>
+                <th className="p-3">Lot ID</th>
+                <th className="p-3">Farmer / Farm</th>
+                <th className="p-3">Millet Commodity</th>
+                <th className="p-3">Allocated Qty</th>
+                <th className="p-3">Status</th>
+                <th className="p-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredLots.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="p-8 text-center text-slate-500 font-medium"
+                  >
+                    No procurement lots currently allocated to this warehouse.
+                  </td>
+                </tr>
+              ) : (
+                filteredLots.map((lot) => (
+                  <tr
+                    key={lot.id}
+                    className="hover:bg-slate-50/80 transition-colors"
+                  >
+                    <td className="p-3 font-semibold text-slate-900">
+                      <div>{lot.lotNumber}</div>
+                      <div className="text-[10px] font-mono text-slate-400 truncate max-w-[120px]">
+                        {lot.id}
+                      </div>
+                    </td>
+
+                    <td className="p-3">
+                      <div className="font-bold text-slate-900">
+                        {lot.farmerName}
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        {lot.farmName}
+                      </div>
+                    </td>
+
+                    <td className="p-3">
+                      <div className="font-medium text-slate-800">
+                        {lot.millet}
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        {lot.grade}
+                      </div>
+                    </td>
+
+                    <td className="p-3 font-bold text-slate-900 whitespace-nowrap">
+                      {lot.quantityKg.toLocaleString("en-IN")} kg
+                    </td>
+
+                    <td className="p-3 whitespace-nowrap">
+                      <span
+                        className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-bold border ${
+                          STATUS_STYLES[lot.statusRaw] ||
+                          "bg-emerald-100 text-emerald-800 border-emerald-300"
+                        }`}
+                      >
+                        {formatStatus(lot.statusRaw)}
+                      </span>
+                    </td>
+
+                    <td className="p-3 text-right">
+                      <button
+                        onClick={() => navigate(`/procurement-lots/${lot.id}`)}
+                        className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 hover:bg-slate-100 transition shadow-2xs"
+                      >
+                        <FileText size={13} />
+                        View Lot
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Allocate Lot Modal */}
+      {showAllocateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overflow-y-auto backdrop-blur-xs">
+          <div className="w-full max-w-2xl bg-white rounded-xl shadow-2xl overflow-hidden border border-slate-200">
+            <AllocateLotCard
+              initialWarehouseId={id}
+              onCancel={() => setShowAllocateModal(false)}
+              onSuccess={() => {
+                setShowAllocateModal(false);
+                loadWarehouseData();
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function Info({
-  icon: Icon,
-  label,
-  value,
-}) {
+function InfoItem({ icon: Icon, label, value }) {
   return (
-    <div className="flex gap-3">
-      <div className="mt-0.5 rounded-lg bg-muted p-2">
+    <div className="flex gap-3 items-start">
+      <div className="rounded-lg bg-slate-100 p-2 text-slate-600 shrink-0">
         <Icon size={16} />
       </div>
 
       <div>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
           {label}
         </p>
 
-        <p className="mt-1 text-sm font-medium">
-          {value}
-        </p>
+        <p className="mt-0.5 text-xs font-bold text-slate-900">{value}</p>
       </div>
     </div>
   );

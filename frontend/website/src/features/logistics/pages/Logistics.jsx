@@ -219,21 +219,21 @@ function Logistics() {
   };
 
   return (
-    <div className="space-y-6 max-w-8xl mx-auto pb-12">
+    <div className="space-y-6 max-w-8xl mx-auto pb-12 text-slate-900 dark:text-slate-100">
       {/* Top Banner Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
             Logistics Operations
           </h1>
-          <p className="text-xs text-slate-500 mt-1 font-medium">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
             Schedule and track millet pickup and delivery from farms to warehouses.
           </p>
         </div>
 
         <Button
           onClick={() => navigate("/logistics/create")}
-          className="bg-emerald-800 hover:bg-emerald-900 text-white font-bold h-10 px-5 rounded-lg shadow-sm flex items-center gap-2 self-start md:self-auto"
+          className="bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold h-10 px-5 rounded-lg shadow-xs flex items-center gap-2 self-start md:self-auto"
         >
           <Plus className="h-4 w-4 stroke-[3]" />
           Create Shipment
@@ -242,107 +242,110 @@ function Logistics() {
 
       {/* KPI Cards Row */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="border-slate-200/90 bg-white p-4 shadow-xs rounded-xl cursor-pointer hover:border-red-300 transition" onClick={() => setStatusFilter("Pending Dispatch")}>
-          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+        <Card
+          className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 shadow-xs rounded-xl cursor-pointer hover:border-red-300 dark:hover:border-red-800 transition"
+          onClick={() => setStatusFilter("Pending Dispatch")}
+        >
+          <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             Pending Shipments
           </p>
-          <p className="text-3xl font-black text-slate-900 mt-2">
+          <p className="text-3xl font-black text-slate-900 dark:text-white mt-2">
             {shipments.filter((s) => s.status.toUpperCase().includes("PENDING") || s.status.toUpperCase().includes("SCHEDULED") || s.status.toUpperCase().includes("ISSUE")).length}
           </p>
         </Card>
 
-        <Card className="border-slate-200/90 bg-white p-4 shadow-xs rounded-xl">
+        <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 shadow-xs rounded-xl">
           <div className="flex justify-between items-start">
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Today's Shipments
             </p>
-            <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">
+            <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800/50">
               +3 today
             </span>
           </div>
-          <p className="text-3xl font-black text-slate-900 mt-2">
+          <p className="text-3xl font-black text-slate-900 dark:text-white mt-2">
             {shipments.length}
           </p>
         </Card>
 
-        <Card className="border-slate-200/90 bg-white p-4 shadow-xs rounded-xl">
-          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+        <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 shadow-xs rounded-xl">
+          <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             In Transit
           </p>
-          <p className="text-3xl font-black text-slate-900 mt-2">
+          <p className="text-3xl font-black text-slate-900 dark:text-white mt-2">
             {shipments.filter((s) => s.status.toUpperCase().includes("TRANSIT")).length}
           </p>
         </Card>
 
-        <Card className="border-slate-200/90 bg-white p-4 shadow-xs rounded-xl">
+        <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 shadow-xs rounded-xl">
           <div className="flex justify-between items-start">
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Delivered Today
             </p>
-            <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">
+            <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800/50">
               +15% vs last week
             </span>
           </div>
-          <p className="text-3xl font-black text-emerald-800 mt-2">
+          <p className="text-3xl font-black text-emerald-700 dark:text-emerald-400 mt-2">
             {shipments.filter((s) => s.status.toUpperCase().includes("DELIVERED") || s.status.toUpperCase().includes("COMPLETED")).length}
           </p>
         </Card>
 
-        <Card className="border-slate-200/90 bg-white p-4 shadow-xs rounded-xl col-span-2 md:col-span-1">
+        <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 shadow-xs rounded-xl col-span-2 md:col-span-1">
           <div className="flex justify-between items-start">
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Awaiting Confirmation
             </p>
-            <span className="text-[10px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">
+            <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800/50">
               This month
             </span>
           </div>
-          <p className="text-3xl font-black text-amber-800 mt-2">
+          <p className="text-3xl font-black text-amber-700 dark:text-amber-400 mt-2">
             {shipments.filter((s) => s.warehouseReceiptStatus === "PENDING").length}
           </p>
         </Card>
       </div>
 
       {/* Filter Controls Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900/90 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
         <div className="relative flex-1 min-w-[240px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search Lot ID, Agreement ID..."
-            className="pl-9 bg-slate-50 border-slate-200 h-9 text-xs"
+            className="pl-9 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 h-9 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <Select value={directionFilter} onValueChange={setDirectionFilter}>
-            <SelectTrigger className="h-9 w-[160px] bg-slate-50 border-slate-200 text-xs font-semibold">
+            <SelectTrigger className="h-9 min-w-[150px] bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-slate-100">
               <SelectValue placeholder="Shipment Direction" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">Shipment Direction (All)</SelectItem>
+            <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">
+              <SelectItem value="All">Direction (All)</SelectItem>
               <SelectItem value="Inbound">Inbound</SelectItem>
               <SelectItem value="Outbound">Outbound</SelectItem>
             </SelectContent>
           </Select>
 
           <Select value={destinationFilter} onValueChange={setDestinationFilter}>
-            <SelectTrigger className="h-9 w-[160px] bg-slate-50 border-slate-200 text-xs font-semibold">
+            <SelectTrigger className="h-9 min-w-[150px] bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-slate-100">
               <SelectValue placeholder="Destination Type" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">Destination Type (All)</SelectItem>
-              <SelectItem value="Warehouse">Mandya Warehouse</SelectItem>
+            <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">
+              <SelectItem value="All">Destination (All)</SelectItem>
+              <SelectItem value="Warehouse">Warehouse</SelectItem>
               <SelectItem value="Processor">Processor / SHG</SelectItem>
             </SelectContent>
           </Select>
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="h-9 w-[150px] bg-slate-50 border-slate-200 text-xs font-semibold">
+            <SelectTrigger className="h-9 min-w-[140px] bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-slate-100">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">
               <SelectItem value="All">Status (All)</SelectItem>
               <SelectItem value="Pending Dispatch">Pending Dispatch</SelectItem>
               <SelectItem value="Scheduled">Scheduled</SelectItem>
@@ -353,11 +356,11 @@ function Logistics() {
           </Select>
 
           <Select value={milletFilter} onValueChange={setMilletFilter}>
-            <SelectTrigger className="h-9 w-[150px] bg-slate-50 border-slate-200 text-xs font-semibold">
+            <SelectTrigger className="h-9 min-w-[140px] bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-slate-100">
               <SelectValue placeholder="Millet Type" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">Millet Type (All)</SelectItem>
+            <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">
+              <SelectItem value="All">Millet (All)</SelectItem>
               <SelectItem value="Finger Millet">Finger Millet</SelectItem>
               <SelectItem value="Pearl Millet">Pearl Millet</SelectItem>
               <SelectItem value="Foxtail Millet">Foxtail Millet</SelectItem>
@@ -365,7 +368,7 @@ function Logistics() {
             </SelectContent>
           </Select>
 
-          <Button variant="outline" size="sm" className="h-9 text-xs border-slate-300">
+          <Button variant="outline" size="sm" className="h-9 text-xs border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">
             <Filter className="h-3.5 w-3.5 mr-1" /> More Filters
           </Button>
         </div>
@@ -376,17 +379,17 @@ function Logistics() {
         
         {/* Left Column: Pickup & Delivery Queue */}
         <div className="lg:col-span-3 space-y-4">
-          <Card className="border-slate-200/90 bg-white shadow-xs">
-            <CardHeader className="pb-3 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-xs">
+            <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div>
-                <CardTitle className="text-base font-bold text-slate-900">
+                <CardTitle className="text-base font-bold text-slate-900 dark:text-white">
                   Pickup & Delivery Queue
                 </CardTitle>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Shipment schedules and operational queue
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1 rounded-lg">
+              <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-lg">
                 {[
                   { label: "All", value: "All" },
                   {
@@ -413,8 +416,8 @@ function Logistics() {
                       onClick={() => setStatusFilter(tab.value)}
                       className={`px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1.5 ${
                         isActive
-                          ? "bg-white text-slate-900 shadow-xs"
-                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+                          ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs"
+                          : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700/50"
                       }`}
                     >
                       {tab.label}
@@ -430,7 +433,7 @@ function Logistics() {
             </CardHeader>
             <CardContent className="p-0 overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
-                <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                <thead className="bg-slate-50/80 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-800">
                   <tr>
                     <th className="p-3.5 font-bold">Shipment ID</th>
                     <th className="p-3.5 font-bold">Type</th>
@@ -442,42 +445,42 @@ function Logistics() {
                     <th className="p-3.5 font-bold text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                   {filteredShipments.map((shp) => (
-                    <tr key={shp.id} className="hover:bg-slate-50/80 transition">
-                      <td className="p-3.5 font-mono font-bold text-slate-900 whitespace-nowrap">
+                    <tr key={shp.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                      <td className="p-3.5 font-mono font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
                         {shp.shipmentCode}
                       </td>
 
                       <td className="p-3.5 whitespace-nowrap">
                         {shp.direction === "OUTBOUND" ? (
-                          <Badge className="bg-sky-100 text-sky-800 border-sky-300 text-[10px] font-extrabold uppercase tracking-wider">
+                          <Badge className="bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-950/80 dark:text-sky-300 dark:border-sky-800/50 text-[10px] font-extrabold uppercase tracking-wider">
                             OUTBOUND
                           </Badge>
                         ) : (
-                          <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 text-[10px] font-extrabold uppercase tracking-wider">
+                          <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-800/50 text-[10px] font-extrabold uppercase tracking-wider">
                             INBOUND
                           </Badge>
                         )}
                       </td>
 
                       <td className="p-3.5 min-w-[220px]">
-                        <p className="font-bold text-slate-900 text-xs">
+                        <p className="font-bold text-slate-900 dark:text-slate-100 text-xs">
                           {shp.farmerOrProcessorName}
                         </p>
-                        <p className="text-[11px] text-slate-500 mt-0.5">
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                           {shp.agreementId} • {shp.lotId}
                         </p>
-                        <p className="text-[11px] text-slate-500 font-medium">
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                           {shp.milletType}
                         </p>
 
                         {/* Vehicle & Driver Info Callout if assigned */}
                         {shp.vehicleNumber && (
-                          <div className="mt-2 p-2 rounded-md bg-slate-100/90 border border-slate-200 text-[11px] text-slate-700">
-                            <p className="font-bold">Vehicle: {shp.vehicleNumber}</p>
+                          <div className="mt-2 p-2 rounded-md bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-[11px]">
+                            <p className="font-bold text-slate-900 dark:text-slate-100">Vehicle: {shp.vehicleNumber}</p>
                             {shp.driverName && (
-                              <p className="text-[10px] text-slate-500">
+                              <p className="text-[11px] text-slate-600 dark:text-slate-300 font-medium mt-0.5">
                                 Driver: {shp.driverName} ({shp.driverPhone})
                               </p>
                             )}
@@ -485,23 +488,23 @@ function Logistics() {
                         )}
 
                         {shp.transportResponsibility === "Farmer Delivery" && (
-                          <span className="inline-block mt-1 text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                          <span className="inline-block mt-1 text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
                             Transported by Farmer
                           </span>
                         )}
                       </td>
 
-                      <td className="p-3.5 font-bold text-slate-800 whitespace-nowrap">
+                      <td className="p-3.5 font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">
                         {shp.expectedQuantityKg?.toLocaleString("en-IN")} kg
                       </td>
 
                       <td className="p-3.5 min-w-[180px] text-[11px]">
-                        <p className="text-slate-500">{shp.sourceAddress}</p>
-                        <p className="text-slate-400 font-bold my-0.5">↓</p>
-                        <p className="font-bold text-slate-900">{shp.destinationAddress}</p>
+                        <p className="text-slate-500 dark:text-slate-400">{shp.sourceAddress}</p>
+                        <p className="text-slate-400 dark:text-slate-500 font-bold my-0.5">↓</p>
+                        <p className="font-bold text-slate-900 dark:text-slate-100">{shp.destinationAddress}</p>
                       </td>
 
-                      <td className="p-3.5 whitespace-nowrap text-slate-600 font-medium">
+                      <td className="p-3.5 whitespace-nowrap text-slate-600 dark:text-slate-400 font-medium">
                         {shp.scheduledDate}
                       </td>
 
@@ -515,7 +518,7 @@ function Logistics() {
                             <Button
                               size="sm"
                               onClick={() => navigate(`/warehouses/receiving/${shp.id}`)}
-                              className="h-8 bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow-2xs"
+                              className="h-8 bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold text-xs shadow-2xs"
                             >
                               <ShieldCheck className="h-3.5 w-3.5 mr-1" />
                               Warehouse Receiving
@@ -525,7 +528,7 @@ function Logistics() {
                             variant="outline"
                             size="sm"
                             onClick={() => navigate(`/logistics/${shp.id}`)}
-                            className="h-8 border-slate-300 text-slate-700 hover:text-slate-900 font-bold text-xs"
+                            className="h-8 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white font-bold text-xs"
                           >
                             View Details
                           </Button>
@@ -540,25 +543,25 @@ function Logistics() {
 
           {/* Confirm Pickup Verification Modal */}
           <Dialog open={!!confirmingShipment} onOpenChange={() => setConfirmingShipment(null)}>
-            <DialogContent className="max-w-md bg-white p-6 border border-slate-200">
-              <DialogHeader className="border-b pb-3">
-                <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <ShieldCheck className="h-5 w-5 text-emerald-700" />
+            <DialogContent className="max-w-md bg-white dark:bg-slate-900 p-6 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">
+              <DialogHeader className="border-b border-slate-100 dark:border-slate-800 pb-3">
+                <DialogTitle className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                   Confirm Pickup Verification
                 </DialogTitle>
-                <DialogDescription className="text-xs text-slate-500 mt-1">
+                <DialogDescription className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   Enter the 4-digit code displayed on the farmer's mobile screen under <b>Lot Details → Driver Card</b> to complete this pickup.
                 </DialogDescription>
               </DialogHeader>
 
               {codeError && (
-                <div className="p-2.5 bg-red-50 border border-red-200 text-red-700 text-xs rounded-md font-bold mt-2">
+                <div className="p-2.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs rounded-md font-bold mt-2">
                   {codeError}
                 </div>
               )}
 
               <div className="py-4 space-y-3">
-                <label className="block text-xs font-bold text-slate-700">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                   4-Digit Verification Code <span className="text-red-500">*</span>
                 </label>
                 <Input
@@ -567,16 +570,16 @@ function Logistics() {
                   placeholder="e.g. 4829"
                   value={inputCode}
                   onChange={(e) => setInputCode(e.target.value.replace(/\D/g, ""))}
-                  className="h-11 text-center font-mono text-xl font-black tracking-widest border-slate-300 bg-slate-50"
+                  className="h-11 text-center font-mono text-xl font-black tracking-widest border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 border-t pt-3">
+              <div className="flex items-center justify-end gap-2 border-t border-slate-100 dark:border-slate-800 pt-3">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setConfirmingShipment(null)}
-                  className="h-8 text-xs font-bold"
+                  className="h-8 text-xs font-bold border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300"
                 >
                   Cancel
                 </Button>
@@ -584,7 +587,7 @@ function Logistics() {
                   size="sm"
                   onClick={handleVerifyCode}
                   disabled={inputCode.length !== 4 || verifying}
-                  className="h-8 bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold"
+                  className="h-8 bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-xs font-bold"
                 >
                   {verifying ? "Verifying..." : "Verify & Complete Pickup"}
                 </Button>
@@ -595,48 +598,48 @@ function Logistics() {
 
         {/* Right Column: Today's Pipeline Sidebar (matches Mockup 1) */}
         <div className="space-y-6">
-          <Card className="border-slate-200/90 bg-white shadow-xs">
-            <CardHeader className="pb-3 border-b border-slate-100">
-              <CardTitle className="text-sm font-bold text-slate-900">
+          <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-xs">
+            <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
+              <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">
                 Today's Pipeline
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-4 space-y-4 text-xs">
               <div className="space-y-2">
-                <div className="flex justify-between items-center text-slate-700 font-medium">
+                <div className="flex justify-between items-center text-slate-700 dark:text-slate-300 font-medium">
                   <span>Scheduled</span>
-                  <span className="font-bold text-slate-900">5</span>
+                  <span className="font-bold text-slate-900 dark:text-white">5</span>
                 </div>
-                <div className="flex justify-between items-center text-slate-700 font-medium">
+                <div className="flex justify-between items-center text-slate-700 dark:text-slate-300 font-medium">
                   <span>Vehicles Assigned</span>
-                  <span className="font-bold text-slate-900">3</span>
+                  <span className="font-bold text-slate-900 dark:text-white">3</span>
                 </div>
-                <div className="flex justify-between items-center text-slate-700 font-medium">
+                <div className="flex justify-between items-center text-slate-700 dark:text-slate-300 font-medium">
                   <span>In Transit</span>
-                  <span className="font-bold text-slate-900">3</span>
+                  <span className="font-bold text-slate-900 dark:text-white">3</span>
                 </div>
-                <div className="flex justify-between items-center text-slate-700 font-medium">
+                <div className="flex justify-between items-center text-slate-700 dark:text-slate-300 font-medium">
                   <span>Completed Deliveries</span>
-                  <span className="font-bold text-emerald-700">7</span>
+                  <span className="font-bold text-emerald-700 dark:text-emerald-400">7</span>
                 </div>
-                <div className="flex justify-between items-center text-slate-700 font-medium">
+                <div className="flex justify-between items-center text-slate-700 dark:text-slate-300 font-medium">
                   <span>Awaiting Confirmation</span>
-                  <span className="font-bold text-amber-700">4</span>
+                  <span className="font-bold text-amber-700 dark:text-amber-400">4</span>
                 </div>
               </div>
 
-              <div className="border-t border-slate-100 pt-4 space-y-3">
-                <p className="font-bold text-slate-900 uppercase tracking-wider text-[11px]">
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
+                <p className="font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider text-[11px]">
                   Inbound Flow
                 </p>
-                <div className="space-y-2 text-[11px] text-slate-600 pl-2">
+                <div className="space-y-2 text-[11px] text-slate-600 dark:text-slate-400 pl-2">
                   <div className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full border border-slate-400 bg-white" />
                     <span>Scheduled</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-blue-600" />
-                    <span className="font-bold text-slate-800">Vehicle Assigned</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">Vehicle Assigned</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-emerald-600" />
@@ -657,11 +660,11 @@ function Logistics() {
                 </div>
               </div>
 
-              <div className="border-t border-slate-100 pt-4 space-y-3">
-                <p className="font-bold text-slate-900 uppercase tracking-wider text-[11px]">
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
+                <p className="font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider text-[11px]">
                   Outbound Flow
                 </p>
-                <div className="space-y-2 text-[11px] text-slate-600 pl-2">
+                <div className="space-y-2 text-[11px] text-slate-600 dark:text-slate-400 pl-2">
                   <div className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full border border-slate-400 bg-white" />
                     <span>Scheduled</span>
@@ -685,7 +688,7 @@ function Logistics() {
                 </div>
               </div>
 
-              <div className="mt-4 p-3 rounded-lg bg-slate-50 border border-slate-200/80 text-[11px] text-slate-500 flex items-start gap-2">
+              <div className="mt-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-[11px] text-slate-500 dark:text-slate-400 flex items-start gap-2">
                 <AlertCircle className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
                 <p>Final quantity will be verified at warehouse upon receipt generation.</p>
               </div>

@@ -65,16 +65,39 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const switchRole = (newRole, name) => {
-    const updated = {
-      ...(user || {
-        userId: "99999999-9999-9999-9999-999999999999",
-        email: "fpo@shreeanna.com",
-      }),
-      role: newRole,
-      memberName: name || `${newRole} Demo User`,
+  const switchRole = async (newRole, name) => {
+    const roleEmailMap = {
+      FpoManager: "fpo@shreeanna.com",
+      ProcurementOfficer: "procurement@shreeanna.com",
+      QualityInspector: "quality@shreeanna.com",
+      WarehouseManager: "warehouse@shreeanna.com",
+      LogisticsCoordinator: "logistics@shreeanna.com",
+      Accountant: "accountant@shreeanna.com",
+      Driver: "driver@shreeanna.com",
     };
-    setUser(updated);
+
+    const targetEmail = roleEmailMap[newRole] || "fpo@shreeanna.com";
+    try {
+      const data = await auth.login(targetEmail, "Password123!");
+      const userData = {
+        userId: data.userId,
+        email: data.email,
+        role: data.role,
+        memberName: data.memberName || name || `${newRole} Demo User`,
+      };
+      setUser(userData);
+      setToken(data.accessToken);
+    } catch {
+      const updated = {
+        ...(user || {
+          userId: "99999999-9999-9999-9999-999999999999",
+          email: targetEmail,
+        }),
+        role: newRole,
+        memberName: name || `${newRole} Demo User`,
+      };
+      setUser(updated);
+    }
   };
 
   const logout = async () => {

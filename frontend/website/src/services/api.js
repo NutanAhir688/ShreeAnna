@@ -184,6 +184,7 @@ export const warehousesApi = {
   delete: (id) => request(`/api/warehouses/${id}`, { method: "DELETE" }),
   createReceipt: (data) => request("/api/warehouses/receipts", { method: "POST", body: data }),
   allocateLot: (data) => request("/api/warehouses/allocate-lot", { method: "POST", body: data }),
+  getAllocatedLots: (id) => request(`/api/warehouses/${id}/allocated-lots`).catch(() => []),
 };
 
 
@@ -252,9 +253,19 @@ export const buyersApi = {
 // SETTLEMENTS / PAYMENTS
 // ─────────────────────────────────────────────────────────────
 export const settlementsApi = {
-  getAll: () => request("/api/settlements"),
+  getAll: (status) =>
+    request(
+      status && status !== "All"
+        ? `/api/settlements?status=${encodeURIComponent(status)}`
+        : "/api/settlements"
+    ),
+  getStats: () => request("/api/settlements/stats"),
   getById: (id) => request(`/api/settlements/${id}`),
   create: (data) => request("/api/settlements", { method: "POST", body: data }),
+  createPaymentLink: (id) =>
+    request(`/api/settlements/${id}/create-payment-link`, { method: "POST" }),
+  processPayment: (id, data) =>
+    request(`/api/settlements/${id}/pay`, { method: "POST", body: data }),
   updateStatus: (id, status) =>
     request(`/api/settlements/${id}/status`, { method: "PATCH", body: { status } }),
 };
@@ -264,9 +275,10 @@ export const settlementsApi = {
 // ─────────────────────────────────────────────────────────────
 export const reportsApi = {
   getSummary: () => request("/api/reports/summary"),
-  getProcurementReport: (from, to) =>
-    request(`/api/reports/procurement?from=${from}&to=${to}`),
-  getFinanceReport: (year) => request(`/api/reports/finance?year=${year}`),
+  getFinanceReport: (year) =>
+    request(`/api/reports/finance${year ? `?year=${year}` : ""}`),
+  getRevenueReport: () => request("/api/reports/revenue"),
+  getMarginReport: () => request("/api/reports/margin"),
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -286,3 +298,57 @@ export const dashboardApi = {
    getRecentActivities: () =>
     request("/api/dashboard/recent-activities"),
 };
+
+// ─────────────────────────────────────────────────────────────
+// UPLOADS (Azure Blob Storage SAS & Direct Uploads)
+// ─────────────────────────────────────────────────────────────
+export const uploadApi = {
+  uploadImage: async (file) => {
+    const ext = file.name ? file.name.split('.').pop() : 'jpg';
+    const token = getInMemoryToken();
+
+    // 1. Attempt SAS URL upload (Direct to Azure Blob Storage)
+    try {
+      const sasData = await request(`/api/upload/sas?ext=${encodeURIComponent(ext || 'jpg')}`);
+      if (sasData?.sasUrl && sasData?.permanentUrl) {
+        const putRes = await fetch(sasData.sasUrl, {
+          method: "PUT",
+          headers: {
+            "x-ms-blob-type": "BlockBlob",
+            "Content-Type": file.type || "image/jpeg",
+          },
+          body: file,
+        });
+
+        if (putRes.ok) {
+          return sasData.permanentUrl;
+        }
+      }
+    } catch (err) {
+      console.warn("Direct Azure SAS upload failed, attempting fallback endpoint...", err);
+    }
+
+    // 2. Fallback to server-side POST /api/upload
+    const formData = new FormData();
+    formData.append("file", file);
+    const headers = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(`${API_BASE}/api/upload`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(errData.message || "Failed to upload image.");
+    }
+
+    const data = await res.json();
+    return data.imageUrl || data.url;
+  },
+};
+

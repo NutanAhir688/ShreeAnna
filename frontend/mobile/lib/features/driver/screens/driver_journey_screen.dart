@@ -1,7 +1,19 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../../app/theme.dart';
+import '../../../core/network/api_config.dart';
+import '../../../core/storage/token_storage.dart';
 import '../models/driver_dispatch_model.dart';
 import '../services/driver_api.dart';
+import '../services/driver_location_publisher.dart';
+import '../../auth/screen/welcome_screen.dart';
+import 'driver_profile_screen.dart';
+import 'driver_fullscreen_map_screen.dart';
 
 class DriverJourneyScreen extends StatefulWidget {
   final String? initialDriverPhone;
@@ -19,6 +31,10 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
   RegisteredDriver? _selectedDriver;
   DriverDispatchModel? _activeDispatch;
 
+  DriverLocationPublisher? _locationPublisher;
+  bool _isTracking = false;
+  bool _isStartingTracking = false;
+
   bool _isLoading = true;
   bool _isVerifying = false;
   final TextEditingController _otpController = TextEditingController();
@@ -31,6 +47,7 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
 
   @override
   void dispose() {
+    _locationPublisher?.dispose();
     _otpController.dispose();
     super.dispose();
   }
@@ -67,7 +84,138 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
     }
   }
 
+  Future<void> _startTracking() async {
+    if (_activeDispatch == null) return;
+    setState(() => _isStartingTracking = true);
+    try {
+      final token = await TokenStorage().getAccessToken() ?? '';
+      final lotId = _activeDispatch!.lotId;
+
+      await _locationPublisher?.stop();
+      _locationPublisher = DriverLocationPublisher(
+        apiBaseUrl: ApiConfig.baseUrl,
+        lotId: lotId,
+        accessToken: token,
+      );
+
+      await _locationPublisher!.start();
+      if (mounted) {
+        setState(() {
+          _isTracking = true;
+          _isStartingTracking = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Color(0xFF087F23),
+            content: Text('Live GPS tracking started! Location is broadcasting to farmer & warehouse.'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isStartingTracking = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.red,
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _stopTracking() async {
+    if (_locationPublisher != null) {
+      await _locationPublisher!.stop();
+    }
+    if (mounted) {
+      setState(() => _isTracking = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Live GPS tracking stopped.'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _openGoogleMapsForJourney() async {
+    if (_activeDispatch == null) return;
+
+    final statusUpper = _activeDispatch!.status.toUpperCase();
+    final isInTransit = statusUpper == 'IN_TRANSIT' || statusUpper == 'DELIVERED';
+
+    final lat = isInTransit ? _activeDispatch!.destinationLatitude : _activeDispatch!.pickupLatitude;
+    final lng = isInTransit ? _activeDispatch!.destinationLongitude : _activeDispatch!.pickupLongitude;
+    final address = isInTransit ? _activeDispatch!.destinationAddress : _activeDispatch!.sourceAddress;
+
+    final hasCoords = lat != null && lng != null && lat != 0 && lng != 0;
+
+    // Check device's current location to determine if we are in local India or emulator (USA)
+    Position? currentPos;
+    try {
+      currentPos = await Geolocator.getLastKnownPosition();
+    } catch (_) {}
+
+    // India bounding box approx: lat 8.0 - 37.0, lng 68.0 - 97.5
+    final bool isDeviceInIndia = currentPos != null &&
+        currentPos.latitude >= 8.0 && currentPos.latitude <= 37.0 &&
+        currentPos.longitude >= 68.0 && currentPos.longitude <= 97.5;
+
+    String urlString;
+    if (hasCoords) {
+      if (isDeviceInIndia) {
+        // Real device physically in India: Google Maps uses device live location
+        urlString = 'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving';
+      } else {
+        // Emulator or foreign GPS location (e.g. California):
+        // Provide the dispatch route's origin in Gujarat so Google Maps doesn't fail across oceans with "Can't seem to find a way there"
+        final originLat = isInTransit
+            ? (_activeDispatch!.pickupLatitude ?? (lat - 0.05))
+            : (lat + 0.045);
+        final originLng = isInTransit
+            ? (_activeDispatch!.pickupLongitude ?? (lng - 0.05))
+            : (lng - 0.055);
+        urlString = 'https://www.google.com/maps/dir/?api=1&origin=$originLat,$originLng&destination=$lat,$lng&travelmode=driving';
+      }
+    } else {
+      urlString = 'https://www.google.com/maps/dir/?api=1&destination=${Uri.encodeComponent(address)}&travelmode=driving';
+    }
+
+    final Uri uri = Uri.parse(urlString);
+
+    try {
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+    } catch (e) {
+      debugPrint('Error opening Google Maps: $e');
+      // Fallback: search pin mode
+      try {
+        final fallbackUri = Uri.parse(hasCoords
+            ? 'https://www.google.com/maps/search/?api=1&query=$lat,$lng'
+            : 'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(address)}');
+        await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
+      } catch (err) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Could not open Google Maps: $err'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   Future<void> _handleDriverChange(RegisteredDriver driver) async {
+    if (_isTracking) {
+      await _stopTracking();
+    }
+    await _locationPublisher?.dispose();
+    _locationPublisher = null;
+
     setState(() {
       _selectedDriver = driver;
       _isLoading = true;
@@ -140,23 +288,23 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
                   ),
                   const SizedBox(height: 15),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE8F5E9),
+                      color: const Color(0xFFF1F5F9),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFA5D6A7)),
+                      border: Border.all(color: const Color(0xFFCBD5E1)),
                     ),
-                    child: Row(
+                    child: const Row(
                       children: [
-                        const Icon(Icons.info_outline, color: Color(0xFF2E7D32), size: 18),
-                        const SizedBox(width: 8),
+                        Icon(Icons.shield_outlined, color: Color(0xFF0F766E), size: 18),
+                        SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Pickup Code for this lot: ${_activeDispatch?.verificationCode ?? '4829'}',
-                            style: const TextStyle(
+                            'Farmer verification required. Please obtain the 4-digit OTP directly from the farmer.',
+                            style: TextStyle(
                               fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1B5E20),
+                              color: Color(0xFF334155),
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
@@ -206,6 +354,8 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
                                 return;
                               }
 
+                              final nav = Navigator.of(context);
+                              final messenger = ScaffoldMessenger.of(this.context);
                               setModalState(() => _isVerifying = true);
                               try {
                                 if (_activeDispatch != null) {
@@ -215,16 +365,17 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
                                       _activeDispatch = updated;
                                     });
                                   }
-                                  Navigator.pop(context);
-                                  ScaffoldMessenger.of(this.context).showSnackBar(
+                                  nav.pop();
+                                  messenger.showSnackBar(
                                     const SnackBar(
                                       backgroundColor: Color(0xFF087F23),
                                       content: Text('Pickup Verified! Route set to Warehouse Destination.'),
                                     ),
                                   );
+                                  _startTracking();
                                 }
                               } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
+                                messenger.showSnackBar(
                                   SnackBar(
                                     backgroundColor: Colors.red,
                                     content: Text(e.toString().replaceAll('Exception: ', '')),
@@ -256,6 +407,80 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
     );
   }
 
+  void _openDriverProfile() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DriverProfileScreen(
+          driver: _selectedDriver,
+          activeDispatch: _activeDispatch,
+          isTracking: _isTracking,
+          onStopTracking: _stopTracking,
+          onDriverChanged: _handleDriverChange,
+          availableDrivers: _drivers,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmLogout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          title: const Row(
+            children: [
+              Icon(Icons.logout, color: Color(0xFFDC2626)),
+              SizedBox(width: 8),
+              Text(
+                'Logout Confirmation',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Are you sure you want to log out from your driver account? Active GPS broadcast will be stopped.',
+            style: TextStyle(fontSize: 14, color: Color(0xFF475569)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text('Logout'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true && mounted) {
+      await _stopTracking();
+      await _locationPublisher?.dispose();
+      _locationPublisher = null;
+      await TokenStorage().clearAll();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Logged out successfully.')),
+        );
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+          (route) => false,
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -270,8 +495,19 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.account_circle_outlined, color: ShreeAnnaTheme.primaryGreen),
+            tooltip: 'Driver Profile',
+            onPressed: _openDriverProfile,
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh, color: ShreeAnnaTheme.primaryGreen),
+            tooltip: 'Refresh',
             onPressed: _loadDriverData,
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout, color: Color(0xFFDC2626)),
+            tooltip: 'Logout',
+            onPressed: _confirmLogout,
           ),
         ],
       ),
@@ -304,79 +540,75 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
     final vehicleNo = _selectedDriver?.vehicleNumber ?? _activeDispatch?.vehicleNumber ?? 'KA-09-AB-4521';
     final phone = _selectedDriver?.phone ?? _activeDispatch?.driverPhone ?? '9876543210';
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFD5DFD0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8F5E9),
-              shape: BoxShape.circle,
-              border: Border.all(color: ShreeAnnaTheme.primaryGreen, width: 2),
+    return InkWell(
+      onTap: _openDriverProfile,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFD5DFD0)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
             ),
-            child: const Icon(Icons.local_shipping_outlined, color: ShreeAnnaTheme.primaryGreen, size: 24),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      driverName,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF202420)),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFDFF3E2),
-                        borderRadius: BorderRadius.circular(4),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9),
+                shape: BoxShape.circle,
+                border: Border.all(color: ShreeAnnaTheme.primaryGreen, width: 2),
+              ),
+              child: const Icon(Icons.local_shipping_outlined, color: ShreeAnnaTheme.primaryGreen, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        driverName,
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF202420)),
                       ),
-                      child: const Text(
-                        'ON DUTY',
-                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF087F23)),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFDFF3E2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'ON DUTY',
+                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF087F23)),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Vehicle: $vehicleNo  •  Ph: $phone',
-                  style: const TextStyle(fontSize: 11, color: Color(0xFF596159), fontWeight: FontWeight.w500),
-                ),
-              ],
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Vehicle: $vehicleNo  •  Ph: $phone',
+                    style: const TextStyle(fontSize: 11, color: Color(0xFF596159), fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
             ),
-          ),
-          if (_drivers.length > 1)
-            PopupMenuButton<RegisteredDriver>(
-              icon: const Icon(Icons.swap_horiz, color: ShreeAnnaTheme.primaryGreen),
-              onSelected: _handleDriverChange,
-              itemBuilder: (context) {
-                return _drivers.map((d) {
-                  return PopupMenuItem(
-                    value: d,
-                    child: Text('${d.name} (${d.vehicleNumber})'),
-                  );
-                }).toList();
-              },
+            IconButton(
+              icon: const Icon(Icons.chevron_right, color: Color(0xFF94A3B8)),
+              tooltip: 'View Profile',
+              onPressed: _openDriverProfile,
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -410,163 +642,9 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
   }
 
   Widget _buildMapCard() {
-    final statusUpper = (_activeDispatch?.status ?? '').toUpperCase();
-    final isInTransit = statusUpper == 'IN_TRANSIT' || statusUpper == 'DELIVERED';
-
-    final mapTitle = isInTransit ? 'DESTINATION WAREHOUSE ROUTE' : 'PICKUP LOCATION TRANSIT MAP';
-    final targetLocation = isInTransit
-        ? (_activeDispatch?.destinationAddress ?? 'Mandya Central Warehouse')
-        : (_activeDispatch?.sourceAddress ?? 'Bordi Farm, Dahod');
-
-    final lat = isInTransit ? '22.8397° N' : '37.4220° N';
-    final lng = isInTransit ? '74.2558° E' : '122.0840° W';
-
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF334155)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.12),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: const BoxDecoration(
-              color: Color(0xFF0F172A),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(13)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      isInTransit ? Icons.warehouse_outlined : Icons.navigation_outlined,
-                      color: isInTransit ? const Color(0xFF38BDF8) : const Color(0xFF34D399),
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      mapTitle,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: isInTransit ? const Color(0xFF0284C7) : const Color(0xFF059669),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    isInTransit ? 'IN TRANSIT' : 'TRANSIT TO PICKUP',
-                    style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            height: 180,
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            child: CustomPaint(
-              painter: _MapRoutePainter(isInTransit: isInTransit),
-              child: Stack(
-                children: [
-                  Positioned(
-                    left: 8,
-                    top: isInTransit ? 110 : 20,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.75),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        children: const [
-                          Icon(Icons.local_shipping, color: Colors.amber, size: 14),
-                          SizedBox(width: 4),
-                          Text('Driver Vehicle', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: 8,
-                    top: isInTransit ? 20 : 110,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: isInTransit ? const Color(0xFF0284C7) : const Color(0xFF059669),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(isInTransit ? Icons.warehouse : Icons.agriculture, color: Colors.white, size: 14),
-                          const SizedBox(width: 4),
-                          Text(
-                            isInTransit ? 'Warehouse Dock' : 'Farmer Farm',
-                            style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: const BoxDecoration(
-              color: Color(0xFF0F172A),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(13)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        isInTransit ? 'WAREHOUSE DESTINATION' : 'FARMER PICKUP LOCATION',
-                        style: const TextStyle(fontSize: 9, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        targetLocation,
-                        style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                Text(
-                  'GPS: $lat, $lng',
-                  style: const TextStyle(fontSize: 10, color: Color(0xFF34D399), fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return _DispatchMapCard(
+      dispatch: _activeDispatch!,
+      onOpenGoogleMaps: _openGoogleMapsForJourney,
     );
   }
 
@@ -610,15 +688,13 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
             ],
           ),
           const Divider(height: 20, color: Color(0xFFE2E8F0)),
-          _buildInfoRow(Icons.agriculture_outlined, 'Farmer', d?.farmerOrProcessorName ?? 'Ramesh Patel'),
+          _buildInfoRow(Icons.agriculture_outlined, 'Farmer', d?.farmerOrProcessorName ?? 'N/A'),
           const SizedBox(height: 8),
-          _buildInfoRow(Icons.grass_outlined, 'Millet Type', '${d?.milletType ?? 'Finger Millet'} (${d?.totalQuantityKg.toStringAsFixed(0)} kg)'),
+          _buildInfoRow(Icons.grass_outlined, 'Millet Type', '${d?.milletType ?? 'N/A'} (${d?.totalQuantityKg.toStringAsFixed(0) ?? '0'} kg)'),
           const SizedBox(height: 8),
-          _buildInfoRow(Icons.location_on_outlined, 'Pickup Location', d?.sourceAddress ?? 'Bordi Farm, Dahod'),
+          _buildInfoRow(Icons.location_on_outlined, 'Pickup Location', d?.sourceAddress ?? 'N/A'),
           const SizedBox(height: 8),
-          _buildInfoRow(Icons.warehouse_outlined, 'Destination Warehouse', d?.destinationAddress ?? 'Mandya Central Warehouse'),
-          const SizedBox(height: 8),
-          _buildInfoRow(Icons.lock_outline, 'Pickup Code (OTP)', d?.verificationCode ?? '4829', isCode: true),
+          _buildInfoRow(Icons.warehouse_outlined, 'Destination Warehouse', d?.destinationAddress ?? 'N/A'),
         ],
       ),
     );
@@ -657,9 +733,10 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
           border: Border.all(color: const Color(0xFF90CAF9)),
         ),
         child: Column(
-          children: const [
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Row(
-              children: [
+              children: const [
                 Icon(Icons.check_circle, color: Color(0xFF1565C0), size: 22),
                 SizedBox(width: 10),
                 Expanded(
@@ -670,76 +747,820 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
                 ),
               ],
             ),
-            SizedBox(height: 8),
-            Text(
-              'Show warehouse receiving team the shipment code upon arrival at Dock A.',
+            const SizedBox(height: 8),
+            const Text(
+              'Show warehouse receiving team the shipment code upon arrival at destination warehouse.',
               style: TextStyle(fontSize: 11, color: Color(0xFF1E88E5)),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: _openGoogleMapsForJourney,
+                icon: const Icon(Icons.navigation_rounded, color: Colors.white, size: 20),
+                label: const Text(
+                  'START JOURNEY TO WAREHOUSE (GOOGLE MAPS)',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1976D2),
+                  foregroundColor: Colors.white,
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: ElevatedButton.icon(
+                onPressed: _isStartingTracking
+                    ? null
+                    : (_isTracking ? _stopTracking : _startTracking),
+                icon: _isStartingTracking
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : Icon(
+                        _isTracking ? Icons.stop_circle_outlined : Icons.my_location,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                label: Text(
+                  _isTracking ? 'STOP LIVE GPS PUBLISHING' : 'START LIVE GPS BROADCAST',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _isTracking ? Colors.red.shade700 : ShreeAnnaTheme.primaryGreen,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
             ),
           ],
         ),
       );
     }
 
-    return SizedBox(
-      width: double.infinity,
-      height: 50,
-      child: ElevatedButton.icon(
-        onPressed: _showPickupCodeModal,
-        icon: const Icon(Icons.key, size: 20),
-        label: const Text(
-          'ARRIVED AT PICKUP - ENTER PICKUP CODE',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton.icon(
+            onPressed: _openGoogleMapsForJourney,
+            icon: const Icon(Icons.navigation_rounded, size: 20, color: Colors.white),
+            label: const Text(
+              'START JOURNEY IN GOOGLE MAPS',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1976D2),
+              foregroundColor: Colors.white,
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
         ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: ShreeAnnaTheme.primaryGreen,
-          foregroundColor: Colors.white,
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton.icon(
+            onPressed: _showPickupCodeModal,
+            icon: const Icon(Icons.key, size: 18),
+            label: const Text(
+              'ARRIVED AT PICKUP - ENTER PICKUP CODE',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ShreeAnnaTheme.primaryGreen,
+              foregroundColor: Colors.white,
+              elevation: 1,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
         ),
-      ),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          height: 44,
+          child: OutlinedButton.icon(
+            onPressed: _isStartingTracking
+                ? null
+                : (_isTracking ? _stopTracking : _startTracking),
+            icon: _isStartingTracking
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(
+                    _isTracking ? Icons.location_on : Icons.navigation_outlined,
+                    color: _isTracking ? ShreeAnnaTheme.primaryGreen : const Color(0xFF202420),
+                    size: 18,
+                  ),
+            label: Text(
+              _isTracking ? 'LIVE GPS BROADCASTING ACTIVE (TAP TO STOP)' : 'START GPS TRIP BROADCAST TO PICKUP',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: _isTracking ? ShreeAnnaTheme.primaryGreen : const Color(0xFF202420),
+              ),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(
+                color: _isTracking ? ShreeAnnaTheme.primaryGreen : const Color(0xFFCBD5E1),
+                width: 1.5,
+              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
 
-class _MapRoutePainter extends CustomPainter {
-  final bool isInTransit;
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Geocoding helper — Nominatim (OpenStreetMap), free, no API key
+// ---------------------------------------------------------------------------
+Future<LatLng?> _geocodeAddress(String address) async {
+  if (address.trim().isEmpty) return null;
+  // If address contains coordinates e.g. "21.7204, 73.1532"
+  final coordMatch = RegExp(r'(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)').firstMatch(address);
+  if (coordMatch != null) {
+    final lat = double.tryParse(coordMatch.group(1)!);
+    final lon = double.tryParse(coordMatch.group(2)!);
+    if (lat != null && lon != null) return LatLng(lat, lon);
+  }
 
-  _MapRoutePainter({required this.isInTransit});
+  // Progressive list of query strings to try
+  final candidates = <String>[address];
+  final clean = address.replaceAll('/', ',').replaceAll(RegExp(r'\s+'), ' ').trim();
+  if (clean != address) candidates.add(clean);
+
+  final parts = clean.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+  if (parts.length > 2) {
+    candidates.add(parts.sublist(1).join(', '));
+  }
+  if (parts.length > 1) {
+    candidates.add('${parts.last}, Gujarat, India');
+  }
+
+  for (final q in candidates) {
+    try {
+      final query = Uri.encodeComponent(q);
+      final uri = Uri.parse(
+        'https://nominatim.openstreetmap.org/search?q=$query&format=json&limit=1',
+      );
+      final res = await http.get(uri, headers: {'User-Agent': 'ShreeAnnaApp/1.0'}).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body) as List<dynamic>;
+        if (data.isNotEmpty) {
+          final lat = double.tryParse(data[0]['lat'].toString());
+          final lon = double.tryParse(data[0]['lon'].toString());
+          if (lat != null && lon != null) return LatLng(lat, lon);
+        }
+      }
+    } catch (_) {}
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Real map card — uses exact farm/warehouse coordinates, with OSM tiles
+// ---------------------------------------------------------------------------
+class _DispatchMapCard extends StatefulWidget {
+  final DriverDispatchModel dispatch;
+  final VoidCallback? onOpenGoogleMaps;
+  const _DispatchMapCard({required this.dispatch, this.onOpenGoogleMaps});
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final linePaint = Paint()
-      ..color = isInTransit ? const Color(0xFF38BDF8) : const Color(0xFF34D399)
-      ..strokeWidth = 3
-      ..style = PaintingStyle.stroke;
+  State<_DispatchMapCard> createState() => _DispatchMapCardState();
+}
 
-    final dotPaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
+class _DispatchMapCardState extends State<_DispatchMapCard> {
+  LatLng? _from;
+  LatLng? _to;
+  List<LatLng> _routePoints = [];
+  double? _routeDistanceKm;
+  int? _routeDurationMin;
+  bool _loading = true;
+  String? _error;
+  bool _mapReady = false;
+  final MapController _mapController = MapController();
 
-    final startPoint = isInTransit ? Offset(40, size.height - 40) : Offset(40, 40);
-    final endPoint = isInTransit ? Offset(size.width - 40, 40) : Offset(size.width - 40, size.height - 40);
+  void _fitMapBounds() {
+    if (!_mapReady || !mounted) return;
+    final points = _routePoints.isNotEmpty
+        ? _routePoints
+        : (_from != null && _to != null ? [_from!, _to!] : null);
+    if (points == null || points.isEmpty) return;
 
-    final path = Path();
-    path.moveTo(startPoint.dx, startPoint.dy);
-    path.cubicTo(
-      size.width * 0.4,
-      startPoint.dy,
-      size.width * 0.6,
-      endPoint.dy,
-      endPoint.dx,
-      endPoint.dy,
+    try {
+      final bounds = LatLngBounds.fromPoints(points);
+      _mapController.fitCamera(
+        CameraFit.bounds(
+          bounds: bounds,
+          padding: const EdgeInsets.all(42),
+        ),
+      );
+    } catch (e) {
+      debugPrint('MapController fitCamera deferred: $e');
+    }
+  }
+
+  void _navigateToFullScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DriverFullScreenMapScreen(
+          dispatch: widget.dispatch,
+          onOpenGoogleMaps: widget.onOpenGoogleMaps,
+          initialRoutePoints: _routePoints,
+          from: _from,
+          to: _to,
+          distanceKm: _routeDistanceKm,
+          durationMin: _routeDurationMin,
+        ),
+      ),
     );
-
-    canvas.drawPath(path, linePaint);
-
-    canvas.drawCircle(startPoint, 8, linePaint);
-    canvas.drawCircle(startPoint, 4, dotPaint);
-
-    canvas.drawCircle(endPoint, 8, linePaint);
-    canvas.drawCircle(endPoint, 4, dotPaint);
   }
 
   @override
-  bool shouldRepaint(covariant _MapRoutePainter oldDelegate) => oldDelegate.isInTransit != isInTransit;
+  void initState() {
+    super.initState();
+    _geocode();
+  }
+
+  @override
+  void didUpdateWidget(_DispatchMapCard old) {
+    super.didUpdateWidget(old);
+    if (old.dispatch.status != widget.dispatch.status ||
+        old.dispatch.pickupLatitude != widget.dispatch.pickupLatitude ||
+        old.dispatch.pickupLongitude != widget.dispatch.pickupLongitude ||
+        old.dispatch.destinationLatitude != widget.dispatch.destinationLatitude ||
+        old.dispatch.destinationLongitude != widget.dispatch.destinationLongitude ||
+        old.dispatch.sourceAddress != widget.dispatch.sourceAddress ||
+        old.dispatch.destinationAddress != widget.dispatch.destinationAddress) {
+      _geocode();
+    }
+  }
+
+  Future<void> _fetchRoadRoute(LatLng start, LatLng end) async {
+    try {
+      final url = Uri.parse(
+        'https://router.project-osrm.org/route/v1/driving/'
+        '${start.longitude},${start.latitude};${end.longitude},${end.latitude}'
+        '?overview=full&geometries=geojson',
+      );
+      final res = await http.get(url, headers: {
+        'User-Agent': 'ShreeAnnaApp/1.0 (com.shreeanna.app; contact@shreeanna.com)',
+      }).timeout(const Duration(seconds: 8));
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data['code'] == 'Ok' && data['routes'] != null && (data['routes'] as List).isNotEmpty) {
+          final route = data['routes'][0];
+          final geometry = route['geometry'];
+          final coords = geometry['coordinates'] as List<dynamic>;
+          final pts = coords.map<LatLng>((c) {
+            final lon = (c[0] as num).toDouble();
+            final lat = (c[1] as num).toDouble();
+            return LatLng(lat, lon);
+          }).toList();
+
+          final distanceM = (route['distance'] as num?)?.toDouble() ?? 0;
+          final durationS = (route['duration'] as num?)?.toDouble() ?? 0;
+
+          if (mounted && pts.isNotEmpty) {
+            setState(() {
+              _routePoints = pts;
+              _routeDistanceKm = distanceM / 1000.0;
+              _routeDurationMin = (durationS / 60.0).round();
+            });
+            _fitMapBounds();
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('OSRM road route fetch failed: $e');
+    }
+
+    if (mounted) {
+      setState(() {
+        _routePoints = [start, end];
+      });
+      _fitMapBounds();
+    }
+  }
+
+  Future<void> _geocode() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+      _routePoints = [];
+      _routeDistanceKm = null;
+      _routeDurationMin = null;
+    });
+
+    final statusUpper = widget.dispatch.status.toUpperCase();
+    final isInTransit = statusUpper == 'IN_TRANSIT' || statusUpper == 'DELIVERED';
+
+    LatLng? toLatLng;
+    LatLng? fromLatLng;
+
+    if (isInTransit) {
+      // In transit: target is warehouse destination
+      if (widget.dispatch.destinationLatitude != null &&
+          widget.dispatch.destinationLongitude != null &&
+          widget.dispatch.destinationLatitude != 0) {
+        toLatLng = LatLng(
+          widget.dispatch.destinationLatitude!,
+          widget.dispatch.destinationLongitude!,
+        );
+      } else {
+        toLatLng = await _geocodeAddress(widget.dispatch.destinationAddress);
+      }
+
+      // Origin is farm pickup location
+      if (widget.dispatch.pickupLatitude != null &&
+          widget.dispatch.pickupLongitude != null &&
+          widget.dispatch.pickupLatitude != 0) {
+        fromLatLng = LatLng(
+          widget.dispatch.pickupLatitude!,
+          widget.dispatch.pickupLongitude!,
+        );
+      } else {
+        fromLatLng = await _geocodeAddress(widget.dispatch.sourceAddress);
+      }
+    } else {
+      // Pending pickup: target is farmer farm location using coordinates directly
+      if (widget.dispatch.pickupLatitude != null &&
+          widget.dispatch.pickupLongitude != null &&
+          widget.dispatch.pickupLatitude != 0) {
+        toLatLng = LatLng(
+          widget.dispatch.pickupLatitude!,
+          widget.dispatch.pickupLongitude!,
+        );
+      } else {
+        toLatLng = await _geocodeAddress(widget.dispatch.sourceAddress);
+      }
+
+      // Try reading actual driver GPS coordinates if available
+      try {
+        final pos = await Geolocator.getLastKnownPosition();
+        if (pos != null) {
+          fromLatLng = LatLng(pos.latitude, pos.longitude);
+        }
+      } catch (_) {}
+
+      // Origin fallback representing the driver departing toward the farm (or when simulator is at same spot)
+      if (toLatLng != null &&
+          (fromLatLng == null ||
+           ((fromLatLng.latitude - toLatLng.latitude).abs() < 0.002 &&
+            (fromLatLng.longitude - toLatLng.longitude).abs() < 0.002))) {
+        fromLatLng = LatLng(toLatLng.latitude + 0.045, toLatLng.longitude - 0.055);
+      }
+    }
+
+    if (!mounted) return;
+
+    if (toLatLng == null) {
+      setState(() {
+        _loading = false;
+        _error = 'Could not find location on map';
+      });
+      return;
+    }
+
+    final targetPoint = toLatLng;
+    final startPoint = fromLatLng ?? LatLng(targetPoint.latitude - 0.05, targetPoint.longitude - 0.05);
+
+    setState(() {
+      _from = startPoint;
+      _to = targetPoint;
+      _loading = false;
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fitMapBounds();
+    });
+
+    // Fetch the real turn-by-turn road route
+    await _fetchRoadRoute(startPoint, targetPoint);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final statusUpper = widget.dispatch.status.toUpperCase();
+    final isInTransit = statusUpper == 'IN_TRANSIT' || statusUpper == 'DELIVERED';
+    final targetLocation = isInTransit
+        ? widget.dispatch.destinationAddress
+        : widget.dispatch.sourceAddress;
+
+    final headerColor = isInTransit ? const Color(0xFF0284C7) : const Color(0xFF059669);
+    final lineColor = isInTransit ? const Color(0xFF38BDF8) : const Color(0xFF34D399);
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF334155)),
+        boxShadow: const [
+          BoxShadow(color: Color(0x1F000000), blurRadius: 10, offset: Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header ──────────────────────────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: const BoxDecoration(
+              color: Color(0xFF0F172A),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(13)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(
+                        isInTransit ? Icons.warehouse_outlined : Icons.navigation_outlined,
+                        color: lineColor,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          isInTransit ? 'WAREHOUSE ROUTE' : 'PICKUP LOCATION MAP',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 0.3,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_routeDistanceKm != null)
+                      Container(
+                        margin: const EdgeInsets.only(right: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E293B),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: const Color(0xFF334155)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.route, size: 10, color: Color(0xFF38BDF8)),
+                            const SizedBox(width: 3),
+                            Text(
+                              '${_routeDistanceKm!.toStringAsFixed(1)} km${_routeDurationMin != null ? ' · ~${_routeDurationMin}m' : ''}',
+                              style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF38BDF8)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: headerColor,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        isInTransit ? 'IN TRANSIT' : 'TRANSIT TO PICKUP',
+                        style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // ── Map ─────────────────────────────────────────────────────────────
+          SizedBox(
+            height: 220,
+            child: ClipRRect(
+              borderRadius: BorderRadius.zero,
+              child: _loading
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(color: lineColor, strokeWidth: 2),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Loading map…',
+                            style: TextStyle(color: lineColor, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    )
+                  : _error != null
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.map_outlined, color: Color(0xFF94A3B8), size: 36),
+                              const SizedBox(height: 8),
+                              Text(
+                                _error!,
+                                style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 10),
+                              TextButton(
+                                onPressed: _geocode,
+                                child: Text('Retry', style: TextStyle(color: lineColor)),
+                              ),
+                            ],
+                          ),
+                        )
+                      : Stack(
+                          children: [
+                            FlutterMap(
+                              mapController: _mapController,
+                              options: MapOptions(
+                                initialCenter: _to ?? const LatLng(22.3039, 70.8022),
+                                initialZoom: 11,
+                                onMapReady: () {
+                                  _mapReady = true;
+                                  _fitMapBounds();
+                                },
+                              ),
+                              children: [
+                                // Carto / OpenStreetMap tile layer
+                                TileLayer(
+                                  urlTemplate: ApiConfig.cartoApiKey.isNotEmpty
+                                      ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=${ApiConfig.cartoApiKey}'
+                                      : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                  subdomains: const ['a', 'b', 'c', 'd'],
+                                  userAgentPackageName: 'com.shreeanna.app',
+                                  tileProvider: NetworkTileProvider(
+                                    headers: <String, String>{
+                                      'User-Agent': 'ShreeAnnaApp/1.0 (com.shreeanna.app; contact@shreeanna.com)',
+                                    },
+                                  ),
+                                  maxZoom: 20,
+                                ),
+                                // Real turn-by-turn road route polyline
+                                if (_routePoints.isNotEmpty || (_from != null && _to != null))
+                                  PolylineLayer(
+                                    polylines: [
+                                      // Road casing / drop shadow border for crisp road contrast
+                                      Polyline(
+                                        points: _routePoints.isNotEmpty ? _routePoints : [_from!, _to!],
+                                        color: const Color(0xFF0F172A).withValues(alpha: 0.8),
+                                        strokeWidth: 6.5,
+                                      ),
+                                      // Vibrant navigation road polyline
+                                      Polyline(
+                                        points: _routePoints.isNotEmpty ? _routePoints : [_from!, _to!],
+                                        color: const Color(0xFF2563EB),
+                                        strokeWidth: 4.5,
+                                      ),
+                                    ],
+                                  ),
+                                // Markers
+                                MarkerLayer(
+                                  markers: [
+                                    // Driver / origin marker
+                                    if (_from != null)
+                                      Marker(
+                                        point: _from!,
+                                        width: 90,
+                                        height: 38,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF1E293B).withValues(alpha: 0.92),
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(color: Colors.amber.withValues(alpha: 0.7)),
+                                          ),
+                                          child: const Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(Icons.local_shipping, color: Colors.amber, size: 14),
+                                              SizedBox(width: 4),
+                                              Flexible(
+                                                child: Text(
+                                                  'Driver',
+                                                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    // Destination marker
+                                    if (_to != null)
+                                      Marker(
+                                        point: _to!,
+                                        width: 110,
+                                        height: 38,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: headerColor,
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                isInTransit ? Icons.warehouse : Icons.agriculture,
+                                                color: Colors.white,
+                                                size: 14,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Flexible(
+                                                child: Text(
+                                                  isInTransit ? 'Warehouse' : 'Farmer Farm',
+                                                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                // Map attribution
+                                RichAttributionWidget(
+                                  attributions: [
+                                    TextSourceAttribution(
+                                      ApiConfig.cartoApiKey.isNotEmpty
+                                          ? '© CARTO, © OpenStreetMap contributors'
+                                          : 'OpenStreetMap contributors',
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            // Floating Full-Screen Map button
+                            Positioned(
+                              top: 10,
+                              right: 10,
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: _navigateToFullScreen,
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF0F172A).withValues(alpha: 0.9),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: const Color(0xFF334155)),
+                                      boxShadow: const [
+                                        BoxShadow(color: Colors.black38, blurRadius: 4, offset: Offset(0, 2)),
+                                      ],
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.fullscreen, color: Colors.white, size: 16),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          'Full Screen',
+                                          style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+            ),
+          ),
+
+          // ── Footer ──────────────────────────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: const BoxDecoration(
+              color: Color(0xFF0F172A),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(13)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  isInTransit ? Icons.warehouse_outlined : Icons.location_on_outlined,
+                  color: lineColor,
+                  size: 14,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isInTransit ? 'WAREHOUSE DESTINATION' : 'FARMER PICKUP LOCATION',
+                        style: const TextStyle(fontSize: 9, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        targetLocation,
+                        style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                if (_to != null) ...[
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_routeDistanceKm != null)
+                        Text(
+                          '${_routeDistanceKm!.toStringAsFixed(1)} km by road',
+                          style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      Text(
+                        '${_to!.latitude.toStringAsFixed(4)}°N, ${_to!.longitude.toStringAsFixed(4)}°E',
+                        style: TextStyle(fontSize: 9, color: lineColor, fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: _navigateToFullScreen,
+                    borderRadius: BorderRadius.circular(4),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF334155),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.fullscreen, color: Colors.white, size: 12),
+                          SizedBox(width: 3),
+                          Text(
+                            'Full',
+                            style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (widget.onOpenGoogleMaps != null) ...[
+                    const SizedBox(width: 6),
+                    InkWell(
+                      onTap: widget.onOpenGoogleMaps,
+                      borderRadius: BorderRadius.circular(4),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1976D2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.directions, color: Colors.white, size: 12),
+                            SizedBox(width: 3),
+                            Text(
+                              'Maps',
+                              style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

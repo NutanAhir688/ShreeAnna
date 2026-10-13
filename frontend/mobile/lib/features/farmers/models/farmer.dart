@@ -31,19 +31,19 @@ class Farmer {
 
   factory Farmer.fromJson(Map<String, dynamic> json) {
     return Farmer(
-      id: json['id'],
-      farmerCode: json['farmerCode'],
-      fullName: json['fullName'],
-      phone: json['phone'],
-      email: json['email'] ?? '',
-      address: json['address'],
-      district: json['district'],
-      taluka: json['taluka'],
-      village: json['village'],
-      dateOfBirth: DateTime.parse(json['dateOfBirth']),
-      status: json['status'],
-      createdAt: DateTime.parse(json['createdAt']),
-      farmCount: json['farmCount'] ?? 0,
+      id: json['id']?.toString() ?? '',
+      farmerCode: json['farmerCode']?.toString() ?? '',
+      fullName: json['fullName']?.toString() ?? '',
+      phone: json['phone']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      address: json['address']?.toString() ?? '',
+      district: json['district']?.toString() ?? '',
+      taluka: json['taluka']?.toString() ?? '',
+      village: json['village']?.toString() ?? '',
+      dateOfBirth: DateTime.tryParse(json['dateOfBirth']?.toString() ?? '') ?? DateTime(1990),
+      status: json['status']?.toString() ?? 'ACTIVE',
+      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now(),
+      farmCount: (json['farmCount'] as num?)?.toInt() ?? 0,
     );
   }
 }

@@ -175,6 +175,7 @@ class _OtpScreenState extends State<OtpScreen> {
       final tokenStorage = TokenStorage();
 
       await tokenStorage.saveAccessToken(accessToken);
+      await tokenStorage.saveUserRole('farmer'); // persist role for cold-start routing
       final check = await tokenStorage.getAccessToken();
 
       debugPrint(

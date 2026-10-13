@@ -17,7 +17,7 @@ function WarehouseStats({ warehouses = [] }) {
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <StatCard
         title="Active Warehouses"
-        value={activeCount > 0 ? activeCount.toString() : "5"}
+        value={activeCount.toString()}
         description="Currently operational"
         icon={Warehouse}
         iconBgClass="bg-blue-100/80"
@@ -26,7 +26,7 @@ function WarehouseStats({ warehouses = [] }) {
 
       <StatCard
         title="Total Capacity"
-        value={`${(totalCapKg > 0 ? totalCapKg : 28000).toLocaleString('en-IN')} kg`}
+        value={`${totalCapKg.toLocaleString('en-IN')} kg`}
         description="Combined storage capacity"
         icon={Package}
         iconBgClass="bg-purple-100/80"
@@ -35,8 +35,8 @@ function WarehouseStats({ warehouses = [] }) {
 
       <StatCard
         title="Used Capacity"
-        value={`${(totalUsedKg > 0 ? totalUsedKg : 8650).toLocaleString('en-IN')} kg`}
-        description={`${occupancyPct > 0 ? occupancyPct : 31}% of total capacity`}
+        value={`${totalUsedKg.toLocaleString('en-IN')} kg`}
+        description={`${occupancyPct}% of total capacity`}
         icon={Gauge}
         iconBgClass="bg-amber-100/80"
         iconColorClass="text-amber-600"
@@ -44,7 +44,7 @@ function WarehouseStats({ warehouses = [] }) {
 
       <StatCard
         title="Good Condition"
-        value={activeCount > 0 ? activeCount.toString() : "5"}
+        value={activeCount.toString()}
         description="Warehouses inspected"
         icon={CheckCircle2}
         iconBgClass="bg-emerald-100/80"

@@ -4,7 +4,7 @@ import Topbar from "./Topbar";
 
 function DashboardLayout() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
       
       {/* Sidebar */}
       <Sidebar />
@@ -17,7 +17,7 @@ function DashboardLayout() {
         <Topbar />
 
         {/* Page content */}
-        <main className="p-6">
+        <main className="p-6 bg-slate-50/50 dark:bg-slate-950/80 min-h-[calc(100vh-4rem)]">
           <Outlet />
         </main>
 

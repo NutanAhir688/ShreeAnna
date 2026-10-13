@@ -6,7 +6,7 @@ import WarehouseTable from "../components/WarehouseTable";
 import WarehouseMapView from "../components/WarehouseMapView";
 import AddWarehouseModal from "../components/AddWarehouseModal";
 
-import { warehousesApi } from "@/services/api";
+import { lotsApi, warehousesApi } from "@/services/api";
 
 function Warehouses() {
   const [warehouseList, setWarehouseList] = useState([]);
@@ -17,16 +17,97 @@ function Warehouses() {
 
   const loadWarehouses = async () => {
     try {
-      const data = await warehousesApi.getAll();
+      const [data, lotsData] = await Promise.all([
+        warehousesApi.getAll().catch(() => []),
+        lotsApi.getAll().catch(() => []),
+      ]);
+
+      const lotsList = Array.isArray(lotsData) ? lotsData : [];
+
       if (Array.isArray(data)) {
         const mapped = data.map((w) => {
-          const cap = w.capacityInTons !== undefined && w.capacityInTons !== null ? Number(w.capacityInTons) : (w.capacity ? Number(w.capacity) : 0);
-          const uti = w.utilizedCapacityTons !== undefined && w.utilizedCapacityTons !== null ? Number(w.utilizedCapacityTons) : (w.usedCapacity ? Number(w.usedCapacity) : 0);
+          const cap =
+            w.capacityInTons !== undefined && w.capacityInTons !== null
+              ? Number(w.capacityInTons)
+              : w.capacity !== undefined && w.capacity !== null
+              ? Number(w.capacity)
+              : 5000;
+
+          const dbUtilized =
+            w.utilizedCapacityTons !== undefined && w.utilizedCapacityTons !== null
+              ? Number(w.utilizedCapacityTons)
+              : w.usedCapacity !== undefined && w.usedCapacity !== null
+              ? Number(w.usedCapacity)
+              : 0;
+
+          // Calculate total allocated kg for this specific warehouse from live lots
+          const allocatedForWh = lotsList.filter((l) => {
+            const s = String(l.status || "").toUpperCase();
+
+            // 1. Direct ID match
+            if (
+              l.warehouseId &&
+              w.id &&
+              String(l.warehouseId).toLowerCase() === String(w.id).toLowerCase()
+            ) {
+              return true;
+            }
+
+            // 2. Code match
+            if (
+              l.warehouseCode &&
+              w.warehouseCode &&
+              String(l.warehouseCode).toLowerCase() === String(w.warehouseCode).toLowerCase()
+            ) {
+              return true;
+            }
+
+            // 3. Name match
+            if (l.warehouseName && w.name) {
+              const lWh = l.warehouseName.toLowerCase().trim();
+              const wName = w.name.toLowerCase().trim();
+              if (lWh.includes(wName) || wName.includes(lWh)) {
+                return true;
+              }
+            }
+
+            // 4. Fallback: Assign unassigned stored lots ONLY to the primary warehouse (WH-GUJ-001 / Dahod)
+            const isStored = [
+              "STORED",
+              "WAREHOUSE_RECEIVED",
+              "COMPLETED",
+              "DELIVERED",
+            ].includes(s);
+
+            const isPrimaryWh =
+              w.warehouseCode === "WH-GUJ-001" ||
+              (w.name && w.name.toLowerCase().includes("dahod")) ||
+              w.id === "wh-1" ||
+              w.id === "1" ||
+              w.id === "aa000001-1111-1111-1111-111111111111";
+
+            if (isStored && !l.warehouseId && !l.warehouseName && isPrimaryWh) {
+              return true;
+            }
+
+            return false;
+          });
+
+          const sumKg = allocatedForWh.reduce(
+            (sum, l) =>
+              sum +
+              Number(l.actualQuantityKg ?? l.estimatedQuantityKg ?? l.quantity ?? 0),
+            0
+          );
+
+          const uti = sumKg > 0 ? sumKg : dbUtilized;
+          const lotCount = allocatedForWh.length > 0 ? allocatedForWh.length : (uti > 0 ? Math.ceil(uti / 450) : 0);
+
           return {
             id: w.id,
             code: w.warehouseCode || w.id,
             name: w.name,
-            location: w.location || `${w.village || ''}, ${w.district || ''}`,
+            location: w.location || `${w.village || ""}, ${w.district || ""}`,
             district: w.district || "Gujarat",
             taluka: w.taluka || "",
             village: w.village || "",
@@ -42,6 +123,7 @@ function Warehouses() {
             longitude: w.longitude,
             storageCondition: w.storageCondition || "Dry Grain, Aerated",
             status: w.status === "ACTIVE" ? "Active" : w.status || "Active",
+            stockLots: lotCount,
           };
         });
         setWarehouseList(mapped);

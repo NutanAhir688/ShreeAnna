@@ -15,13 +15,18 @@ import FarmsByDistrict from "../components/FarmsByDistrict";
 import { farmersApi, farmsApi } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
 import LogisticsDashboard from "@/features/logistics/pages/LogisticsDashboard";
+import AccountantDashboard from "./AccountantDashboard";
 
 function Dashboard() {
   const { user } = useAuth();
   const userRole = user?.role || "FpoManager";
 
-  if (userRole === "LogisticsCoordinator") {
+  if (userRole === "LogisticsCoordinator" || userRole?.toLowerCase() === "logisticscoordinator") {
     return <LogisticsDashboard />;
+  }
+
+  if (userRole === "Accountant" || userRole?.toLowerCase() === "accountant") {
+    return <AccountantDashboard />;
   }
 
   const [stats, setStats] = useState({

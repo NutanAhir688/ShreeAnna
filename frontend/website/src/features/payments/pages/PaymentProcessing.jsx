@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   IndianRupee,
   Send,
+  Loader2,
 } from "lucide-react";
 
 import { useNavigate, useParams } from "react-router-dom";
@@ -29,23 +30,43 @@ function PaymentProcessing() {
   const { id } = useParams();
 
   const [payment, setPayment] = useState(null);
+  const [settlementRecord, setSettlementRecord] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
     async function loadPayment() {
       try {
-        const lot = await lotsApi.getById(id);
+        const [lot, allSettlements] = await Promise.all([
+          lotsApi.getById(id),
+          settlementsApi.getAll(),
+        ]);
+
         if (lot) {
+          const qty = lot.actualQuantityKg ?? lot.agreedQuantityKg ?? lot.estimatedQuantityKg ?? 0;
+          const rate = lot.offeredPricePerKg ?? 0;
+          const total = qty * rate;
+
+          // Find associated settlement if any
+          const matchingSettlement = Array.isArray(allSettlements)
+            ? allSettlements.find((s) => s.lotId === lot.lotNumber || s.id === lot.id)
+            : null;
+
+          if (matchingSettlement) {
+            setSettlementRecord(matchingSettlement);
+          }
+
           setPayment({
-            id: `PAY-${lot.id}`,
-            lotId: lot.lotCode || lot.id,
-            farmerId: lot.farmerId || "-",
-            farmerName: lot.farmerName || "Farmer",
-            totalAmount: lot.totalAmount || (lot.estimatedQuantityKg || 0) * (lot.unitPrice || 35),
-            status: lot.paymentStatus || "Pending",
-            paymentMethod: "Bank Transfer",
-            transactionId: lot.transactionId || null,
-            paymentDate: lot.paymentDate || null,
+            id: matchingSettlement?.settlementCode || `SET-${lot.lotNumber}`,
+            settlementId: matchingSettlement?.id || lot.id,
+            lotId: lot.lotNumber || lot.id,
+            farmerId: lot.farmerId,
+            farmerName: lot.farmerName,
+            totalAmount: matchingSettlement ? matchingSettlement.finalAmount : total,
+            status: matchingSettlement ? matchingSettlement.status : (lot.status === "STORED" ? "Pending Settlement" : lot.status),
+            paymentMethod: matchingSettlement?.paymentMethod || "Razorpay (MockGateway)",
+            transactionId: matchingSettlement?.transactionId || null,
+            paymentDate: matchingSettlement?.paymentDate || null,
           });
         }
       } catch (err) {
@@ -58,47 +79,63 @@ function PaymentProcessing() {
   }, [id]);
 
   const [form, setForm] = useState({
-    paymentMethod:
-      payment?.paymentMethod || "Bank Transfer",
+    paymentMethod: "Razorpay (MockGateway)",
   });
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+      </div>
+    );
+  }
 
   if (!payment) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
         <div className="text-center">
           <h2 className="text-lg font-semibold text-slate-900">
-            Payment not available
+            Payment record not found
           </h2>
 
           <p className="mt-1 text-sm text-slate-500">
-            No payment record exists for lot {id}.
+            No procurement lot record exists for {id}.
           </p>
 
           <Button
             className="mt-4"
-            onClick={() =>
-              navigate("/procurement-lots")
-            }
+            onClick={() => navigate("/settlements")}
           >
-            Back to Procurement
+            Back to Settlements
           </Button>
         </div>
       </div>
     );
   }
 
-  const isPaid = payment.status === "Paid";
+  const isPaid = payment.status === "Paid" || payment.status === "Completed";
 
-  const handleProcessPayment = () => {
-    console.log("Payment processed:", {
-      paymentId: payment.id,
-      lotId: payment.lotId,
-      farmerId: payment.farmerId,
-      amount: payment.totalAmount,
-      paymentMethod: form.paymentMethod,
-    });
+  const handleProcessPayment = async () => {
+    try {
+      setProcessing(true);
+      const targetId = settlementRecord?.id || payment.settlementId;
+      const res = await settlementsApi.processPayment(targetId, {
+        paymentMethod: form.paymentMethod || "Razorpay (MockGateway)",
+        simulateSuccess: true,
+      });
 
-    navigate(`/procurement-lots/${payment.lotId}`);
+      setPayment((prev) => ({
+        ...prev,
+        status: "Paid",
+        transactionId: res.transactionId,
+        paymentDate: res.paymentDate,
+      }));
+    } catch (err) {
+      console.error("Payment processing failed:", err);
+      alert("Failed to process payment via MockGateway: " + (err.message || "Unknown error"));
+    } finally {
+      setProcessing(false);
+    }
   };
 
   return (
@@ -109,14 +146,10 @@ function PaymentProcessing() {
           <Button
             variant="ghost"
             className="-ml-3 mb-2"
-            onClick={() =>
-              navigate(
-                `/procurement-lots/${payment.lotId}`
-              )
-            }
+            onClick={() => navigate("/settlements")}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Lot
+            Back to Settlements
           </Button>
 
           <div className="flex items-center gap-3">
@@ -142,7 +175,7 @@ function PaymentProcessing() {
               </div>
 
               <p className="mt-1 text-sm text-slate-500">
-                Farmer payment for procurement lot{" "}
+                Farmer DBT payout for procurement lot{" "}
                 <span className="font-medium text-slate-700">
                   {payment.lotId}
                 </span>
@@ -152,9 +185,13 @@ function PaymentProcessing() {
         </div>
 
         {!isPaid && (
-          <Button onClick={handleProcessPayment}>
-            <Send className="mr-2 h-4 w-4" />
-            Process Payment
+          <Button onClick={handleProcessPayment} disabled={processing} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
+            {processing ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="mr-2 h-4 w-4" />
+            )}
+            Process Payment (Razorpay MockGateway)
           </Button>
         )}
       </div>
@@ -173,8 +210,7 @@ function PaymentProcessing() {
           </CardTitle>
 
           <p className="text-sm text-slate-500">
-            Confirm the payment method before processing
-            the farmer's payment.
+            Confirm the payment method before processing the farmer's DBT payout.
           </p>
         </CardHeader>
 
@@ -198,13 +234,11 @@ function PaymentProcessing() {
               </p>
 
               <p className="mt-1 text-sm text-emerald-700">
-                Transaction ID:{" "}
-                {payment.transactionId}
+                Transaction ID: {payment.transactionId}
               </p>
 
               <p className="text-sm text-emerald-700">
-                Payment Date:{" "}
-                {payment.paymentDate}
+                Payment Date: {payment.paymentDate}
               </p>
             </div>
           </div>
@@ -217,15 +251,13 @@ function PaymentProcessing() {
             </p>
 
             <p className="mt-1 text-sm text-amber-700">
-              Verify the farmer and payment details before
-              processing.
+              Disburse direct benefit transfer to {payment.farmerName}.
             </p>
           </div>
 
-          <Button onClick={handleProcessPayment}>
-            <Send className="mr-2 h-4 w-4" />
-            Process ₹
-            {payment.totalAmount.toLocaleString("en-IN")}
+          <Button onClick={handleProcessPayment} disabled={processing} className="bg-blue-600 hover:bg-blue-700 text-white">
+            {processing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Process ₹{Number(payment.totalAmount || 0).toLocaleString("en-IN")}
           </Button>
         </div>
       )}

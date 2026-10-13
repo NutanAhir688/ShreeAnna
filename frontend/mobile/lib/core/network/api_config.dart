@@ -1,9 +1,17 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class ApiConfig {
   static const String baseUrl = 'http://10.0.2.2:5066';
 
   static const String sendFarmerOtp = '$baseUrl/api/auth/farmer/send-otp';
 
   static const String verifyFarmerOtp = '$baseUrl/api/auth/farmer/verify-otp';
+
+  static const String sendDriverOtp = '$baseUrl/api/auth/driver/send-otp';
+
+  static const String verifyDriverOtp = '$baseUrl/api/auth/driver/verify-otp';
+
+  static const String directDriverLogin = '$baseUrl/api/auth/driver/direct-login';
 
   static const String farmerMe = '$baseUrl/api/farmers/me';
 
@@ -47,8 +55,20 @@ class ApiConfig {
   static String dispatchByLot(String lotId) =>
     '$baseUrl/api/dispatches/by-lot/${Uri.encodeComponent(lotId)}';
 
+  static const String notifications = '$baseUrl/api/notifications';
+  static const String notificationsReadAll = '$baseUrl/api/notifications/read-all';
+  static String notificationRead(String id) => '$baseUrl/api/notifications/$id/read';
+
   static const String azureBlobBaseUrl =
       'https://shreeannafarmimages.blob.core.windows.net/farm-images';
 
   static String azureSasToken = '';
+
+  static String get cartoApiKey {
+    try {
+      final key = dotenv.env['CARTO_API_KEY'];
+      if (key != null && key.trim().isNotEmpty) return key.trim();
+    } catch (_) {}
+    return const String.fromEnvironment('CARTO_API_KEY', defaultValue: '');
+  }
 }

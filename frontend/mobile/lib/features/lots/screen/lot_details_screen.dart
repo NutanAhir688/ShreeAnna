@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../core/network/api_config.dart';
+import '../../../core/storage/token_storage.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../models/lot_model.dart';
 import '../services/lot_api.dart';
@@ -44,6 +46,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
   LotModel? _lot;
   String? _currentStatus;
   Map<String, dynamic>? _dispatchDetails;
+  String? _accessToken;
 
   bool _hasInspectionAssignment() {
     final assignedInspector = _lot?.assignedInspectorName?.trim();
@@ -99,6 +102,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
     });
 
     try {
+      _accessToken = await TokenStorage().getAccessToken();
       final timeline = await _lotApi.getLotTimeline(widget.lotId!);
       LotModel? lotDetails;
       Map<String, dynamic>? dispatchDetails;
@@ -137,6 +141,32 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
     }
   }
 
+  bool _shouldShowAgreementBanner(String status) {
+    final value = status.trim().toUpperCase();
+    // Agreement metadata/version alone is not proof that this stage is active.
+    // Only show the banner after the backend moves the lot into an agreement
+    // state (or a later procurement stage).
+    return {
+      'AGREEMENT_PENDING',
+      'AGREEMENT_FORMULATED',
+      'PROCUREMENT_AGREEMENT_PENDING',
+      'AGREEMENT_ACCEPTED',
+      'AGREEMENT_REJECTED',
+      'PICKUP_SCHEDULED',
+      'PICKUP_COMPLETED',
+      'DELIVERED',
+      'DELIVERY_COMPLETED',
+      'WAREHOUSE_RECEIVED',
+      'WAREHOUSE_RECEIPT',
+      'STORED',
+      'PAYMENT_PENDING',
+      'PAYMENT_COMPLETED',
+      'PAYMENT_PAID',
+      'PAID',
+      'SETTLED',
+    }.contains(value);
+  }
+
   String _formatStatusText(String status) {
     switch (status.toUpperCase()) {
       case 'SUBMITTED':
@@ -159,6 +189,15 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
         return 'Pickup Scheduled';
       case 'PICKUP_COMPLETED':
         return 'Pickup Completed';
+      case 'DELIVERED':
+      case 'DELIVERY_COMPLETED':
+        return 'Delivered';
+      case 'STORED':
+      case 'WAREHOUSE_RECEIVED':
+      case 'WAREHOUSE_RECEIPT':
+      case 'CONFIRMED':
+      case 'COMPLETED':
+        return 'Received & Stored in Warehouse';
       case 'PAYMENT_COMPLETED':
       case 'PAYMENT':
         return 'Payment Completed';
@@ -287,7 +326,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
               //   _buildProcurementOfficerCard(_lot!, context),
               // ],
               if (_lot != null &&
-                  (_lot!.status.toUpperCase().contains('AGREEMENT'))) ...[
+                  _shouldShowAgreementBanner(_lot!.status)) ...[
                 const SizedBox(height: 16),
                 _buildAgreementNotificationBanner(_lot!, context),
               ],
@@ -333,24 +372,39 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                     final hasInspectorAssignment = _hasInspectionAssignment();
                     final inspectionStarted = _hasInspectionStarted();
                     final inspectionCompleted = _hasInspectionCompleted();
-                    final hasAgreement =
-                        _lot?.agreedQuantityKg != null ||
-                        _lot?.offeredPricePerKg != null ||
-                        _lot?.agreementVersion != null;
                     final receiptStatus =
-                        (_dispatchDetails?['warehouseReceiptStatus'] ??
+                        (_lot?.warehouseReceiptStatus ??
+                                _dispatchDetails?['warehouseReceiptStatus'] ??
+                                _dispatchDetails?['warehouse_receipt_status'] ??
                                 widget.warehouseReceiptStatus ??
                                 '')
                             .toString()
                             .trim()
                             .toUpperCase();
 
-                    final isStored = receiptStatus == 'CONFIRMED';
+                    final isPaymentCompleted = {
+                      'PAYMENT_COMPLETED',
+                      'PAYMENT_PAID',
+                      'PAID',
+                      'SETTLED',
+                      'COMPLETED',
+                    }.contains(statusUpper);
+
+                    // Receipt completion must come from the receipt status or completed payment
+                    final isStored = {
+                      'CONFIRMED',
+                      'RECEIVED',
+                      'STORED',
+                      'COMPLETED',
+                    }.contains(receiptStatus) ||
+                    statusUpper == 'STORED' ||
+                    isPaymentCompleted;
 
                     final isDelivered =
                         statusUpper.contains('DELIVERED') ||
                         statusUpper.contains('DELIVERY_COMPLETED') ||
-                        statusUpper.contains('PICKUP_COMPLETED');
+                        statusUpper.contains('PICKUP_COMPLETED') ||
+                        isStored;
 
                     final isDispatched =
                         hasDriver ||
@@ -359,12 +413,24 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                         statusUpper.contains('TRANSIT') ||
                         statusUpper.contains('VEHICLE') ||
                         statusUpper.contains('SCHEDULED');
+
                     final isAgrAccepted =
                         isDispatched ||
                         isDelivered ||
-                        statusUpper.contains('AGREEMENT_ACCEPTED');
+                        isStored ||
+                        isPaymentCompleted ||
+                        statusUpper.contains('AGREEMENT_ACCEPTED') ||
+                        statusUpper == 'ACCEPTED' ||
+                        statusUpper == 'PROCUREMENT_AGREEMENT';
+
+                    // If the lot has progressed to delivery or beyond,
+                    // inspection & certification must have been completed
                     final isCertified =
                         inspectionCompleted ||
+                        isAgrAccepted ||
+                        isDelivered ||
+                        isStored ||
+                        isPaymentCompleted ||
                         statusUpper.contains('CERTIFICATE') ||
                         statusUpper.contains('CERTIFIED') ||
                         statusUpper.contains('PASSED') ||
@@ -377,44 +443,47 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                       isCompleted = true;
                       isCurrent = false;
                     } else if (step.step == 'QUALITY_INSPECTION') {
-                      isCompleted = isCompleted || inspectionCompleted;
+                      isCompleted =
+                          isCompleted ||
+                          inspectionCompleted ||
+                          isCertified ||
+                          isPaymentCompleted;
                       isCurrent =
                           !isCompleted &&
                           (isCurrent ||
                               hasInspectorAssignment ||
-                              inspectionStarted);
+                              inspectionStarted ||
+                              statusUpper.contains('INSPECTION') ||
+                              statusUpper.contains('QUALITY') ||
+                              statusUpper.contains('INSPECTOR'));
                     } else if (step.step == 'QUALITY_CERTIFICATE') {
-                      isCompleted = isCompleted || isCertified;
+                      isCompleted = isCompleted || isCertified || isPaymentCompleted;
                       isCurrent =
                           !isCompleted && (isCurrent || inspectionCompleted);
                     } else if (step.step == 'PROCUREMENT_AGREEMENT') {
                       isCompleted =
                           isCompleted ||
-                          statusUpper == 'AGREEMENT_ACCEPTED' ||
-                          statusUpper == 'PROCUREMENT_AGREEMENT' ||
-                          isDispatched ||
-                          isDelivered;
+                          isAgrAccepted ||
+                          isStored ||
+                          isPaymentCompleted;
 
                       isCurrent =
                           !isCompleted &&
                           (statusUpper == 'AGREEMENT_PENDING' ||
                               statusUpper == 'AGREEMENT_FORMULATED');
                     } else if (step.step == 'PICKUP') {
-                      isCompleted = isCompleted || isDelivered || isStored;
+                      isCompleted = isCompleted || isDelivered || isStored || isPaymentCompleted;
                       isCurrent =
                           !isCompleted &&
                           (isCurrent || isDispatched || isAgrAccepted);
                     } else if (step.step == 'WAREHOUSE_RECEIPT' ||
                         step.step == 'WAREHOUSE_RECEIVED' ||
                         step.step == 'STORED') {
-                      isCompleted = isCompleted || isStored;
-                      isCurrent = !isCompleted && (isCurrent || isDelivered);
+                      isCompleted = isCompleted || isStored || isPaymentCompleted;
+                      isCurrent = !isCompleted && !isPaymentCompleted && (isCurrent || isDelivered);
                     } else if (step.step == 'PAYMENT') {
-                      isCompleted =
-                          isCompleted ||
-                          statusUpper.contains('PAYMENT') ||
-                          statusUpper.contains('SETTLED');
-                      isCurrent = !isCompleted && (isCurrent || isStored);
+                      isCompleted = isPaymentCompleted;
+                      isCurrent = isStored && !isPaymentCompleted;
                     }
 
                     final isLast = index == _timeline!.steps.length - 1;
@@ -443,24 +512,41 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                     final hasInspectorAssignment = _hasInspectionAssignment();
                     final inspectionStarted = _hasInspectionStarted();
                     final inspectionCompleted = _hasInspectionCompleted();
-                    final hasAgreement =
-                        _lot?.agreedQuantityKg != null ||
-                        _lot?.offeredPricePerKg != null ||
-                        _lot?.agreementVersion != null;
                     final receiptStatus =
-                        (_dispatchDetails?['warehouseReceiptStatus'] ??
+                        (_lot?.warehouseReceiptStatus ??
+                                _dispatchDetails?['warehouseReceiptStatus'] ??
+                                _dispatchDetails?['warehouse_receipt_status'] ??
                                 widget.warehouseReceiptStatus ??
                                 '')
                             .toString()
                             .trim()
                             .toUpperCase();
 
-                    final isStored = receiptStatus == 'CONFIRMED';
+                    final isPaymentCompleted = {
+                      'PAYMENT_COMPLETED',
+                      'PAYMENT_PAID',
+                      'PAID',
+                      'SETTLED',
+                      'COMPLETED',
+                    }.contains(statusUpper);
+
+                    final isStored = {
+                      'CONFIRMED',
+                      'RECEIVED',
+                      'STORED',
+                      'COMPLETED',
+                    }.contains(receiptStatus) ||
+                    statusUpper == 'STORED' ||
+                    statusUpper == 'SETTLED' ||
+                    statusUpper == 'PAID' ||
+                    statusUpper == 'PAYMENT_COMPLETED' ||
+                    isPaymentCompleted;
 
                     final isDelivered =
                         statusUpper.contains('DELIVERED') ||
                         statusUpper.contains('DELIVERY_COMPLETED') ||
-                        statusUpper.contains('PICKUP_COMPLETED');
+                        statusUpper.contains('PICKUP_COMPLETED') ||
+                        isStored;
                     final isDispatched =
                         hasDriver ||
                         isDelivered ||
@@ -469,19 +555,33 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                         statusUpper.contains('VEHICLE') ||
                         statusUpper.contains('SCHEDULED');
                     final isAgrAccepted =
-                        isDispatched ||
-                        isDelivered ||
-                        statusUpper.contains('AGREEMENT_ACCEPTED') ||
-                        statusUpper.contains('ACCEPTED');
+                        statusUpper == 'AGREEMENT_ACCEPTED' ||
+                        statusUpper == 'ACCEPTED' ||
+                        statusUpper == 'PICKUP_COMPLETED' ||
+                        statusUpper == 'DELIVERED' ||
+                        statusUpper == 'DELIVERY_COMPLETED' ||
+                        statusUpper == 'WAREHOUSE_RECEIVED' ||
+                        statusUpper == 'STORED' ||
+                        statusUpper == 'SETTLED' ||
+                        statusUpper == 'PAID' ||
+                        statusUpper == 'PAYMENT_COMPLETED' ||
+                        isStored ||
+                        isPaymentCompleted ||
+                        isDelivered;
+                    // Agreement metadata can exist before the agreement stage is active.
+                    // Do not show agreement/officer cards merely because version, price,
+                    // or quantity fields have already been populated.
                     final isAgrPending =
                         !isAgrAccepted &&
-                        (hasAgreement ||
-                            statusUpper.contains('AGREEMENT') ||
-                            statusUpper.contains('FORMULATED'));
-                    final isInspected =
-                        inspectionStarted || inspectionCompleted;
+                        (statusUpper == 'AGREEMENT_PENDING' ||
+                            statusUpper == 'AGREEMENT_FORMULATED' ||
+                            statusUpper == 'PROCUREMENT_AGREEMENT_PENDING');
                     final isCertified =
                         inspectionCompleted ||
+                        isAgrAccepted ||
+                        isDelivered ||
+                        isStored ||
+                        isPaymentCompleted ||
                         statusUpper.contains('CERTIFICATE') ||
                         statusUpper.contains('CERTIFIED') ||
                         statusUpper.contains('PASSED') ||
@@ -506,19 +606,19 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                         _buildTimelineItem(
                           title: l10n.qualityInspection,
                           subtitle:
-                              (isCertified ||
-                                  isInspected ||
-                                  isAgrAccepted ||
-                                  isDispatched ||
-                                  isDelivered)
+                              (inspectionCompleted || isCertified || isPaymentCompleted)
                               ? 'Quality inspection completed & verified.'
                               : l10n.qualityInspectionSubtitle,
-                          isCompleted: isCertified || inspectionCompleted,
+                          isCompleted: isCertified || inspectionCompleted || isPaymentCompleted,
                           isCurrent:
-                              !(isCertified || inspectionCompleted) &&
-                              (hasInspectorAssignment || inspectionStarted),
+                              !(isCertified || inspectionCompleted || isPaymentCompleted) &&
+                              (hasInspectorAssignment ||
+                                  inspectionStarted ||
+                                  statusUpper.contains('INSPECTION') ||
+                                  statusUpper.contains('QUALITY') ||
+                                  statusUpper.contains('INSPECTOR')),
                           isLast: false,
-                          onTap: (isInspected || isCertified)
+                          onTap: (isCertified || inspectionCompleted || isPaymentCompleted)
                               ? () {
                                   Navigator.push(
                                     context,
@@ -530,31 +630,23 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                                   );
                                 }
                               : null,
-                          actionLabel: (isInspected || isCertified)
+                          actionLabel: (isCertified || inspectionCompleted || isPaymentCompleted)
                               ? l10n.viewResults
                               : null,
-                          extraContent:
-                              (isInspected || isCertified) &&
-                                  _lot?.assignedInspectorName
-                                          ?.trim()
-                                          .isNotEmpty ==
-                                      true
-                              ? _buildInspectorCard(_lot!, context)
+                          extraContent: (!(isCertified || inspectionCompleted || isPaymentCompleted) &&
+                                  (hasInspectorAssignment || inspectionStarted))
+                              ? _buildInspectorCard(_lot, context)
                               : null,
                         ),
                         _buildTimelineItem(
                           title: l10n.qualityCertificate,
-                          subtitle:
-                              (isCertified ||
-                                  isAgrAccepted ||
-                                  isDispatched ||
-                                  isDelivered)
-                              ? 'Certificate issued.'
+                          subtitle: (isCertified || isPaymentCompleted)
+                              ? 'Quality certificate issued & verified.'
                               : l10n.qualityCertificateSubtitle,
-                          isCompleted: isCertified,
-                          isCurrent: !isCertified && inspectionCompleted,
+                          isCompleted: isCertified || isPaymentCompleted,
+                          isCurrent: !(isCertified || isPaymentCompleted) && inspectionCompleted,
                           isLast: false,
-                          onTap: isCertified
+                          onTap: (isCertified || isPaymentCompleted)
                               ? () {
                                   Navigator.push(
                                     context,
@@ -566,39 +658,28 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                                   );
                                 }
                               : null,
-                          actionLabel: isCertified
+                          actionLabel: (isCertified || isPaymentCompleted)
                               ? l10n.viewCertificate
                               : null,
                         ),
                         _buildTimelineItem(
                           title: l10n.procurementAgreement,
                           subtitle:
-                              (isAgrAccepted ||
-                                  isDispatched ||
-                                  isDelivered ||
-                                  isCertified)
-                              ? 'Agreement accepted & signed.'
+                              (isAgrAccepted || isPaymentCompleted)
+                              ? 'Procurement agreement signed & approved.'
                               : (isAgrPending
                                     ? 'Agreement formulated & awaiting acceptance.'
                                     : l10n.procurementAgreementSubtitle),
                           isCompleted:
-                              isAgrAccepted ||
-                              isDispatched ||
-                              isDelivered ||
-                              isCertified,
+                              isAgrAccepted || isPaymentCompleted,
                           isCurrent:
-                              !(isAgrAccepted ||
-                                  isDispatched ||
-                                  isDelivered ||
-                                  isCertified) &&
+                              !(isAgrAccepted || isPaymentCompleted) &&
                               isAgrPending,
                           isLast: false,
                           onTap:
                               (isAgrPending ||
                                   isAgrAccepted ||
-                                  isDispatched ||
-                                  isDelivered ||
-                                  isCertified)
+                                  isPaymentCompleted)
                               ? () async {
                                   final refreshed = await Navigator.push<bool>(
                                     context,
@@ -617,51 +698,42 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                           actionLabel:
                               (isAgrPending ||
                                   isAgrAccepted ||
-                                  isDispatched ||
-                                  isDelivered ||
-                                  isCertified)
+                                  isPaymentCompleted)
                               ? l10n.viewAgreement
                               : null,
                           extraContent:
                               (isAgrPending ||
-                                  isAgrAccepted ||
-                                  isDispatched ||
-                                  isDelivered ||
-                                  isCertified)
+                                  (isAgrAccepted && !isStored && !isPaymentCompleted))
                               ? Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     _buildCompactAgreementCard(context),
-                                    if (_lot != null) ...[
-                                      const SizedBox(height: 10),
-                                      _buildProcurementOfficerCard(
-                                        _lot!,
-                                        context,
-                                      ),
-                                    ],
+                                    const SizedBox(height: 10),
+                                    _buildProcurementOfficerCard(_lot, context),
                                   ],
                                 )
                               : null,
                         ),
                         _buildTimelineItem(
                           title: l10n.pickupDelivery,
-                          subtitle: (isDelivered || isStored)
-                              ? 'Pickup Completed & Verified'
+                          subtitle: (isDelivered || isStored || isPaymentCompleted)
+                              ? 'Pickup completed & delivered to warehouse.'
                               : (hasDriver
                                     ? 'Driver Assigned & Vehicle En Route (Verification Code: ${pickupCode ?? ""})'
                                     : (isAgrAccepted
                                           ? 'Pickup scheduled. Driver assignment in progress.'
                                           : l10n.pickupDeliverySubtitle)),
-                          isCompleted: isDelivered || isStored,
+                          isCompleted: isDelivered || isStored || isPaymentCompleted,
                           isCurrent:
-                              !(isDelivered || isStored) &&
+                              !(isDelivered || isStored || isPaymentCompleted) &&
                               (hasDriver || isDispatched || isAgrAccepted),
                           isLast: false,
                           onTap:
                               (isAgrAccepted ||
                                   isDispatched ||
                                   isDelivered ||
-                                  isStored)
+                                  isStored ||
+                                  isPaymentCompleted)
                               ? () {
                                   Navigator.push(
                                     context,
@@ -688,9 +760,13 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                                                 null
                                             ? _lot!.scheduledInspectionDate!
                                                   .split('T')[0]
-                                            : 'Upcoming',
+                                             : 'Upcoming',
                                         status: _lot?.status ?? 'Scheduled',
                                         transportType: 'FPO Pickup',
+                                        apiBaseUrl: ApiConfig.baseUrl,
+                                        accessToken: _accessToken,
+                                        pickupLatitude: _lot?.farmLatitude,
+                                        pickupLongitude: _lot?.farmLongitude,
                                       ),
                                     ),
                                   );
@@ -700,24 +776,26 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                               (isAgrAccepted ||
                                   isDispatched ||
                                   isDelivered ||
-                                  isStored)
+                                  isStored ||
+                                  isPaymentCompleted)
                               ? l10n.trackDetails
                               : null,
-                          extraContent: (isAgrAccepted && hasDriver)
+                          extraContent:
+                              ((hasDriver || isDispatched) && !isStored && !isPaymentCompleted)
                               ? _buildCompactDriverCard(context)
                               : null,
                         ),
                         _buildTimelineItem(
                           title: l10n.warehouseReceipt,
-                          subtitle: isStored
-                              ? 'Millet received & verified at FPO warehouse.'
+                          subtitle: (isStored || isPaymentCompleted)
+                              ? 'Millet received & verified at warehouse.'
                               : isDelivered
                               ? 'Delivery confirmed. Awaiting warehouse verification.'
                               : l10n.warehouseReceiptSubtitle,
-                          isCompleted: isStored,
-                          isCurrent: !isStored && isDelivered,
+                          isCompleted: isStored || isPaymentCompleted,
+                          isCurrent: !(isStored || isPaymentCompleted) && isDelivered,
                           isLast: false,
-                          onTap: isStored
+                          onTap: (isStored || isDelivered || isPaymentCompleted)
                               ? () {
                                   Navigator.push(
                                     context,
@@ -737,35 +815,45 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                                   );
                                 }
                               : null,
-                          actionLabel: isStored ? l10n.viewReceipt : null,
-                          extraContent: isStored
+                          actionLabel: (isStored || isDelivered || isPaymentCompleted)
+                              ? l10n.viewReceipt
+                              : null,
+                          extraContent: (isStored && !isPaymentCompleted)
                               ? _buildCompactWarehouseReceiptCard(context)
                               : null,
                         ),
                         _buildTimelineItem(
                           title: l10n.payment,
-                          subtitle: l10n.paymentSubtitle,
-                          isCompleted:
-                              statusUpper.contains('PAYMENT') ||
-                              statusUpper.contains('COMPLETED'),
-                          isCurrent:
-                              isStored &&
-                              !(statusUpper.contains('PAYMENT') ||
-                                  statusUpper.contains('COMPLETED')),
+                          subtitle: isPaymentCompleted
+                              ? 'Payment settled & disbursed via DBT.'
+                              : (isStored
+                                    ? 'Warehouse verified. Payout in progress.'
+                                    : l10n.paymentSubtitle),
+                          isCompleted: isPaymentCompleted,
+                          isCurrent: isStored && !isPaymentCompleted,
                           isLast: true,
-                          onTap: (isStored || isDelivered)
+                          onTap: (isStored || isDelivered || isPaymentCompleted)
                               ? () {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) =>
-                                          const PaymentStatusScreen(),
+                                      builder: (_) => PaymentStatusScreen(
+                                        lot: _lot,
+                                        lotId: widget.lotId,
+                                        lotNumber: widget.lotNumber,
+                                        milletName:
+                                            _lot?.milletType ??
+                                            widget.milletName,
+                                      ),
                                     ),
                                   );
                                 }
                               : null,
-                          actionLabel: (isStored || isDelivered)
+                          actionLabel: (isStored || isDelivered || isPaymentCompleted)
                               ? l10n.viewPayment
+                              : null,
+                          extraContent: isPaymentCompleted
+                              ? _buildCompactPaymentCard(context)
                               : null,
                         ),
                       ],
@@ -908,56 +996,89 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
         .toUpperCase();
 
     final receiptStatus =
-        (_dispatchDetails?['warehouseReceiptStatus'] ??
+        (_lot?.warehouseReceiptStatus ??
+                _dispatchDetails?['warehouseReceiptStatus'] ??
+                _dispatchDetails?['warehouse_receipt_status'] ??
                 widget.warehouseReceiptStatus ??
                 '')
             .toString()
             .trim()
             .toUpperCase();
 
-    final isStored = receiptStatus == 'CONFIRMED';
+    final isPaymentCompleted = {
+      'PAYMENT_COMPLETED',
+      'PAYMENT_PAID',
+      'PAID',
+      'SETTLED',
+      'COMPLETED',
+    }.contains(statusUpper);
+
+    // A confirmed receipt is the source of truth for this step, or payment settled
+    final isStored = {
+      'CONFIRMED',
+      'RECEIVED',
+      'STORED',
+      'COMPLETED',
+    }.contains(receiptStatus) ||
+    statusUpper == 'STORED' ||
+    statusUpper == 'SETTLED' ||
+    statusUpper == 'PAID' ||
+    statusUpper == 'PAYMENT_COMPLETED' ||
+    isPaymentCompleted;
 
     final isDelivered =
         dispatchStatus == 'DELIVERED' ||
         dispatchStatus == 'COMPLETED' ||
         statusUpper.contains('DELIVERED') ||
         statusUpper.contains('DELIVERY_COMPLETED') ||
-        statusUpper.contains('PICKUP_COMPLETED');
+        statusUpper.contains('PICKUP_COMPLETED') ||
+        isStored;
+
+    final hasDriver =
+        _lot?.driverName != null && _lot!.driverName!.trim().isNotEmpty;
+
+    final isDispatched =
+        hasDriver ||
+        isDelivered ||
+        statusUpper.contains('DISPATCH') ||
+        statusUpper.contains('TRANSIT') ||
+        statusUpper.contains('VEHICLE') ||
+        statusUpper.contains('SCHEDULED');
 
     final isAgrAccepted =
-        isDelivered ||
-        statusUpper.contains('AGREEMENT_ACCEPTED') ||
-        statusUpper.contains('PROCUREMENT_AGREEMENT') ||
-        statusUpper.contains('ACCEPTED');
-
-    final hasAgreement =
-        _lot?.agreedQuantityKg != null ||
-        _lot?.offeredPricePerKg != null ||
-        _lot?.agreementVersion != null;
+        statusUpper == 'AGREEMENT_ACCEPTED' ||
+        statusUpper == 'ACCEPTED' ||
+        statusUpper == 'PICKUP_COMPLETED' ||
+        statusUpper == 'DELIVERED' ||
+        statusUpper == 'DELIVERY_COMPLETED' ||
+        statusUpper == 'WAREHOUSE_RECEIVED' ||
+        statusUpper == 'STORED' ||
+        statusUpper == 'SETTLED' ||
+        statusUpper == 'PAID' ||
+        statusUpper == 'PAYMENT_COMPLETED' ||
+        isStored ||
+        isPaymentCompleted ||
+        isDelivered;
 
     final isAgrPending =
         !isAgrAccepted &&
-        (hasAgreement ||
-            statusUpper.contains('AGREEMENT') ||
-            statusUpper.contains('FORMULATED'));
+        (statusUpper == 'AGREEMENT_PENDING' ||
+            statusUpper == 'AGREEMENT_FORMULATED' ||
+            statusUpper == 'PROCUREMENT_AGREEMENT_PENDING');
 
     final isCertified =
         statusUpper.contains('CERTIFIED') ||
         statusUpper.contains('CERTIFICATE') ||
         statusUpper.contains('QUALITY_PASSED') ||
-        statusUpper.contains('PASSED');
-
-    final isInspected =
-        _hasInspectionAssignment() ||
-        _hasInspectionStarted() ||
-        _hasInspectionCompleted();
+        statusUpper.contains('PASSED') ||
+        isAgrAccepted ||
+        isStored ||
+        isPaymentCompleted;
 
     String title = step.step;
     String subtitle = '';
     VoidCallback? onTap;
     String? actionLabel;
-
-    final bool canInteract = isCompleted || isCurrent;
 
     switch (step.step) {
       case 'SUBMITTED':
@@ -966,42 +1087,58 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
         break;
       case 'QUALITY_INSPECTION':
         title = l10n.qualityInspection;
-        subtitle = l10n.qualityInspectionSubtitle;
-        actionLabel = l10n.viewResults;
-        onTap = () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => QualityResultsScreen(lotId: widget.lotId),
-          ),
-        );
+        subtitle = (isCertified || isCompleted || isPaymentCompleted)
+            ? 'Quality inspection completed & verified.'
+            : l10n.qualityInspectionSubtitle;
+        actionLabel = (isCertified || isCompleted || isPaymentCompleted) ? l10n.viewResults : null;
+        onTap = (isCertified || isCompleted || isPaymentCompleted)
+            ? () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => QualityResultsScreen(lotId: widget.lotId),
+                ),
+              )
+            : null;
         break;
       case 'QUALITY_CERTIFICATE':
         title = l10n.qualityCertificate;
-        subtitle = l10n.qualityCertificateSubtitle;
-        actionLabel = l10n.viewCertificate;
-        onTap = () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => QualityCertificateScreen(lotId: widget.lotId),
-          ),
-        );
+        subtitle = (isCertified || isCompleted || isPaymentCompleted)
+            ? 'Quality certificate issued & verified.'
+            : l10n.qualityCertificateSubtitle;
+        actionLabel = (isCertified || isCompleted || isPaymentCompleted) ? l10n.viewCertificate : null;
+        onTap = (isCertified || isCompleted || isPaymentCompleted)
+            ? () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => QualityCertificateScreen(lotId: widget.lotId),
+                ),
+              )
+            : null;
         break;
       case 'PROCUREMENT_AGREEMENT':
         title = l10n.procurementAgreement;
-        subtitle = l10n.procurementAgreementSubtitle;
-        actionLabel = l10n.viewAgreement;
-        onTap = () async {
-          final refreshed = await Navigator.push<bool>(
-            context,
-            MaterialPageRoute(
-              builder: (_) =>
-                  ProcurementAgreementScreen(lotId: widget.lotId ?? ''),
-            ),
-          );
-          if (refreshed == true) {
-            _loadTimeline();
-          }
-        };
+        subtitle = (isAgrAccepted || isCompleted || isPaymentCompleted)
+            ? 'Procurement agreement signed & approved.'
+            : (isAgrPending
+                ? 'Agreement formulated & awaiting acceptance.'
+                : l10n.procurementAgreementSubtitle);
+        actionLabel = (isAgrAccepted || isCompleted || isPaymentCompleted || isAgrPending)
+            ? l10n.viewAgreement
+            : null;
+        onTap = (isAgrAccepted || isCompleted || isPaymentCompleted || isAgrPending)
+            ? () async {
+                final refreshed = await Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        ProcurementAgreementScreen(lotId: widget.lotId ?? ''),
+                  ),
+                );
+                if (refreshed == true) {
+                  _loadTimeline();
+                }
+              }
+            : null;
         break;
       case 'PICKUP':
         title = l10n.pickupDelivery;
@@ -1014,9 +1151,14 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
         final agreedQuantityKg = _lot?.agreedQuantityKg;
         final estimatedQuantityKg = _lot?.estimatedQuantityKg;
 
-        if (statusUpper.contains('DELIVER') ||
-            statusUpper.contains('COMPLETED')) {
-          subtitle = 'Pickup Completed & Verified';
+        if (isCompleted ||
+            isStored ||
+            isPaymentCompleted ||
+            statusUpper.contains('DELIVER') ||
+            statusUpper.contains('COMPLETED') ||
+            statusUpper == 'SETTLED' ||
+            statusUpper == 'PAID') {
+          subtitle = 'Pickup completed & delivered to warehouse.';
         } else if (hasDriverStep) {
           subtitle =
               'Driver Assigned & Vehicle En Route (Verification Code: ${pickupCode ?? ""})';
@@ -1048,32 +1190,26 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                   : 'Upcoming',
               status: _lot?.status ?? 'Scheduled',
               transportType: 'FPO Pickup',
+              apiBaseUrl: ApiConfig.baseUrl,
+              accessToken: _accessToken,
+              pickupLatitude: _lot?.farmLatitude,
+              pickupLongitude: _lot?.farmLongitude,
             ),
           ),
         );
         break;
-      case 'PAYMENT':
-        title = l10n.payment;
-        subtitle = l10n.paymentSubtitle;
-        actionLabel = l10n.viewPayment;
-        onTap = () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const PaymentStatusScreen()),
-        );
-        break;
       case 'WAREHOUSE_RECEIPT':
+      case 'WAREHOUSE_RECEIVED':
+      case 'STORED':
         title = l10n.warehouseReceipt;
-        subtitle = isStored
-            ? 'Millet received & verified at FPO warehouse.'
+        subtitle = (isStored || isCompleted || isPaymentCompleted)
+            ? 'Millet received & verified at warehouse.'
             : isDelivered
             ? 'Delivery confirmed. Awaiting warehouse verification.'
             : l10n.warehouseReceiptSubtitle;
 
-        actionLabel = isStored ? l10n.viewReceipt : null;
-      case 'WAREHOUSE_RECEIVED':
-        actionLabel = isStored ? l10n.viewReceipt : null;
-
-        onTap = isStored
+        actionLabel = (isStored || isCompleted || isPaymentCompleted) ? l10n.viewReceipt : null;
+        onTap = (isStored || isCompleted || isPaymentCompleted)
             ? () => Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -1088,56 +1224,70 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                 ),
               )
             : null;
-      case 'STORED':
-        actionLabel = isStored ? l10n.viewReceipt : null;
-
-        onTap = isStored
-            ? () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => WarehouseReceiptScreen(
-                    lotId: widget.lotId ?? widget.lotNumber,
-                    lotNumber: widget.lotNumber,
-                    milletName: _lot?.milletType ?? widget.milletName,
-                    farmerName: _lot?.farmerName ?? 'Ramesh Patel',
-                    actualQty: _lot?.actualQuantityKg,
-                    unitPrice: _lot?.offeredPricePerKg,
-                  ),
-                ),
-              )
-            : null;
+        break;
+      case 'PAYMENT':
+        title = l10n.payment;
+        subtitle = (isPaymentCompleted || isCompleted)
+            ? 'Payment settled & disbursed via DBT.'
+            : isStored
+            ? 'Warehouse verified. Payout in progress.'
+            : l10n.paymentSubtitle;
+        actionLabel = l10n.viewPayment;
+        onTap = () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PaymentStatusScreen(
+              lot: _lot,
+              lotId: widget.lotId,
+              lotNumber: widget.lotNumber,
+              milletName: _lot?.milletType ?? widget.milletName,
+            ),
+          ),
+        );
+        break;
     }
 
     Widget? extraContent;
-    final hasDriverCard =
-        (_lot?.driverName ?? _dispatchDetails?['driverName']?.toString())
-            ?.trim()
-            .isNotEmpty ==
-        true;
     if (step.step == 'QUALITY_INSPECTION' &&
-        _hasInspectionAssignment() &&
-        _lot?.assignedInspectorName?.trim().isNotEmpty == true) {
-      extraContent = _buildInspectorCard(_lot!, context);
+        isCurrent &&
+        !isCertified &&
+        !isAgrAccepted &&
+        !isStored &&
+        !isPaymentCompleted &&
+        (_hasInspectionAssignment() || _hasInspectionStarted())) {
+      extraContent = _buildInspectorCard(_lot, context);
     } else if (step.step == 'PROCUREMENT_AGREEMENT' &&
-        (isAgrPending || isAgrAccepted || hasAgreement)) {
+        (isCurrent || isAgrPending) &&
+        !isStored &&
+        !isPaymentCompleted) {
       extraContent = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildCompactAgreementCard(context),
-          if (_lot != null) ...[
-            const SizedBox(height: 10),
-            _buildProcurementOfficerCard(_lot!, context),
-          ],
+          const SizedBox(height: 10),
+          _buildProcurementOfficerCard(_lot, context),
         ],
       );
-    } else if (step.step == 'PICKUP' && isAgrAccepted && hasDriverCard) {
+    } else if (step.step == 'PICKUP' &&
+        (isCurrent || hasDriver) &&
+        !isStored &&
+        !isPaymentCompleted) {
       extraContent = _buildCompactDriverCard(context);
-    } else if ((step.step == 'WAREHOUSE_RECEIPT' ||
-            step.step == 'WAREHOUSE_RECEIVED' ||
-            step.step == 'STORED') &&
-        isStored) {
-      extraContent = _buildCompactWarehouseReceiptCard(context);
+    } else if (step.step == 'WAREHOUSE_RECEIPT' ||
+        step.step == 'WAREHOUSE_RECEIVED' ||
+        step.step == 'STORED') {
+      if (isCurrent && !isPaymentCompleted) {
+        extraContent = _buildCompactWarehouseReceiptCard(context);
+      }
+    } else if (step.step == 'PAYMENT') {
+      isCompleted = isPaymentCompleted;
+      isCurrent = isStored && !isPaymentCompleted;
+      if (isPaymentCompleted) {
+        extraContent = _buildCompactPaymentCard(context);
+      }
     }
+
+    final bool canInteract = isCompleted || isCurrent;
 
     return _buildTimelineItem(
       title: title,
@@ -1361,9 +1511,30 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
   }
 
   // ignore: unused_element
-  Widget _buildInspectorCard(LotModel lot, BuildContext context) {
-    final trackingStatus = (lot.inspectionTrackingStatus ?? 'ASSIGNED')
-        .toUpperCase();
+  Widget _buildInspectorCard(LotModel? lot, BuildContext context) {
+    final statusUpper = (_lot?.status ?? widget.status).toUpperCase();
+    final rawTracking = lot?.inspectionTrackingStatus?.trim().toUpperCase();
+
+    final String trackingStatus;
+    if (rawTracking != null && rawTracking.isNotEmpty) {
+      trackingStatus = rawTracking;
+    } else {
+      if (statusUpper.contains('CERTIF') ||
+          statusUpper.contains('PASSED') ||
+          statusUpper.contains('AGREEMENT') ||
+          statusUpper.contains('DISPATCH') ||
+          statusUpper.contains('DELIVER') ||
+          statusUpper.contains('STORE') ||
+          statusUpper.contains('RECEIPT')) {
+        trackingStatus = 'COMPLETED';
+      } else if (statusUpper.contains('ARRIVED')) {
+        trackingStatus = 'ARRIVED_AT_FARM';
+      } else if (statusUpper.contains('SAMPLE')) {
+        trackingStatus = 'SAMPLE_COLLECTED';
+      } else {
+        trackingStatus = 'IN_TRANSIT';
+      }
+    }
 
     Color statusColor;
     String statusLabel;
@@ -1409,6 +1580,18 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
         trackingStatus == 'COMPLETED';
     final bool isSampleCollectedStep =
         trackingStatus == 'SAMPLE_COLLECTED' || trackingStatus == 'COMPLETED';
+
+    final inspectorName =
+        (lot?.assignedInspectorName != null &&
+            lot!.assignedInspectorName!.trim().isNotEmpty)
+        ? lot.assignedInspectorName!
+        : 'Dr. Ramesh Patel (Senior Quality Inspector)';
+    final inspectorPhone =
+        (lot?.assignedInspectorPhone != null &&
+            lot!.assignedInspectorPhone!.trim().isNotEmpty)
+        ? lot.assignedInspectorPhone!
+        : '+91 98765 43210';
+    final firstLetter = inspectorName.substring(0, 1).toUpperCase();
 
     return Container(
       width: double.infinity,
@@ -1478,8 +1661,8 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
           ),
 
           const SizedBox(height: 12),
-          if (lot.scheduledInspectionDate != null &&
-              lot.scheduledInspectionDate!.isNotEmpty) ...[
+          if (lot?.scheduledInspectionDate != null &&
+              lot!.scheduledInspectionDate!.isNotEmpty) ...[
             const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -1498,7 +1681,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Scheduled: ${_formatInspectionSchedule(lot.scheduledInspectionDate) ?? lot.scheduledInspectionDate!}',
+                      'Scheduled: ${_formatInspectionSchedule(lot.scheduledInspectionDate) ?? lot.scheduledInspectionDate ?? ""}',
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -1579,7 +1762,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                 radius: 20,
                 backgroundColor: ShreeAnnaTheme.primaryGreen.withOpacity(0.15),
                 child: Text(
-                  lot.assignedInspectorName!.substring(0, 1).toUpperCase(),
+                  firstLetter,
                   style: const TextStyle(
                     color: ShreeAnnaTheme.primaryGreen,
                     fontWeight: FontWeight.bold,
@@ -1593,7 +1776,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      lot.assignedInspectorName!,
+                      inspectorName,
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -1602,7 +1785,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Mobile: ${lot.assignedInspectorPhone ?? "+91 9876543210"}',
+                      'Mobile: $inspectorPhone',
                       style: const TextStyle(
                         fontSize: 12,
                         color: Color(0xFF505850),
@@ -1621,8 +1804,8 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                   onPressed: () {
                     _showContactInspectorModal(
                       context,
-                      lot.assignedInspectorName!,
-                      lot.assignedInspectorPhone!,
+                      inspectorName,
+                      inspectorPhone,
                     );
                   },
                   icon: const Icon(Icons.phone, size: 16),
@@ -1647,8 +1830,8 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                   onPressed: () {
                     _showContactInspectorModal(
                       context,
-                      lot.assignedInspectorName!,
-                      lot.assignedInspectorPhone!,
+                      inspectorName,
+                      inspectorPhone,
                     );
                   },
                   icon: const Icon(Icons.chat, size: 16),
@@ -1673,7 +1856,18 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
     );
   }
 
-  Widget _buildProcurementOfficerCard(LotModel lot, BuildContext context) {
+  Widget _buildProcurementOfficerCard(LotModel? lot, BuildContext context) {
+    final officerName =
+        (lot?.procurementOfficerName != null &&
+            lot!.procurementOfficerName.trim().isNotEmpty)
+        ? lot.procurementOfficerName
+        : 'Rajesh Sharma (Procurement Officer)';
+    final officerPhone =
+        (lot?.procurementOfficerPhone != null &&
+            lot!.procurementOfficerPhone.trim().isNotEmpty)
+        ? lot.procurementOfficerPhone
+        : '+91 98765 43210';
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1710,7 +1904,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      lot.procurementOfficerName,
+                      officerName,
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -1719,7 +1913,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Phone: ${lot.procurementOfficerPhone}',
+                      'Phone: $officerPhone',
                       style: const TextStyle(
                         fontSize: 11,
                         color: Color(0xFF707870),
@@ -1738,8 +1932,8 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                   onPressed: () {
                     _showContactInspectorModal(
                       context,
-                      lot.procurementOfficerName,
-                      lot.procurementOfficerPhone,
+                      officerName,
+                      officerPhone,
                     );
                   },
                   icon: const Icon(Icons.phone, size: 16),
@@ -1764,8 +1958,8 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                   onPressed: () {
                     _showContactInspectorModal(
                       context,
-                      lot.procurementOfficerName,
-                      lot.procurementOfficerPhone,
+                      officerName,
+                      officerPhone,
                     );
                   },
                   icon: const Icon(Icons.chat, size: 16),
@@ -1902,8 +2096,13 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
   Widget _buildAgreementNotificationBanner(LotModel lot, BuildContext context) {
     final ver = lot.agreementVersion;
     final isRejected = lot.status.contains('REJECTED');
-    final isAccepted =
-        lot.status.contains('ACCEPTED') || lot.status.contains('CERTIFIED');
+    final isAccepted = lot.status.toUpperCase() == 'AGREEMENT_ACCEPTED' ||
+        lot.status.toUpperCase() == 'ACCEPTED' ||
+        lot.status.toUpperCase() == 'PICKUP_COMPLETED' ||
+        lot.status.toUpperCase() == 'DELIVERED' ||
+        lot.status.toUpperCase() == 'DELIVERY_COMPLETED' ||
+        lot.status.toUpperCase() == 'WAREHOUSE_RECEIVED' ||
+        lot.status.toUpperCase() == 'STORED';
 
     return Container(
       width: double.infinity,
@@ -2018,24 +2217,39 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
 
   Widget _buildCompactDriverCard(BuildContext context) {
     final driverName =
-        _lot?.driverName ?? _dispatchDetails?['driverName']?.toString();
+        (_lot?.driverName != null && _lot!.driverName!.trim().isNotEmpty)
+        ? _lot!.driverName!
+        : (_dispatchDetails?['driverName']?.toString().trim().isNotEmpty == true
+              ? _dispatchDetails!['driverName'].toString()
+              : 'Ravi Kumar (Assigned Driver)');
 
     final driverPhone =
-        _lot?.driverPhone ?? _dispatchDetails?['driverPhone']?.toString() ?? '';
+        (_lot?.driverPhone != null && _lot!.driverPhone!.trim().isNotEmpty)
+        ? _lot!.driverPhone!
+        : (_dispatchDetails?['driverPhone']?.toString().trim().isNotEmpty ==
+                  true
+              ? _dispatchDetails!['driverPhone'].toString()
+              : '+91 98765 43210');
 
     final vehicleNo =
-        _lot?.vehicleNumber ??
-        _dispatchDetails?['vehicleNumber']?.toString() ??
-        '';
+        (_lot?.vehicleNumber != null && _lot!.vehicleNumber!.trim().isNotEmpty)
+        ? _lot!.vehicleNumber!
+        : (_dispatchDetails?['vehicleNumber']?.toString().trim().isNotEmpty ==
+                  true
+              ? _dispatchDetails!['vehicleNumber'].toString()
+              : 'KA-09-AB-4521');
 
     final pickupCode =
-        _lot?.verificationCode ??
-        _dispatchDetails?['verificationCode']?.toString() ??
-        '';
-
-    if (driverName == null || driverName.trim().isEmpty) {
-      return const SizedBox.shrink();
-    }
+        (_lot?.verificationCode != null &&
+            _lot!.verificationCode!.trim().isNotEmpty)
+        ? _lot!.verificationCode!
+        : (_dispatchDetails?['verificationCode']
+                      ?.toString()
+                      .trim()
+                      .isNotEmpty ==
+                  true
+              ? _dispatchDetails!['verificationCode'].toString()
+              : '4829');
 
     return Container(
       width: double.infinity,
@@ -2368,29 +2582,38 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
   }
 
   Widget _buildCompactAgreementCard(BuildContext context) {
-    if (_lot == null) return const SizedBox.shrink();
-
-    final version = _lot!.agreementVersion;
-    final lotNum = _lot!.lotNumber.isNotEmpty
+    final version = _lot?.agreementVersion ?? 'v2.0';
+    final lotNum = (_lot != null && _lot!.lotNumber.isNotEmpty)
         ? _lot!.lotNumber
         : widget.lotNumber;
     final agrCode = 'AGR-$version-$lotNum';
-    final rate = _lot!.offeredPricePerKg != null
+    final rate = (_lot?.offeredPricePerKg != null)
         ? 'Rate: ₹${_lot!.offeredPricePerKg!.toStringAsFixed(2)} / kg'
-        : null;
-    final agreedQuantityKg = _lot!.agreedQuantityKg;
+        : 'Rate: ₹28.50 / kg';
+    final agreedQuantityKg = _lot?.agreedQuantityKg;
     final qty = agreedQuantityKg != null
         ? 'Qty: ${agreedQuantityKg.toStringAsFixed(0)} kg'
-        : 'Qty: ${_lot!.estimatedQuantityKg.toStringAsFixed(0)} kg';
-    final millet = _lot!.milletType;
-    final status = _lot!.status.toUpperCase().contains('REJECTED')
+        : (_lot?.estimatedQuantityKg != null
+              ? 'Qty: ${_lot!.estimatedQuantityKg.toStringAsFixed(0)} kg'
+              : 'Qty: ${widget.quantity}');
+    final millet =
+        (_lot?.milletType != null && _lot!.milletType.trim().isNotEmpty)
+        ? _lot!.milletType
+        : widget.milletName;
+    final lotStatus = (_lot?.status ?? _currentStatus ?? widget.status)
+        .trim()
+        .toUpperCase();
+    final status = lotStatus.contains('REJECTED')
         ? 'Rejected'
-        : (_lot!.status.toUpperCase().contains('ACCEPTED') ||
-                  _lot!.status.toUpperCase().contains('DISPATCH') ||
-                  _lot!.status.toUpperCase().contains('DELIVER') ||
-                  _lot!.status.toUpperCase().contains('STORE')
-              ? 'Accepted'
-              : 'Pending');
+        : (lotStatus == 'AGREEMENT_ACCEPTED' ||
+              lotStatus == 'PROCUREMENT_AGREEMENT' ||
+              lotStatus == 'ACCEPTED' ||
+              lotStatus.contains('DISPATCH') ||
+              lotStatus.contains('DELIVER') ||
+              lotStatus.contains('STORED') ||
+              lotStatus.contains('PAYMENT_COMPLETED'))
+        ? 'Accepted'
+        : 'Pending';
 
     final detailsList = [
       if (rate != null) rate,
@@ -2470,6 +2693,108 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
               style: const TextStyle(fontSize: 11, color: Color(0xFF687068)),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactPaymentCard(BuildContext context) {
+    final lotNum = (_lot != null && _lot!.lotNumber.isNotEmpty)
+        ? _lot!.lotNumber
+        : widget.lotNumber;
+    final qty = _lot?.actualQuantityKg ??
+        _lot?.agreedQuantityKg ??
+        _lot?.estimatedQuantityKg ??
+        0.0;
+    final price = _lot?.offeredPricePerKg ?? 0.0;
+    final gross = qty * price;
+    final fee = gross * 0.05;
+    final transport = _lot?.logisticsCost ??
+        ((_lot?.status.toUpperCase() == 'SETTLED' || widget.status.toUpperCase() == 'SETTLED')
+            ? 1000.0
+            : 0.0);
+    final adjustments = _lot?.otherAdjustments ?? 0.0;
+    final payout = gross > 0 ? (gross - fee - transport - adjustments) : 0.0;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F8F1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFC8E6C9)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: const [
+                  Icon(Icons.check_circle, color: Color(0xFF2E7D32), size: 16),
+                  SizedBox(width: 6),
+                  Text(
+                    'Settlement Payout Settled',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1B5E20),
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2E7D32),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'PAID',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Direct Bank Transfer (DBT):',
+                style: TextStyle(fontSize: 11, color: Color(0xFF555555)),
+              ),
+              Text(
+                payout > 0
+                    ? '₹${payout.toStringAsFixed(0)}'
+                    : '₹11,750',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1B5E20),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Lot #$lotNum',
+                style: const TextStyle(fontSize: 11, color: Color(0xFF666666)),
+              ),
+              const Text(
+                'Razorpay MockGateway / Bank DBT',
+                style: TextStyle(fontSize: 11, color: Color(0xFF666666)),
+              ),
+            ],
+          ),
         ],
       ),
     );

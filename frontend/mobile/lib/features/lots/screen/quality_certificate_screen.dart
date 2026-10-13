@@ -121,7 +121,7 @@ class _QualityCertificateScreenState extends State<QualityCertificateScreen> {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Includes Scannable QR Code & Blockchain Verification Seal',
+                      'Includes Scannable QR Code &  Verification Seal',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
