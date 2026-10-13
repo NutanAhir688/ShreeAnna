@@ -32,10 +32,10 @@ namespace backend.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<bool>("IsUsed")
                         .HasColumnType("boolean");
@@ -63,7 +63,7 @@ namespace backend.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -85,7 +85,7 @@ namespace backend.Migrations
                         .HasColumnType("character varying(250)");
 
                     b.Property<DateTime?>("RefreshTokenExpiryTime")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -115,10 +115,10 @@ namespace backend.Migrations
                         .HasColumnType("character varying(250)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTime>("DateOfBirth")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("District")
                         .IsRequired()
@@ -156,7 +156,7 @@ namespace backend.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Village")
                         .IsRequired()
@@ -182,7 +182,7 @@ namespace backend.Migrations
                         .HasColumnType("numeric(10,2)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("District")
                         .IsRequired()
@@ -240,7 +240,7 @@ namespace backend.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.Property<DateTime?>("VerifiedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<Guid?>("VerifiedBy")
                         .HasColumnType("uuid");
@@ -267,7 +267,7 @@ namespace backend.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("CropName")
                         .IsRequired()
@@ -279,7 +279,7 @@ namespace backend.Migrations
                         .HasColumnType("numeric(10,2)");
 
                     b.Property<DateTime?>("ExpectedHarvestDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<Guid>("FarmId")
                         .HasColumnType("uuid");
@@ -290,7 +290,7 @@ namespace backend.Migrations
                         .HasColumnType("character varying(50)");
 
                     b.Property<DateTime>("SowingDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -329,7 +329,7 @@ namespace backend.Migrations
                         .HasColumnType("character varying(30)");
 
                     b.Property<DateTime>("JoinedDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Location")
                         .IsRequired()
@@ -386,7 +386,7 @@ namespace backend.Migrations
                         .HasColumnType("numeric");
 
                     b.Property<DateTime>("ReceivedDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -422,7 +422,7 @@ namespace backend.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("MovementDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("MovementType")
                         .IsRequired()
@@ -457,10 +457,10 @@ namespace backend.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTime?>("DeliveredDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("DestinationAddress")
                         .IsRequired()
@@ -473,6 +473,18 @@ namespace backend.Migrations
                     b.Property<string>("DispatchCode")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<decimal?>("DriverAccuracyMeters")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime?>("DriverLastUpdated")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<decimal?>("DriverLatitude")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("DriverLongitude")
+                        .HasColumnType("numeric");
 
                     b.Property<string>("DriverName")
                         .IsRequired()
@@ -502,7 +514,7 @@ namespace backend.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("ScheduledDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("ScheduledEndTime")
                         .IsRequired()
@@ -559,6 +571,92 @@ namespace backend.Migrations
                     b.ToTable("Dispatches");
                 });
 
+            modelBuilder.Entity("backend.Features.Logistics.Entities.Driver", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("DriverCode")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("LicenseNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<decimal>("VehicleCapacityKg")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<string>("VehicleNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Drivers");
+                });
+
+            modelBuilder.Entity("backend.Features.Logistics.Entities.DriverLocationLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("AccuracyMeters")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("DriverIdOrPhone")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<decimal>("Latitude")
+                        .HasPrecision(10, 7)
+                        .HasColumnType("numeric(10,7)");
+
+                    b.Property<decimal>("Longitude")
+                        .HasPrecision(10, 7)
+                        .HasColumnType("numeric(10,7)");
+
+                    b.Property<Guid>("LotId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("RecordedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LotId");
+
+                    b.ToTable("DriverLocationLogs");
+                });
+
             modelBuilder.Entity("backend.Features.Logistics.Entities.ShipmentIssue", b =>
                 {
                     b.Property<Guid>("Id")
@@ -585,7 +683,7 @@ namespace backend.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("IncidentDateTime")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("IssueCategory")
                         .IsRequired()
@@ -604,7 +702,7 @@ namespace backend.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("ReportedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -645,11 +743,23 @@ namespace backend.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
+
+                    b.Property<decimal?>("DriverAccuracyMeters")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime?>("DriverLastUpdated")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<decimal?>("DriverLatitude")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("DriverLongitude")
+                        .HasColumnType("numeric");
 
                     b.Property<decimal>("EstimatedQuantityKg")
                         .HasPrecision(10, 2)
@@ -665,13 +775,13 @@ namespace backend.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("HarvestDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("InspectionTrackingStatus")
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("InspectorLastUpdated")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<decimal?>("InspectorLatitude")
                         .HasColumnType("numeric");
@@ -697,7 +807,7 @@ namespace backend.Migrations
                         .HasColumnType("numeric");
 
                     b.Property<DateTime?>("ScheduledInspectionDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -705,10 +815,10 @@ namespace backend.Migrations
                         .HasColumnType("character varying(50)");
 
                     b.Property<DateTime>("SubmissionDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.HasKey("Id");
 
@@ -744,7 +854,7 @@ namespace backend.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("InspectionDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("InspectorName")
                         .IsRequired()
@@ -789,7 +899,7 @@ namespace backend.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("IssueDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("IssuedBy")
                         .IsRequired()
@@ -799,7 +909,7 @@ namespace backend.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("ValidUntil")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.HasKey("Id");
 
@@ -822,7 +932,7 @@ namespace backend.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("District")
                         .IsRequired()

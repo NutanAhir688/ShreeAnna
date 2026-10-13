@@ -10,6 +10,7 @@ public interface ILogisticsService
 {
     Task<List<DispatchResponse>> GetAllAsync();
     Task<DispatchResponse?> GetByIdAsync(Guid id);
+    Task<DispatchResponse?> GetByIdOrCodeAsync(string idOrCode);
     Task<DispatchResponse> CreateAsync(CreateDispatchRequest request);
     Task<DispatchResponse> UpdateStatusAsync(Guid id, string status);
     Task<DispatchResponse> ConfirmDeliveryAsync(Guid id, ConfirmDeliveryRequest request);
@@ -47,6 +48,34 @@ public class LogisticsService : ILogisticsService
             .Include(d => d.Warehouse)
             .FirstOrDefaultAsync(d => d.Id == id);
         return dispatch is null ? null : Map(dispatch);
+    }
+
+    public async Task<DispatchResponse?> GetByIdOrCodeAsync(string idOrCode)
+    {
+        if (Guid.TryParse(idOrCode, out var guidId))
+        {
+            var dispatch = await _context.Dispatches
+                .Include(d => d.Warehouse)
+                .FirstOrDefaultAsync(d => d.Id == guidId);
+            if (dispatch != null) return Map(dispatch);
+        }
+
+        var byCode = await _context.Dispatches
+            .Include(d => d.Warehouse)
+            .FirstOrDefaultAsync(d => d.DispatchCode.ToLower() == idOrCode.ToLower() || d.LotId == idOrCode);
+        if (byCode != null) return Map(byCode);
+
+        // Fallback for mock/demo slugs like "shp-1", "shp-2" -> provide the first real active dispatch
+        if (idOrCode.StartsWith("shp-", StringComparison.OrdinalIgnoreCase))
+        {
+            var first = await _context.Dispatches
+                .Include(d => d.Warehouse)
+                .OrderByDescending(d => d.CreatedAt)
+                .FirstOrDefaultAsync();
+            if (first != null) return Map(first);
+        }
+
+        return null;
     }
 
     public async Task<DispatchResponse> CreateAsync(CreateDispatchRequest request)
@@ -90,6 +119,10 @@ public class LogisticsService : ILogisticsService
             ScheduledStartTime = request.ScheduledStartTime ?? "09:00 AM",
             ScheduledEndTime = request.ScheduledEndTime ?? "11:00 AM",
             SpecialInstructions = request.SpecialInstructions ?? "",
+            PickupLatitude = request.PickupLatitude,
+            PickupLongitude = request.PickupLongitude,
+            DestinationLatitude = request.DestinationLatitude ?? warehouse?.Latitude,
+            DestinationLongitude = request.DestinationLongitude ?? warehouse?.Longitude,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -111,6 +144,15 @@ public class LogisticsService : ILogisticsService
             {
                 lot.Status = "DISPATCHED";
                 dispatch.LotId = lot.Id.ToString();
+                if ((dispatch.PickupLatitude == null || dispatch.PickupLatitude == 0) && lot.FarmId != Guid.Empty)
+                {
+                    var farm = await _context.Farms.FindAsync(lot.FarmId);
+                    if (farm != null && farm.Latitude != 0)
+                    {
+                        dispatch.PickupLatitude = farm.Latitude;
+                        dispatch.PickupLongitude = farm.Longitude;
+                    }
+                }
             }
         }
 
@@ -367,6 +409,26 @@ public class LogisticsService : ILogisticsService
             list = await _context.Dispatches.Include(d => d.Warehouse).OrderByDescending(d => d.CreatedAt).ToListAsync();
         }
 
+        foreach (var d in list)
+        {
+            if ((d.PickupLatitude == null || d.PickupLatitude == 0) && !string.IsNullOrWhiteSpace(d.LotId))
+            {
+                var lot = await _context.ProcurementLots
+                    .Include(l => l.Farm)
+                    .FirstOrDefaultAsync(l => l.Id.ToString() == d.LotId || l.LotNumber == d.LotId);
+                if (lot?.Farm != null && lot.Farm.Latitude != 0)
+                {
+                    d.PickupLatitude = lot.Farm.Latitude;
+                    d.PickupLongitude = lot.Farm.Longitude;
+                }
+            }
+            if (d.DestinationLatitude == null && d.Warehouse != null)
+            {
+                d.DestinationLatitude = d.Warehouse.Latitude;
+                d.DestinationLongitude = d.Warehouse.Longitude;
+            }
+        }
+
         return list.Select(Map).ToList();
     }
 
@@ -402,7 +464,11 @@ public class LogisticsService : ILogisticsService
             d.ScheduledEndTime ?? "11:00 AM",
             d.SpecialInstructions ?? "",
             d.DeliveredDate,
-            d.CreatedAt
+            d.CreatedAt,
+            d.PickupLatitude,
+            d.PickupLongitude,
+            d.DestinationLatitude ?? d.Warehouse?.Latitude,
+            d.DestinationLongitude ?? d.Warehouse?.Longitude
         );
     }
     public async Task<DispatchResponse> ConfirmWarehouseReceiptAsync(Guid id)

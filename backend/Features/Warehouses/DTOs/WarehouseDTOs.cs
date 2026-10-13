@@ -87,3 +87,16 @@ public record LotAllocationResponse(
     DateTime AllocatedAt
 );
 
+public record WarehouseAllocatedLotResponse(
+    string Id,
+    string LotNumber,
+    string FarmerName,
+    string FarmName,
+    string MilletType,
+    string Grade,
+    decimal QuantityKg,
+    string Status,
+    string? DispatchCode,
+    DateTime AllocatedAt
+);
+

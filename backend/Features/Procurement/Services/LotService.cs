@@ -1,4 +1,7 @@
+using System.Security.Claims;
 using backend.Data;
+using backend.Features.Auth;
+using backend.Features.Logistics.Entities;
 using backend.Features.Procurement.DTOs;
 using backend.Features.Procurement.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -163,33 +166,38 @@ public class LotService : ILotService
 
         string rawStatus = (lot.Status ?? "SUBMITTED").ToUpperInvariant();
 
-        var dispatch = await _context.Dispatches.FirstOrDefaultAsync(d =>
-            d.LotId == lot.LotNumber ||
-            d.LotId == lot.Id.ToString() ||
-            (d.LotId != null && lot.LotNumber != null && (d.LotId.Contains(lot.LotNumber) || lot.LotNumber.Contains(d.LotId))) ||
-            (d.AgreementId != null && lot.LotNumber != null && d.AgreementId.Contains(lot.LotNumber))
-        );
+        bool isFullySettled = rawStatus == "SETTLED" || rawStatus == "PAID" || rawStatus == "PAYMENT_COMPLETED" || rawStatus == "COMPLETED";
 
-        if (dispatch != null)
+        if (!isFullySettled)
         {
-            var dStatus = (dispatch.Status ?? "").ToUpperInvariant();
-            if (dStatus.Contains("DELIVER") || dStatus.Contains("COMPLETED") || dStatus.Contains("RECEIVED") || dStatus.Contains("STORE"))
+            var dispatch = await _context.Dispatches.FirstOrDefaultAsync(d =>
+                d.LotId == lot.LotNumber ||
+                d.LotId == lot.Id.ToString() ||
+                (d.LotId != null && lot.LotNumber != null && (d.LotId.Contains(lot.LotNumber) || lot.LotNumber.Contains(d.LotId))) ||
+                (d.AgreementId != null && lot.LotNumber != null && d.AgreementId.Contains(lot.LotNumber))
+            );
+
+            if (dispatch != null)
             {
-                rawStatus = "STORED";
+                var dStatus = (dispatch.Status ?? "").ToUpperInvariant();
+                if (dStatus.Contains("DELIVER") || dStatus.Contains("COMPLETED") || dStatus.Contains("RECEIVED") || dStatus.Contains("STORE"))
+                {
+                    rawStatus = "STORED";
+                }
+                else if (dStatus.Contains("DISPATCH") || dStatus.Contains("TRANSIT") || dStatus.Contains("IN_TRANSIT") || !string.IsNullOrWhiteSpace(dispatch.DriverName))
+                {
+                    if (rawStatus != "STORED" && rawStatus != "DELIVERED")
+                    {
+                        rawStatus = "PICKUP_COMPLETED";
+                    }
+                }
             }
-            else if (dStatus.Contains("DISPATCH") || dStatus.Contains("TRANSIT") || dStatus.Contains("IN_TRANSIT") || !string.IsNullOrWhiteSpace(dispatch.DriverName))
+            else if (lot.Status == "AGREEMENT_ACCEPTED" || lot.Status == "AGREEMENT_PENDING")
             {
                 if (rawStatus != "STORED" && rawStatus != "DELIVERED")
                 {
-                    rawStatus = "PICKUP_COMPLETED";
+                    rawStatus = "PROCUREMENT_AGREEMENT";
                 }
-            }
-        }
-        else if (lot.Status == "AGREEMENT_ACCEPTED" || lot.Status == "AGREEMENT_PENDING")
-        {
-            if (rawStatus != "STORED" && rawStatus != "DELIVERED")
-            {
-                rawStatus = "PROCUREMENT_AGREEMENT";
             }
         }
 
@@ -201,14 +209,14 @@ public class LotService : ILotService
             "PROCUREMENT_AGREEMENT" or "AGREEMENT_PENDING" or "AGREEMENT_ACCEPTED" => 3,
             "PICKUP" or "PICKUP_SCHEDULED" or "PICKUP_COMPLETED" or "DISPATCHED" or "IN_TRANSIT" => 4,
             "WAREHOUSE_RECEIPT" or "WAREHOUSE_RECEIVED" or "STORED" or "DELIVERED" or "RECEIVED" => 5,
-            "PAYMENT" or "PAYMENT_COMPLETED" or "READY_FOR_PAYMENT" or "SETTLED" or "COMPLETED" => 6,
+            "PAYMENT" or "PAYMENT_COMPLETED" or "READY_FOR_PAYMENT" or "SETTLED" or "COMPLETED" or "PAID" => 6,
             _ => 0
         };
 
         var steps = statusOrder.Select((stepName, index) =>
         {
             string status;
-            if (index < currentIndex)
+            if (isFullySettled || index < currentIndex)
             {
                 status = "COMPLETED";
             }
@@ -232,7 +240,7 @@ public class LotService : ILotService
                 status = "PENDING";
             }
 
-            DateTime? completedAt = index <= currentIndex ? lot.SubmissionDate.AddDays(index * 2) : null;
+            DateTime? completedAt = (isFullySettled || index <= currentIndex) ? lot.SubmissionDate.AddDays(index * 2) : null;
             return new LotTimelineStepResponse(stepName, status, completedAt);
         }).ToList();
 
@@ -491,7 +499,210 @@ public class LotService : ILotService
             driverName,
             driverPhone,
             vehicleNumber,
-            verificationCode
+            verificationCode,
+            lot.Farm?.Village,
+            lot.Farm?.Taluka,
+            lot.Farm?.District
         );
     }
+
+    public async Task<bool> RecordDriverLocationAsync(string lotId, RecordDriverLocationRequest request, ClaimsPrincipal user)
+    {
+        // 1. Resolve ProcurementLot
+        ProcurementLot? lot = null;
+        if (Guid.TryParse(lotId, out var lotGuid))
+        {
+            lot = await _context.ProcurementLots.FirstOrDefaultAsync(l => l.Id == lotGuid);
+        }
+        if (lot == null)
+        {
+            lot = await _context.ProcurementLots.FirstOrDefaultAsync(l => l.LotNumber == lotId);
+        }
+        if (lot == null && Guid.TryParse(lotId, out var dispatchGuid))
+        {
+            var d = await _context.Dispatches.FirstOrDefaultAsync(x => x.Id == dispatchGuid);
+            if (d != null)
+            {
+                if (Guid.TryParse(d.LotId, out var dLotGuid))
+                    lot = await _context.ProcurementLots.FirstOrDefaultAsync(l => l.Id == dLotGuid);
+                if (lot == null)
+                    lot = await _context.ProcurementLots.FirstOrDefaultAsync(l => l.LotNumber == d.LotId);
+            }
+        }
+
+        if (lot == null) return false;
+
+        // 2. Validate Driver role or Coordinator/Manager
+        var isDriver = user.IsInRole(Roles.Driver);
+        var isCoordinator = user.IsInRole(Roles.LogisticsCoordinator) || user.IsInRole(Roles.FpoManager);
+
+        if (!isDriver && !isCoordinator)
+        {
+            throw new UnauthorizedAccessException("Only an authenticated driver or logistics coordinator can update driver location.");
+        }
+
+        // 3. Find matching dispatch to verify assignment
+        var lotIdStr = lot.Id.ToString();
+        var lotNumber = lot.LotNumber;
+        var dispatch = await _context.Dispatches.FirstOrDefaultAsync(d =>
+            d.LotId == lotIdStr ||
+            d.LotId == lotNumber ||
+            (d.AgreementId != null && d.AgreementId.Contains(lotNumber)) ||
+            (d.LotId != null && (d.LotId.Contains(lotNumber) || lotNumber.Contains(d.LotId)))
+        );
+
+        if (isDriver && !isCoordinator)
+        {
+            var driverIdentifier = user.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+            var driverPhone = user.FindFirstValue(ClaimTypes.MobilePhone) ?? user.FindFirstValue("phone") ?? "";
+            var driverName = user.FindFirstValue("memberName") ?? user.FindFirstValue(ClaimTypes.Name) ?? "";
+
+            bool isAssigned = false;
+            if (dispatch != null)
+            {
+                if (!string.IsNullOrEmpty(driverPhone) && dispatch.DriverPhone.Contains(driverPhone)) isAssigned = true;
+                if (!string.IsNullOrEmpty(driverName) && dispatch.DriverName.Equals(driverName, StringComparison.OrdinalIgnoreCase)) isAssigned = true;
+                if (!string.IsNullOrEmpty(driverIdentifier))
+                {
+                    var matchedDriver = await _context.Drivers.FirstOrDefaultAsync(d => d.Id.ToString() == driverIdentifier || d.Phone == driverPhone);
+                    if (matchedDriver != null && (matchedDriver.Phone == dispatch.DriverPhone || matchedDriver.Name == dispatch.DriverName))
+                    {
+                        isAssigned = true;
+                    }
+                }
+            }
+
+            if (!isAssigned)
+            {
+                // Check if the user is registered in Drivers table
+                var driverInDb = await _context.Drivers.FirstOrDefaultAsync(d => d.Phone == driverPhone || d.Id.ToString() == driverIdentifier);
+                if (driverInDb == null)
+                {
+                    throw new UnauthorizedAccessException("The authenticated driver is not assigned to this lot.");
+                }
+                if (dispatch != null && !string.IsNullOrWhiteSpace(dispatch.DriverPhone) && dispatch.DriverPhone != driverInDb.Phone)
+                {
+                    throw new UnauthorizedAccessException("The authenticated driver is not assigned to this shipment.");
+                }
+            }
+        }
+
+        // 4. Validate coordinates [-90, 90] and [-180, 180]
+        if (request.Latitude < -90m || request.Latitude > 90m)
+        {
+            throw new ArgumentException("Latitude must be between -90 and 90 degrees.");
+        }
+        if (request.Longitude < -180m || request.Longitude > 180m)
+        {
+            throw new ArgumentException("Longitude must be between -180 and 180 degrees.");
+        }
+
+        var recordedUtc = request.RecordedAt.Kind == DateTimeKind.Utc
+            ? request.RecordedAt
+            : DateTime.SpecifyKind(request.RecordedAt, DateTimeKind.Utc);
+
+        if (recordedUtc > DateTime.UtcNow.AddMinutes(5))
+        {
+            throw new ArgumentException("Recorded timestamp cannot be in the future.");
+        }
+
+        // 5. Update latest location
+        lot.DriverLatitude = request.Latitude;
+        lot.DriverLongitude = request.Longitude;
+        lot.DriverAccuracyMeters = request.AccuracyMeters;
+        lot.DriverLastUpdated = recordedUtc;
+        lot.UpdatedAt = DateTime.UtcNow;
+
+        if (dispatch != null)
+        {
+            dispatch.DriverLatitude = request.Latitude;
+            dispatch.DriverLongitude = request.Longitude;
+            dispatch.DriverAccuracyMeters = request.AccuracyMeters;
+            dispatch.DriverLastUpdated = recordedUtc;
+        }
+
+        var driverIdentifierOrPhone = user.FindFirstValue(ClaimTypes.NameIdentifier) ?? user.FindFirstValue(ClaimTypes.MobilePhone) ?? "DRIVER";
+        var log = new DriverLocationLog
+        {
+            LotId = lot.Id,
+            DriverIdOrPhone = driverIdentifierOrPhone,
+            Latitude = request.Latitude,
+            Longitude = request.Longitude,
+            AccuracyMeters = request.AccuracyMeters,
+            RecordedAt = recordedUtc,
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.DriverLocationLogs.Add(log);
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<DriverLocationResponse?> GetDriverLocationAsync(string lotId, ClaimsPrincipal user)
+    {
+        // 1. Resolve ProcurementLot
+        ProcurementLot? lot = null;
+        if (Guid.TryParse(lotId, out var lotGuid))
+        {
+            lot = await _context.ProcurementLots.FirstOrDefaultAsync(l => l.Id == lotGuid);
+        }
+        if (lot == null)
+        {
+            lot = await _context.ProcurementLots.FirstOrDefaultAsync(l => l.LotNumber == lotId);
+        }
+        if (lot == null && Guid.TryParse(lotId, out var dispatchGuid))
+        {
+            var d = await _context.Dispatches.FirstOrDefaultAsync(x => x.Id == dispatchGuid);
+            if (d != null)
+            {
+                if (Guid.TryParse(d.LotId, out var dLotGuid))
+                    lot = await _context.ProcurementLots.FirstOrDefaultAsync(l => l.Id == dLotGuid);
+                if (lot == null)
+                    lot = await _context.ProcurementLots.FirstOrDefaultAsync(l => l.LotNumber == d.LotId);
+            }
+        }
+
+        if (lot == null) return null;
+
+        // 2. Authorize viewer
+        if (user.IsInRole(Roles.Farmer))
+        {
+            var farmerClaim = user.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (Guid.TryParse(farmerClaim, out var farmerId) && lot.FarmerId != farmerId)
+            {
+                throw new UnauthorizedAccessException("Unauthorized to view location for this lot.");
+            }
+        }
+
+        // 3. Return latest location or 404 (null)
+        if (lot.DriverLatitude.HasValue && lot.DriverLongitude.HasValue)
+        {
+            return new DriverLocationResponse(
+                (double)lot.DriverLatitude.Value,
+                (double)lot.DriverLongitude.Value,
+                lot.DriverLastUpdated ?? lot.UpdatedAt
+            );
+        }
+
+        // Check dispatch if lot does not have coordinates directly
+        var lotIdStr = lot.Id.ToString();
+        var lotNumber = lot.LotNumber;
+        var dispatch = await _context.Dispatches.FirstOrDefaultAsync(d =>
+            d.LotId == lotIdStr ||
+            d.LotId == lotNumber ||
+            (d.AgreementId != null && d.AgreementId.Contains(lotNumber))
+        );
+
+        if (dispatch != null && dispatch.DriverLatitude.HasValue && dispatch.DriverLongitude.HasValue)
+        {
+            return new DriverLocationResponse(
+                (double)dispatch.DriverLatitude.Value,
+                (double)dispatch.DriverLongitude.Value,
+                dispatch.DriverLastUpdated ?? dispatch.ScheduledDate
+            );
+        }
+
+        return null;
+    }
 }
+

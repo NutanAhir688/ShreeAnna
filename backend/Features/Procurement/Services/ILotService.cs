@@ -16,5 +16,7 @@ public interface ILotService
     Task<bool> RejectAgreementAsync(Guid lotId, RejectAgreementRequest request);
     Task<bool> ReschedulePickupAsync(Guid lotId, ReschedulePickupRequest request);
     Task<List<InspectorResponse>> GetInspectorsAsync();
+    Task<bool> RecordDriverLocationAsync(string lotId, RecordDriverLocationRequest request, System.Security.Claims.ClaimsPrincipal user);
+    Task<DriverLocationResponse?> GetDriverLocationAsync(string lotId, System.Security.Claims.ClaimsPrincipal user);
 }
 

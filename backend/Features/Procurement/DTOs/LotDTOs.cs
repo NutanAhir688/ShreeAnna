@@ -56,7 +56,10 @@ public record LotResponse(
     string? DriverName,
     string? DriverPhone,
     string? VehicleNumber,
-    string? VerificationCode
+    string? VerificationCode,
+    string? FarmVillage = null,
+    string? FarmTaluka = null,
+    string? FarmDistrict = null
 );
 
 public record FormulateAgreementRequest(
@@ -96,5 +99,18 @@ public record InspectorResponse(
     string Phone,
     string Role,
     string Email
+);
+
+public record RecordDriverLocationRequest(
+    decimal Latitude,
+    decimal Longitude,
+    decimal? AccuracyMeters,
+    DateTime RecordedAt
+);
+
+public record DriverLocationResponse(
+    double Latitude,
+    double Longitude,
+    DateTime UpdatedAt
 );
 

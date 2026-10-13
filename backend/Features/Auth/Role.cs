@@ -9,4 +9,5 @@ public static class Roles
     public const string LogisticsCoordinator = "LogisticsCoordinator";
     public const string Accountant = "Accountant";
     public const string Farmer = "Farmer";
+    public const string Driver = "Driver";
 }

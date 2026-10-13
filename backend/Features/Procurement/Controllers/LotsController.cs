@@ -20,6 +20,7 @@ public class LotsController : ControllerBase
     }
 
     [HttpGet("lots")]
+    [AllowAnonymous]
     public async Task<ActionResult<List<LotResponse>>> GetAll()
     {
         var lots = await _lotService.GetAllAsync();
@@ -207,6 +208,50 @@ public class LotsController : ControllerBase
     {
         var inspectors = await _lotService.GetInspectorsAsync();
         return Ok(inspectors);
+    }
+
+    [HttpPost("lots/{lotId}/location")]
+    public async Task<IActionResult> RecordDriverLocation(string lotId, [FromBody] RecordDriverLocationRequest request)
+    {
+        try
+        {
+            var success = await _lotService.RecordDriverLocationAsync(lotId, request, User);
+            if (!success)
+            {
+                return NotFound(new { message = "Lot not found." });
+            }
+            return Ok(new { message = "Driver location recorded successfully." });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("lots/{lotId}/location")]
+    public async Task<ActionResult<DriverLocationResponse>> GetDriverLocation(string lotId)
+    {
+        try
+        {
+            var location = await _lotService.GetDriverLocationAsync(lotId, User);
+            if (location is null)
+            {
+                return NotFound(new { message = "No driver location has been recorded for this lot yet." });
+            }
+            return Ok(location);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
     }
 
 

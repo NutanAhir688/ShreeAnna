@@ -29,9 +29,70 @@ public static class DbSeeder
                     ""Status"" text NOT NULL,
                     ""CreatedAt"" timestamp with time zone NOT NULL
                 );
-            ");
-            await context.Database.ExecuteSqlRawAsync(@"
                 ALTER TABLE ""Dispatches"" ADD COLUMN IF NOT EXISTS ""VerificationCode"" text NOT NULL DEFAULT '4829';
+                ALTER TABLE ""Dispatches"" ADD COLUMN IF NOT EXISTS ""DriverLatitude"" numeric(10,7);
+                ALTER TABLE ""Dispatches"" ADD COLUMN IF NOT EXISTS ""DriverLongitude"" numeric(10,7);
+                ALTER TABLE ""Dispatches"" ADD COLUMN IF NOT EXISTS ""DriverAccuracyMeters"" numeric(10,2);
+                ALTER TABLE ""Dispatches"" ADD COLUMN IF NOT EXISTS ""DriverLastUpdated"" timestamp with time zone;
+                ALTER TABLE ""Dispatches"" ADD COLUMN IF NOT EXISTS ""PickupLatitude"" numeric(10,7);
+                ALTER TABLE ""Dispatches"" ADD COLUMN IF NOT EXISTS ""PickupLongitude"" numeric(10,7);
+                ALTER TABLE ""Dispatches"" ADD COLUMN IF NOT EXISTS ""DestinationLatitude"" numeric(10,7);
+                ALTER TABLE ""Dispatches"" ADD COLUMN IF NOT EXISTS ""DestinationLongitude"" numeric(10,7);
+                ALTER TABLE ""ProcurementLots"" ADD COLUMN IF NOT EXISTS ""DriverLatitude"" numeric(10,7);
+                ALTER TABLE ""ProcurementLots"" ADD COLUMN IF NOT EXISTS ""DriverLongitude"" numeric(10,7);
+                ALTER TABLE ""ProcurementLots"" ADD COLUMN IF NOT EXISTS ""DriverAccuracyMeters"" numeric(10,2);
+                ALTER TABLE ""ProcurementLots"" ADD COLUMN IF NOT EXISTS ""DriverLastUpdated"" timestamp with time zone;
+                CREATE TABLE IF NOT EXISTS ""DriverLocationLogs"" (
+                    ""Id"" uuid NOT NULL PRIMARY KEY,
+                    ""LotId"" uuid NOT NULL,
+                    ""DriverIdOrPhone"" text NOT NULL,
+                    ""Latitude"" numeric(10,7) NOT NULL,
+                    ""Longitude"" numeric(10,7) NOT NULL,
+                    ""AccuracyMeters"" numeric(10,2),
+                    ""RecordedAt"" timestamp with time zone NOT NULL,
+                    ""CreatedAt"" timestamp with time zone NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS ""Notifications"" (
+                    ""Id"" uuid NOT NULL PRIMARY KEY,
+                    ""UserId"" uuid,
+                    ""FarmerId"" uuid,
+                    ""Title"" text NOT NULL,
+                    ""Message"" text NOT NULL,
+                    ""Category"" text NOT NULL,
+                    ""IsRead"" boolean NOT NULL DEFAULT false,
+                    ""CreatedAt"" timestamp with time zone NOT NULL,
+                    ""RelatedEntityId"" text,
+                    ""RelatedEntityType"" text
+                );
+                CREATE TABLE IF NOT EXISTS ""Settlements"" (
+                    ""Id"" uuid NOT NULL PRIMARY KEY,
+                    ""SettlementCode"" text NOT NULL,
+                    ""OrderId"" text NOT NULL,
+                    ""LotId"" uuid,
+                    ""LotNumber"" text,
+                    ""FarmerId"" uuid,
+                    ""FarmerName"" text NOT NULL,
+                    ""FarmerPhone"" text,
+                    ""BuyerName"" text NOT NULL,
+                    ""BuyerType"" text NOT NULL,
+                    ""MilletType"" text NOT NULL,
+                    ""QuantityKg"" numeric(12,2) NOT NULL,
+                    ""PricePerKg"" numeric(10,2) NOT NULL,
+                    ""GrossAmount"" numeric(12,2) NOT NULL,
+                    ""FpoMargin"" numeric(12,2) NOT NULL DEFAULT 0,
+                    ""TransportCost"" numeric(12,2) NOT NULL DEFAULT 0,
+                    ""OtherCharges"" numeric(12,2) NOT NULL DEFAULT 0,
+                    ""FinalAmount"" numeric(12,2) NOT NULL,
+                    ""Status"" text NOT NULL,
+                    ""PaymentMethod"" text,
+                    ""RazorpayPaymentLinkId"" text,
+                    ""RazorpayShortUrl"" text,
+                    ""TransactionId"" text,
+                    ""PaymentDate"" timestamp with time zone,
+                    ""DeliveryDate"" timestamp with time zone,
+                    ""CreatedAt"" timestamp with time zone NOT NULL,
+                    ""UpdatedAt"" timestamp with time zone
+                );
             ");
         }
         catch { }
@@ -115,7 +176,8 @@ public static class DbSeeder
             ("quality@shreeanna.com", Roles.QualityInspector, "Ananya Roy (Quality Inspector)"),
             ("warehouse@shreeanna.com", Roles.WarehouseManager, "Suresh Kumar (Warehouse Manager)"),
             ("logistics@shreeanna.com", Roles.LogisticsCoordinator, "Ramesh Verma (Logistics Coordinator)"),
-            ("accountant@shreeanna.com", Roles.Accountant, "Priya Sharma (Accountant)")
+            ("accountant@shreeanna.com", Roles.Accountant, "Priya Sharma (Accountant)"),
+            ("driver@shreeanna.com", Roles.Driver, "Ravi Kumar (Driver)")
         };
 
         foreach (var acc in seedAccounts)
