@@ -43,5 +43,13 @@ public class Dispatch
     public string SpecialInstructions { get; set; } = string.Empty;
 
     public DateTime? DeliveredDate { get; set; }
+    public decimal? DriverLatitude { get; set; }
+    public decimal? DriverLongitude { get; set; }
+    public decimal? DriverAccuracyMeters { get; set; }
+    public DateTime? DriverLastUpdated { get; set; }
+    public decimal? PickupLatitude { get; set; }
+    public decimal? PickupLongitude { get; set; }
+    public decimal? DestinationLatitude { get; set; }
+    public decimal? DestinationLongitude { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

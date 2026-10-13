@@ -15,20 +15,20 @@ import { lotsApi } from "@/services/api";
 const PAGE_SIZE = 7;
 
 const STATUS_STYLES = {
-  SUBMITTED: "bg-slate-200 text-slate-700",
-  QUALITY_INSPECTION: "bg-amber-100 text-amber-800",
-  QUALITY_CERTIFICATE: "bg-emerald-100 text-emerald-800",
-  QUALITY_CERTIFIED: "bg-emerald-100 text-emerald-800",
-  PROCUREMENT_AGREEMENT: "bg-blue-100 text-blue-800",
-  AGREEMENT_ACCEPTED: "bg-blue-100 text-blue-800",
-  AGREEMENT_PENDING: "bg-blue-100 text-blue-800",
-  PICKUP: "bg-purple-100 text-purple-800",
-  PICKUP_RESCHEDULED: "bg-orange-100 text-orange-800",
-  WAREHOUSE_RECEIVED: "bg-emerald-100 text-emerald-800",
-  PAYMENT: "bg-indigo-100 text-indigo-800",
-  COMPLETED: "bg-emerald-100 text-emerald-800",
-  REJECTED: "bg-red-100 text-red-800",
-  QUALITY_FAILED: "bg-red-100 text-red-800",
+  SUBMITTED: "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+  QUALITY_INSPECTION: "bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 dark:border dark:border-amber-800/50",
+  QUALITY_CERTIFICATE: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border dark:border-emerald-800/50",
+  QUALITY_CERTIFIED: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border dark:border-emerald-800/50",
+  PROCUREMENT_AGREEMENT: "bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300 dark:border dark:border-blue-800/50",
+  AGREEMENT_ACCEPTED: "bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300 dark:border dark:border-blue-800/50",
+  AGREEMENT_PENDING: "bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300 dark:border dark:border-blue-800/50",
+  PICKUP: "bg-purple-100 text-purple-800 dark:bg-purple-950/80 dark:text-purple-300 dark:border dark:border-purple-800/50",
+  PICKUP_RESCHEDULED: "bg-orange-100 text-orange-800 dark:bg-orange-950/80 dark:text-orange-300 dark:border dark:border-orange-800/50",
+  WAREHOUSE_RECEIVED: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border dark:border-emerald-800/50",
+  PAYMENT: "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/80 dark:text-indigo-300 dark:border dark:border-indigo-800/50",
+  COMPLETED: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border dark:border-emerald-800/50",
+  REJECTED: "bg-red-100 text-red-800 dark:bg-red-950/80 dark:text-red-300 dark:border dark:border-red-800/50",
+  QUALITY_FAILED: "bg-red-100 text-red-800 dark:bg-red-950/80 dark:text-red-300 dark:border dark:border-red-800/50",
 };
 
 function ProcurementLots() {
@@ -209,35 +209,35 @@ function ProcurementLots() {
   };
 
   return (
-    <div className="min-h-full space-y-5 bg-[#f5f8fc] p-0 text-slate-900">
+    <div className="min-h-full space-y-6 text-slate-900 dark:text-slate-100">
       {/* Page heading */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="text-[27px] font-bold tracking-tight">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
             Procurement Lots
           </h1>
 
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
             Manage the lifecycle of submitted millet lots from farmers to warehouse.
           </p>
         </div>
 
         <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
           <div className="relative w-full sm:w-[280px]">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
 
             <input
               value={search}
               onChange={(event) => handleSearchChange(event.target.value)}
               placeholder="Search Lot ID or Farmer..."
-              className="h-10 w-full rounded-md border border-slate-300 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-emerald-700 focus:ring-2 focus:ring-emerald-100"
+              className="h-10 w-full rounded-md border border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900/90 pl-9 pr-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none transition focus:border-emerald-600 dark:focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
             />
           </div>
 
           <Button
             variant="outline"
             onClick={() => setShowFilters((value) => !value)}
-            className="h-10 gap-2 border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+            className="h-10 gap-2 border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900/90 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
           >
             <SlidersHorizontal className="h-4 w-4" />
             Filter
@@ -279,14 +279,14 @@ function ProcurementLots() {
       </div>
 
       {loading && (
-        <div className="flex h-40 items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white">
-          <Loader2 className="h-6 w-6 animate-spin text-emerald-700" />
-          <p className="text-sm text-slate-600">Loading procurement lots...</p>
+        <div className="flex h-40 items-center justify-center gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90">
+          <Loader2 className="h-6 w-6 animate-spin text-emerald-600 dark:text-emerald-500" />
+          <p className="text-sm text-slate-600 dark:text-slate-400">Loading procurement lots...</p>
         </div>
       )}
 
       {!loading && error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 p-4 text-sm text-red-700 dark:text-red-400">
           {error}
         </div>
       )}
@@ -294,7 +294,7 @@ function ProcurementLots() {
       {!loading && !error && (
         <>
           {showFilters && (
-            <div className="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 md:grid-cols-3">
+            <div className="grid gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 md:grid-cols-3">
               <FilterSelect
                 label="Status"
                 value={status}
@@ -340,7 +340,7 @@ function ProcurementLots() {
                 <Button
                   variant="outline"
                   onClick={handleReset}
-                  className="h-10 w-full border-slate-300"
+                  className="h-10 w-full border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
                 >
                   Reset filters
                 </Button>
@@ -349,18 +349,18 @@ function ProcurementLots() {
           )}
 
           {/* Table */}
-          <div className="overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-xs">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[850px] border-collapse text-sm">
                 <thead>
-                  <tr className="border-b border-slate-300 bg-[#e6edf4] text-left text-[11px] font-bold uppercase tracking-wide text-slate-600">
-                    <th className="px-3 py-3">Lot ID</th>
-                    <th className="px-3 py-3">Farmer / Farm</th>
-                    <th className="px-3 py-3">Millet Type</th>
-                    <th className="px-3 py-3 text-right">Est. Qty (MT)</th>
-                    <th className="px-3 py-3">Timeline</th>
-                    <th className="px-3 py-3">Status</th>
-                    <th className="px-3 py-3 text-right">Action</th>
+                  <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-100/70 dark:bg-slate-800/60 text-left text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                    <th className="px-4 py-3.5">Lot ID</th>
+                    <th className="px-4 py-3.5">Farmer / Farm</th>
+                    <th className="px-4 py-3.5">Millet Type</th>
+                    <th className="px-4 py-3.5 text-right">Est. Qty (MT)</th>
+                    <th className="px-4 py-3.5">Timeline</th>
+                    <th className="px-4 py-3.5">Status</th>
+                    <th className="px-4 py-3.5 text-right">Action</th>
                   </tr>
                 </thead>
 
@@ -369,7 +369,7 @@ function ProcurementLots() {
                     <tr>
                       <td
                         colSpan={7}
-                        className="px-4 py-12 text-center text-sm text-slate-500"
+                        className="px-4 py-12 text-center text-sm text-slate-500 dark:text-slate-400"
                       >
                         No procurement lots found.
                       </td>
@@ -390,15 +390,23 @@ function ProcurementLots() {
             </div>
 
             {/* Pagination footer */}
-            <div className="flex flex-col gap-3 border-t border-slate-300 bg-[#e6edf4] px-3 py-2.5 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 px-4 py-3 text-xs text-slate-600 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
               <p>
                 Showing{" "}
-                {filteredLots.length === 0
-                  ? 0
-                  : (currentPage - 1) * PAGE_SIZE + 1}{" "}
+                <span className="font-semibold text-slate-900 dark:text-slate-200">
+                  {filteredLots.length === 0
+                    ? 0
+                    : (currentPage - 1) * PAGE_SIZE + 1}
+                </span>{" "}
                 to{" "}
-                {Math.min(currentPage * PAGE_SIZE, filteredLots.length)} of{" "}
-                {filteredLots.length} entries
+                <span className="font-semibold text-slate-900 dark:text-slate-200">
+                  {Math.min(currentPage * PAGE_SIZE, filteredLots.length)}
+                </span>{" "}
+                of{" "}
+                <span className="font-semibold text-slate-900 dark:text-slate-200">
+                  {filteredLots.length}
+                </span>{" "}
+                entries
               </p>
 
               <div className="flex items-center justify-end gap-1">
@@ -406,7 +414,7 @@ function ProcurementLots() {
                   type="button"
                   disabled={currentPage === 1}
                   onClick={() => setPage((value) => Math.max(1, value - 1))}
-                  className="rounded p-1.5 text-slate-600 hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+                  className="rounded p-1.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40 transition"
                   aria-label="Previous page"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -422,9 +430,9 @@ function ProcurementLots() {
                       type="button"
                       key={pageNumber}
                       onClick={() => setPage(pageNumber)}
-                      className={`h-7 min-w-7 rounded px-2 font-semibold ${pageNumber === currentPage
-                          ? "bg-[#075b45] text-white"
-                          : "text-slate-700 hover:bg-white"
+                      className={`h-7 min-w-7 rounded px-2 text-xs font-semibold transition ${pageNumber === currentPage
+                          ? "bg-emerald-600 dark:bg-emerald-600 text-white shadow-xs"
+                          : "text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800"
                         }`}
                     >
                       {pageNumber}
@@ -437,7 +445,7 @@ function ProcurementLots() {
                   onClick={() =>
                     setPage((value) => Math.min(totalPages, value + 1))
                   }
-                  className="rounded p-1.5 text-slate-600 hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+                  className="rounded p-1.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40 transition"
                   aria-label="Next page"
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -453,17 +461,17 @@ function ProcurementLots() {
 
 function SummaryCard({ title, value, footer, showTrend = false }) {
   return (
-    <div className="rounded-lg border border-slate-300 bg-white px-4 py-4 shadow-sm">
-      <p className="text-[11px] font-medium text-slate-500">{title}</p>
+    <div className="rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/90 px-4 py-4 shadow-xs backdrop-blur-xs">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{title}</p>
 
       <div className="mt-3 flex items-end justify-between gap-3">
-        <p className="text-[25px] font-bold leading-none text-slate-900">
+        <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
           {value}
         </p>
 
-        <p className="flex items-center gap-1 text-[11px] text-slate-600">
+        <p className="flex items-center gap-1 text-[11px] font-medium text-slate-600 dark:text-slate-400">
           {showTrend && (
-            <TrendingUp className="h-3 w-3 text-emerald-700" />
+            <TrendingUp className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
           )}
           {footer}
         </p>
@@ -475,17 +483,17 @@ function SummaryCard({ title, value, footer, showTrend = false }) {
 function FilterSelect({ label, value, onChange, options }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-xs font-semibold text-slate-600">
+      <span className="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400">
         {label}
       </span>
 
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-100"
+        className="h-10 w-full rounded-md border border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 px-3 text-sm outline-none focus:border-emerald-600 dark:focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
       >
         {options.map((option) => (
-          <option key={option.value} value={option.value}>
+          <option key={option.value} value={option.value} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
             {option.label}
           </option>
         ))}
@@ -496,49 +504,49 @@ function FilterSelect({ label, value, onChange, options }) {
 
 function ProcurementRow({ lot, onView }) {
   return (
-    <tr className="border-b border-slate-200 last:border-b-0 hover:bg-slate-50">
-      <td className="whitespace-nowrap px-3 py-3.5 font-semibold text-[#075b45]">
+    <tr className="border-b border-slate-100 dark:border-slate-800/60 last:border-b-0 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+      <td className="whitespace-nowrap px-4 py-3.5 font-bold text-emerald-700 dark:text-emerald-400">
         {lot.lotNumber}
       </td>
 
-      <td className="px-3 py-3.5">
-        <p className="font-semibold text-slate-900">{lot.farmerName}</p>
-        <p className="mt-0.5 text-[11px] text-slate-500">
+      <td className="px-4 py-3.5">
+        <p className="font-semibold text-slate-900 dark:text-slate-100">{lot.farmerName}</p>
+        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
           {lot.farmName}
         </p>
       </td>
 
-      <td className="whitespace-nowrap px-3 py-3.5 text-slate-800">
+      <td className="whitespace-nowrap px-4 py-3.5 text-slate-700 dark:text-slate-300">
         {lot.millet}
       </td>
 
-      <td className="whitespace-nowrap px-3 py-3.5 text-right font-medium text-slate-800">
+      <td className="whitespace-nowrap px-4 py-3.5 text-right font-medium text-slate-900 dark:text-slate-100">
         {(lot.quantity / 1000).toLocaleString("en-IN", {
           maximumFractionDigits: 2,
         })}
       </td>
 
-      <td className="whitespace-nowrap px-3 py-3.5 text-[10px] text-slate-600">
+      <td className="whitespace-nowrap px-4 py-3.5 text-[11px] text-slate-500 dark:text-slate-400">
         <p>
-          <span className="font-semibold">Sub:</span>{" "}
+          <span className="font-semibold text-slate-700 dark:text-slate-300">Sub:</span>{" "}
           {formatDate(lot.submissionDate)}
         </p>
 
         <p className="mt-1">
-          <span className="font-semibold">Har:</span>{" "}
+          <span className="font-semibold text-slate-700 dark:text-slate-300">Har:</span>{" "}
           {formatDate(lot.harvestDate)}
         </p>
       </td>
 
-      <td className="px-3 py-3.5">
+      <td className="px-4 py-3.5">
         <StatusBadge status={lot.status} />
       </td>
 
-      <td className="px-3 py-3.5 text-right">
+      <td className="px-4 py-3.5 text-right">
         <Button
           variant="outline"
           onClick={onView}
-          className="h-8 border-slate-400 bg-white px-3 text-xs font-semibold text-slate-800 hover:bg-slate-100"
+          className="h-8 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-xs font-semibold text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white"
         >
           View Details
         </Button>

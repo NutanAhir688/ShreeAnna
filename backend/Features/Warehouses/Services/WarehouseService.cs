@@ -17,6 +17,7 @@ public interface IWarehouseService
     Task<WarehouseReceiptResponse> CreateReceiptAsync(CreateWarehouseReceiptRequest request);
     Task<WarehouseReceiptResponse?> GetReceiptByLotOrDispatchAsync(string identifier);
     Task<LotAllocationResponse> AllocateLotAsync(AllocateLotRequest request);
+    Task<List<WarehouseAllocatedLotResponse>> GetAllocatedLotsAsync(Guid warehouseId);
 }
 
 public class WarehouseService : IWarehouseService
@@ -179,7 +180,7 @@ public class WarehouseService : IWarehouseService
 
         var statusStr = request.IsDraft ? "DRAFT" : (variance != 0 ? "RECEIVED WITH VARIANCE" : "FULLY RECEIVED");
 
-        dispatch.Status = "DELIVERED";
+        dispatch.Status = request.IsDraft ? "DELIVERED" : "COMPLETED";
         dispatch.DeliveredDate = DateTime.UtcNow;
         dispatch.FinalReceivedQuantityKg = actualQty;
         dispatch.WarehouseReceiptStatus = request.IsDraft ? "DRAFT" : "CONFIRMED";
@@ -198,9 +199,23 @@ public class WarehouseService : IWarehouseService
 
         if (lot != null)
         {
-            lot.Status = "STORED";
+            lot.Status = request.IsDraft ? "DELIVERED" : "STORED";
             lot.ActualQuantityKg = actualQty;
             lot.UpdatedAt = DateTime.UtcNow;
+        }
+
+        // Synchronize all dispatches referencing this Lot/Dispatch ID
+        var lotOrDispatchId = dispatch.LotId ?? dispatch.Id.ToString();
+        var matchingDispatches = await _context.Dispatches
+            .Where(d => d.Id == dispatch.Id || d.LotId == lotOrDispatchId || (lot != null && (d.LotId == lot.LotNumber || d.LotId == lot.Id.ToString())))
+            .ToListAsync();
+
+        foreach (var d in matchingDispatches)
+        {
+            d.Status = request.IsDraft ? "DELIVERED" : "COMPLETED";
+            d.WarehouseReceiptStatus = request.IsDraft ? "DRAFT" : "CONFIRMED";
+            d.FinalReceivedQuantityKg = actualQty;
+            d.DeliveredDate ??= DateTime.UtcNow;
         }
 
         // Handle Inventory update if not draft
@@ -276,13 +291,36 @@ public class WarehouseService : IWarehouseService
     public async Task<LotAllocationResponse> AllocateLotAsync(AllocateLotRequest request)
     {
         var warehouse = await _context.Warehouses.FindAsync(request.WarehouseId);
-        var warehouseName = warehouse?.Name ?? "Mandya Warehouse";
+        var warehouseName = warehouse?.Name ?? "Dahod FPO Warehouse";
+
+        if (warehouse != null)
+        {
+            warehouse.UtilizedCapacityTons += request.Quantity;
+        }
 
         // Find procurement lot if exists
         var lot = await _context.ProcurementLots.FirstOrDefaultAsync(l => l.LotNumber == request.LotId || l.Id.ToString() == request.LotId);
         if (lot != null)
         {
             lot.Status = "STORED";
+            if (lot.ActualQuantityKg == null || lot.ActualQuantityKg == 0)
+            {
+                lot.ActualQuantityKg = request.Quantity;
+            }
+            lot.UpdatedAt = DateTime.UtcNow;
+        }
+
+        // Find dispatch if exists and link to warehouse
+        var dispatch = await _context.Dispatches.FirstOrDefaultAsync(d => d.LotId == request.LotId || d.Id.ToString() == request.LotId || d.DispatchCode == request.LotId);
+        if (dispatch != null)
+        {
+            dispatch.WarehouseId = request.WarehouseId;
+            dispatch.Status = "COMPLETED";
+            dispatch.WarehouseReceiptStatus = "CONFIRMED";
+            if (dispatch.FinalReceivedQuantityKg == null || dispatch.FinalReceivedQuantityKg == 0)
+            {
+                dispatch.FinalReceivedQuantityKg = request.Quantity;
+            }
         }
 
         // Add/Update inventory batch
@@ -298,9 +336,9 @@ public class WarehouseService : IWarehouseService
             Id = Guid.NewGuid(),
             MovementCode = $"SM-{movementCount:D4}",
             BatchId = batch?.Id ?? Guid.NewGuid(),
-            MovementType = "TRANSFER",
+            MovementType = "INBOUND",
             QuantityKg = request.Quantity,
-            FromLocation = "Unallocated Stock",
+            FromLocation = "Arrived Procurement Lot",
             ToLocation = $"{warehouseName} - {request.StorageSection}",
             MovementDate = DateTime.UtcNow
         };
@@ -318,6 +356,104 @@ public class WarehouseService : IWarehouseService
             "ALLOCATED",
             DateTime.UtcNow
         );
+    }
+
+    public async Task<List<WarehouseAllocatedLotResponse>> GetAllocatedLotsAsync(Guid warehouseId)
+    {
+        var warehouse = await _context.Warehouses.FindAsync(warehouseId);
+        if (warehouse == null) return new List<WarehouseAllocatedLotResponse>();
+
+        var results = new List<WarehouseAllocatedLotResponse>();
+        var seenLotIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // 1. Dispatches targeting this warehouse
+        var dispatches = await _context.Dispatches
+            .Where(d => d.WarehouseId == warehouseId)
+            .OrderByDescending(d => d.CreatedAt)
+            .ToListAsync();
+
+        var lotKeyList = dispatches.Select(d => d.LotId).Where(id => !string.IsNullOrEmpty(id)).Distinct().ToList();
+
+        var lots = await _context.ProcurementLots
+            .Include(l => l.Farmer)
+            .Include(l => l.Farm)
+            .Include(l => l.FarmCrop)
+            .Where(l => lotKeyList.Contains(l.Id.ToString()) || lotKeyList.Contains(l.LotNumber))
+            .ToListAsync();
+
+        foreach (var d in dispatches)
+        {
+            var lot = lots.FirstOrDefault(l => l.Id.ToString() == d.LotId || l.LotNumber == d.LotId);
+            var lotKey = lot?.Id.ToString() ?? d.LotId;
+            if (string.IsNullOrEmpty(lotKey) || seenLotIds.Contains(lotKey)) continue;
+
+            seenLotIds.Add(lotKey);
+
+            var lotNumber = lot?.LotNumber ?? (d.LotId.Length > 8 ? $"LOT-{d.LotId.Substring(0, 8).ToUpper()}" : d.LotId);
+            var farmerName = d.FarmerOrProcessorName;
+            if (string.IsNullOrWhiteSpace(farmerName)) farmerName = lot?.Farmer?.FullName ?? "Registered Farmer";
+
+            var farmName = lot?.Farm?.FarmName ?? d.SourceAddress;
+            if (string.IsNullOrWhiteSpace(farmName)) farmName = "Govind Farm";
+
+            var millet = d.MilletType;
+            if (string.IsNullOrWhiteSpace(millet)) millet = lot?.FarmCrop?.CropName ?? "Millet";
+
+            var qty = d.FinalReceivedQuantityKg > 0 ? d.FinalReceivedQuantityKg.Value : d.TotalQuantityKg;
+            if (qty <= 0 && lot != null)
+            {
+                qty = lot.ActualQuantityKg ?? lot.AgreedQuantityKg ?? lot.EstimatedQuantityKg;
+            }
+
+            var status = d.Status == "COMPLETED" || lot?.Status == "STORED" ? "STORED" : d.Status;
+
+            results.Add(new WarehouseAllocatedLotResponse(
+                lotKey,
+                lotNumber,
+                farmerName,
+                farmName,
+                millet,
+                lot?.FarmCrop?.CropName ?? "Grade A",
+                qty,
+                status,
+                d.DispatchCode,
+                d.DeliveredDate ?? d.CreatedAt
+            ));
+        }
+
+        // 2. Also check if there are other STORED lots in Dahod / Primary warehouse
+        var isPrimary = warehouse.WarehouseCode == "WH-GUJ-001" || warehouse.Name.ToLower().Contains("dahod");
+        if (isPrimary)
+        {
+            var storedLots = await _context.ProcurementLots
+                .Include(l => l.Farmer)
+                .Include(l => l.Farm)
+                .Include(l => l.FarmCrop)
+                .Where(l => (l.Status == "STORED" || l.Status == "DELIVERED" || l.Status == "COMPLETED") && !lotKeyList.Contains(l.Id.ToString()) && !lotKeyList.Contains(l.LotNumber))
+                .ToListAsync();
+
+            foreach (var lot in storedLots)
+            {
+                var lotKey = lot.Id.ToString();
+                if (seenLotIds.Contains(lotKey)) continue;
+                seenLotIds.Add(lotKey);
+
+                results.Add(new WarehouseAllocatedLotResponse(
+                    lotKey,
+                    lot.LotNumber,
+                    lot.Farmer?.FullName ?? "Farmer",
+                    lot.Farm?.FarmName ?? "Registered Farm",
+                    lot.FarmCrop?.CropName ?? "Millet",
+                    lot.FarmCrop?.CropName ?? "Grade A",
+                    lot.ActualQuantityKg ?? lot.AgreedQuantityKg ?? lot.EstimatedQuantityKg,
+                    "STORED",
+                    "INBOUND",
+                    lot.UpdatedAt
+                ));
+            }
+        }
+
+        return results;
     }
 
     private static WarehouseResponse Map(Warehouse w)

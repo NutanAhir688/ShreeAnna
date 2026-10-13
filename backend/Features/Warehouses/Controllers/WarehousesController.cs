@@ -18,6 +18,7 @@ public class WarehousesController : ControllerBase
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<ActionResult<List<WarehouseResponse>>> GetAll()
     {
         var warehouses = await _warehouseService.GetAllAsync();
@@ -25,6 +26,7 @@ public class WarehousesController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [AllowAnonymous]
     public async Task<ActionResult<WarehouseResponse>> GetById(Guid id)
     {
         var warehouse = await _warehouseService.GetByIdAsync(id);
@@ -75,6 +77,7 @@ public class WarehousesController : ControllerBase
     }
 
     [HttpPost("allocate-lot")]
+    [AllowAnonymous]
     public async Task<ActionResult<LotAllocationResponse>> AllocateLot([FromBody] AllocateLotRequest request)
     {
         try
@@ -86,6 +89,15 @@ public class WarehousesController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
+    }
+
+    [HttpGet("{id:guid}/allocated-lots")]
+    [HttpGet("{id:guid}/lots")]
+    [AllowAnonymous]
+    public async Task<ActionResult<List<WarehouseAllocatedLotResponse>>> GetAllocatedLots(Guid id)
+    {
+        var lots = await _warehouseService.GetAllocatedLotsAsync(id);
+        return Ok(lots);
     }
 }
 

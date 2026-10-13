@@ -104,7 +104,7 @@ function AppRoutes() {
           <Route path="/dispatches/:id/report-issue" element={<ReportIssue />} />
           <Route path="/dispatches/report-issue" element={<ReportIssue />} />
 
-          <Route path="/inventory" element={<Inventory />} />
+          <Route path="/inventory" element={<Navigate to="/warehouses" replace />} />
           <Route path="/inventory/movements" element={<StockMovements />} />
           <Route path="/inventory/:id" element={<InventoryDetails />} />
 

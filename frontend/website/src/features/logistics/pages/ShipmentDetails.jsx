@@ -53,7 +53,15 @@ function ShipmentDetails() {
     async function loadShipment() {
       setLoading(true);
       try {
-        const data = await logisticsApi.getById(id);
+        let data = null;
+        try {
+          data = await logisticsApi.getById(id);
+        } catch {
+          // If direct ID lookup fails (e.g. mock slug or code), search all active dispatches
+          const all = await logisticsApi.getAll().catch(() => []);
+          data = all.find((d) => d.id === id || d.dispatchCode?.toLowerCase() === id?.toLowerCase()) || all[0];
+        }
+
         if (data) {
           setShipment({
             id: data.id,
@@ -109,10 +117,29 @@ function ShipmentDetails() {
     }
   };
 
-  if (loading || !shipment) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-800"></div>
+      </div>
+    );
+  }
+
+  if (!shipment) {
+    return (
+      <div className="max-w-xl mx-auto py-16 px-4 text-center space-y-4">
+        <div className="h-16 w-16 mx-auto rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 border border-amber-200">
+          <AlertCircle className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-900">Shipment Record Not Found</h2>
+        <p className="text-sm text-slate-600">
+          We couldn't locate shipment <span className="font-mono font-semibold text-slate-800">"{id}"</span> in the database. It may have been archived or completed.
+        </p>
+        <div className="pt-2 flex justify-center gap-3">
+          <Button onClick={() => navigate("/dispatches")} className="bg-emerald-700 hover:bg-emerald-800 text-white">
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Logistics
+          </Button>
+        </div>
       </div>
     );
   }

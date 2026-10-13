@@ -62,10 +62,12 @@ function QualityManagement({ defaultTab = "assigned" }) {
 
   const userRole = user?.role || "FpoManager";
   const isProcurementOfficer = userRole === "ProcurementOfficer";
+  const isWarehouseOfficer = userRole === "WarehouseManager" || userRole === "WarehouseOfficer";
+  const isHideInspectionTabs = isProcurementOfficer || isWarehouseOfficer;
 
   // Active tab: assigned | history | certifications
   const rawTab = searchParams.get("tab") || defaultTab;
-  const activeTab = isProcurementOfficer ? "certifications" : rawTab;
+  const activeTab = isHideInspectionTabs ? "certifications" : rawTab;
 
   const setActiveTab = (tab) => {
     setSearchParams({ tab });
@@ -193,7 +195,7 @@ function QualityManagement({ defaultTab = "assigned" }) {
             Quality Management
           </h1>
           <p className="text-sm text-slate-500">
-            {isProcurementOfficer
+            {isHideInspectionTabs
               ? "Review and view issued quality certifications."
               : "Conduct quality inspections, review inspection history, and issue certifications."}
           </p>
@@ -201,8 +203,8 @@ function QualityManagement({ defaultTab = "assigned" }) {
       </div>
 
       {/* Quick Stats Banner */}
-      <div className={`grid gap-4 sm:grid-cols-2 ${isProcurementOfficer ? "" : "lg:grid-cols-4"}`}>
-        {!isProcurementOfficer && (
+      <div className={`grid gap-4 sm:grid-cols-2 ${isHideInspectionTabs ? "" : "lg:grid-cols-4"}`}>
+        {!isHideInspectionTabs && (
           <>
             <Card className="border-slate-200/80 bg-white shadow-xs">
               <CardContent className="flex items-center justify-between p-5">
@@ -279,7 +281,7 @@ function QualityManagement({ defaultTab = "assigned" }) {
 
       {/* Main Tabs Navigation */}
       <div className="flex border-b border-slate-200 bg-white px-2 pt-2 rounded-t-lg shadow-xs">
-        {!isProcurementOfficer && (
+        {!isHideInspectionTabs && (
           <>
             <button
               onClick={() => setActiveTab("assigned")}
@@ -392,7 +394,7 @@ function QualityManagement({ defaultTab = "assigned" }) {
       )}
 
       {/* TAB 1: ASSIGNED INSPECTIONS */}
-      {!loading && !error && !isProcurementOfficer && activeTab === "assigned" && (
+      {!loading && !error && !isHideInspectionTabs && activeTab === "assigned" && (
         <div className="overflow-hidden rounded-lg border border-slate-200/80 bg-white shadow-xs">
           <Table>
             <TableHeader>
@@ -504,7 +506,7 @@ function QualityManagement({ defaultTab = "assigned" }) {
       )}
 
       {/* TAB 2: INSPECTION HISTORY */}
-      {!loading && !error && !isProcurementOfficer && activeTab === "history" && (
+      {!loading && !error && !isHideInspectionTabs && activeTab === "history" && (
         <div className="overflow-hidden rounded-lg border border-slate-200/80 bg-white shadow-xs">
           <Table>
             <TableHeader>

@@ -4,6 +4,7 @@ import '../../../app/theme.dart';
 import '../../../l10n/generated/app_localizations.dart';
 
 import '../../farm/screen/farm_management_screen.dart';
+import '../../farm/screen/add_farm_screen.dart';
 import '../../farmers/models/farmer.dart';
 import '../../farmers/services/farmer_api.dart';
 import '../../lots/models/lot_model.dart';
@@ -12,6 +13,7 @@ import '../../lots/screen/my_lots_screen.dart';
 import '../../lots/screen/sell_millet_screen.dart';
 import '../../lots/services/lot_api.dart';
 import '../../profile/screen/profile_screen.dart';
+import '../../profile/screen/notifications_screen.dart';
 import '../../support/screen/support_screen.dart';
 import '../../driver/screens/driver_journey_screen.dart';
 
@@ -233,17 +235,26 @@ class _HomeScreenState extends State<HomeScreen> {
                       icon: const Icon(Icons.help_outline, color: ShreeAnnaTheme.primaryGreen),
                     ),
                     const SizedBox(width: 4),
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: ShreeAnnaTheme.primaryGreen,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Icon(
-                        Icons.notifications_none,
-                        color: Colors.white,
-                        size: 22,
+                    InkWell(
+                      borderRadius: BorderRadius.circular(6),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+                        );
+                      },
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: ShreeAnnaTheme.primaryGreen,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(
+                          Icons.notifications_none,
+                          color: Colors.white,
+                          size: 22,
+                        ),
                       ),
                     ),
                   ],
@@ -254,39 +265,74 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 18),
 
             // ------------------------------------------------------
-            // SELL MILLET BUTTON
+            // QUICK ACTION BUTTONS: SELL MILLET & ADD FARM (PRIMARY)
             // ------------------------------------------------------
-            SizedBox(
-              width: double.infinity,
-              height: 46,
-              child: ElevatedButton.icon(
-                onPressed: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const SellMilletScreen()),
-                  );
-                  _loadDashboardData();
-                },
-                icon: const Icon(Icons.agriculture, size: 19),
-                label: Text(
-                  l10n.sellMillet,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: ShreeAnnaTheme.primaryGreen,
-                  foregroundColor: Colors.white,
-                  elevation: 1,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const SellMilletScreen()),
+                        );
+                        _loadDashboardData();
+                      },
+                      icon: const Icon(Icons.agriculture, size: 19),
+                      label: Text(
+                        l10n.sellMillet,
+                        style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ShreeAnnaTheme.primaryGreen,
+                        foregroundColor: Colors.white,
+                        elevation: 1.5,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const AddFarmScreen()),
+                        );
+                        _loadDashboardData();
+                      },
+                      icon: const Icon(Icons.add_location_alt_outlined, size: 19),
+                      label: Text(
+                        l10n.addFarmTitle,
+                        style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ShreeAnnaTheme.primaryGreen,
+                        foregroundColor: Colors.white,
+                        elevation: 1.5,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
 
             const SizedBox(height: 10),
 
             // ------------------------------------------------------
-            // MANAGE FARMS BUTTON & HELP SUPPORT
+            // SECONDARY ACTIONS: MANAGE FARMS & HELP SUPPORT
             // ------------------------------------------------------
             Row(
               children: [
@@ -294,24 +340,26 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: SizedBox(
                     height: 46,
                     child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
+                      onPressed: () async {
+                        await Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (_) => const FarmManagementScreen(),
                           ),
                         );
+                        _loadDashboardData();
                       },
-                      icon: const Icon(Icons.agriculture_outlined, size: 18),
+                      icon: const Icon(Icons.landscape_outlined, size: 18),
                       label: Text(
                         l10n.manageFarms,
                         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                       ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: ShreeAnnaTheme.primaryGreen,
-                        side: const BorderSide(color: ShreeAnnaTheme.primaryGreen),
+                        side: const BorderSide(color: ShreeAnnaTheme.primaryGreen, width: 1.2),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
@@ -337,9 +385,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: ShreeAnnaTheme.primaryGreen,
-                        side: const BorderSide(color: ShreeAnnaTheme.primaryGreen),
+                        side: const BorderSide(color: ShreeAnnaTheme.primaryGreen, width: 1.2),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),

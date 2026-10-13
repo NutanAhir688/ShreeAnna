@@ -14,6 +14,9 @@ using backend.Features.Quality.Services;
 using backend.Features.Warehouses.Services;
 using backend.Features.Inventory.Services;
 using backend.Features.Logistics.Services;
+using backend.Features.Notifications.Services;
+using backend.Features.Settlements.Services;
+using backend.Features.Reports.Services;
 
 // Enable legacy timestamp behavior for Npgsql to prevent ArgumentException with DateTimeKind.Unspecified
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
@@ -106,13 +109,19 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IOtpService, OtpService>();
 builder.Services.AddScoped<IFarmerService, FarmerService>();
 builder.Services.AddScoped<IFarmerAuthService, FarmerAuthService>();
+builder.Services.AddScoped<IDriverAuthService, DriverAuthService>();
 builder.Services.AddScoped<IFarmService, FarmService>();
 builder.Services.AddScoped<ILotService, LotService>();
 builder.Services.AddScoped<IQualityService, QualityService>();
 builder.Services.AddScoped<IWarehouseService, WarehouseService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<ILogisticsService, LogisticsService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<backend.Infrastructure.Storage.IBlobStorageService, backend.Infrastructure.Storage.AzureBlobStorageService>();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IRazorpayMockGatewayService, RazorpayMockGatewayService>();
+builder.Services.AddScoped<ISettlementService, SettlementService>();
+builder.Services.AddScoped<IReportsService, ReportsService>();
 
 // --------------------------------------------------
 // Controllers & Swagger

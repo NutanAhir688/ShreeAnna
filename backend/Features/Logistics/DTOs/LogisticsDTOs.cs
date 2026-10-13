@@ -20,7 +20,11 @@ public record CreateDispatchRequest(
     DateTime ScheduledDate,
     string? ScheduledStartTime,
     string? ScheduledEndTime,
-    string? SpecialInstructions
+    string? SpecialInstructions,
+    decimal? PickupLatitude = null,
+    decimal? PickupLongitude = null,
+    decimal? DestinationLatitude = null,
+    decimal? DestinationLongitude = null
 );
 
 public record DispatchResponse(
@@ -53,7 +57,11 @@ public record DispatchResponse(
     string ScheduledEndTime,
     string SpecialInstructions,
     DateTime? DeliveredDate,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    decimal? PickupLatitude = null,
+    decimal? PickupLongitude = null,
+    decimal? DestinationLatitude = null,
+    decimal? DestinationLongitude = null
 );
 
 public record ConfirmDeliveryRequest(

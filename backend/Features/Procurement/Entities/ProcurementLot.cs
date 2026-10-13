@@ -47,6 +47,14 @@ public class ProcurementLot
 
     public DateTime? InspectorLastUpdated { get; set; }
 
+    public decimal? DriverLatitude { get; set; }
+
+    public decimal? DriverLongitude { get; set; }
+
+    public decimal? DriverAccuracyMeters { get; set; }
+
+    public DateTime? DriverLastUpdated { get; set; }
+
     public decimal? OfferedPricePerKg { get; set; }
     public decimal? AgreedQuantityKg { get; set; }
     public string? AgreementVersion { get; set; } = "v1.0";

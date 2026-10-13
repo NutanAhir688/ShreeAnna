@@ -30,16 +30,18 @@ public class LogisticsController : ControllerBase
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<ActionResult<List<DispatchResponse>>> GetAll()
     {
         var dispatches = await _logisticsService.GetAllAsync();
         return Ok(dispatches);
     }
 
-    [HttpGet("{id:guid}")]
-    public async Task<ActionResult<DispatchResponse>> GetById(Guid id)
+    [HttpGet("{id}")]
+    [AllowAnonymous]
+    public async Task<ActionResult<DispatchResponse>> GetById(string id)
     {
-        var dispatch = await _logisticsService.GetByIdAsync(id);
+        var dispatch = await _logisticsService.GetByIdOrCodeAsync(id);
         if (dispatch is null) return NotFound(new { message = "Dispatch not found" });
         return Ok(dispatch);
     }

@@ -18,6 +18,7 @@ import {
   Phone,
   Compass,
   Plus,
+  Loader2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -56,12 +57,12 @@ export function calculateDistanceKm(lat1, lon1, lat2, lon2) {
 }
 
 export function formatCoords(lat, lng) {
-  if (lat === null || lat === undefined || lng === null || lng === undefined) {
-    return "Lat: 37.4220, Lng: -122.0840";
+  if (lat === null || lat === undefined || lng === null || lng === undefined || lat === "" || lng === "") {
+    return "N/A";
   }
   const numLat = Number(lat);
   const numLng = Number(lng);
-  if (isNaN(numLat) || isNaN(numLng)) return "N/A";
+  if (isNaN(numLat) || isNaN(numLng) || (numLat === 0 && numLng === 0)) return "N/A";
 
   const latDir = numLat >= 0 ? "N" : "S";
   const lngDir = numLng >= 0 ? "E" : "W";
@@ -71,15 +72,102 @@ export function formatCoords(lat, lng) {
 function ShipmentWarehouseMap({
   farmLat,
   farmLng,
-  farmName = "Farm Location",
+  farmName = "",
   warehouses = [],
   selectedWarehouseId,
   onSelectWarehouse,
+  onRouteCalculated,
 }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const layerGroupRef = useRef(null);
+  const routeCacheRef = useRef({});
 
+  const [routeInfo, setRouteInfo] = useState({
+    distanceKm: null,
+    durationText: null,
+    coordinates: [],
+    loading: false,
+  });
+
+  const hasFarmCoords =
+    farmLat !== null &&
+    farmLat !== undefined &&
+    farmLng !== null &&
+    farmLng !== undefined &&
+    !isNaN(Number(farmLat)) &&
+    !isNaN(Number(farmLng)) &&
+    !(Number(farmLat) === 0 && Number(farmLng) === 0);
+
+  const validFarmLat = hasFarmCoords ? Number(farmLat) : null;
+  const validFarmLng = hasFarmCoords ? Number(farmLng) : null;
+
+  const selectedWh =
+    warehouses.find((w) => w.id === selectedWarehouseId) || warehouses[0] || null;
+
+  // 1. Fetch real road driving route using OSRM
+  useEffect(() => {
+    if (validFarmLat === null || validFarmLng === null || !selectedWh?.latitude || !selectedWh?.longitude) {
+      setRouteInfo({ distanceKm: null, durationText: null, coordinates: [], loading: false });
+      return;
+    }
+
+    const swLat = Number(selectedWh.latitude);
+    const swLng = Number(selectedWh.longitude);
+    if (!swLat || !swLng) return;
+
+    const cacheKey = `${validFarmLng.toFixed(4)},${validFarmLat.toFixed(4)};${swLng.toFixed(4)},${swLat.toFixed(4)}`;
+    if (routeCacheRef.current[cacheKey]) {
+      const cached = routeCacheRef.current[cacheKey];
+      setRouteInfo(cached);
+      if (onRouteCalculated) onRouteCalculated(cached);
+      return;
+    }
+
+    let isCancelled = false;
+    setRouteInfo((prev) => ({ ...prev, loading: true }));
+
+    fetch(
+      `https://router.project-osrm.org/route/v1/driving/${validFarmLng},${validFarmLat};${swLng},${swLat}?overview=full&geometries=geojson`
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        if (isCancelled) return;
+        if (data.code === "Ok" && data.routes && data.routes.length > 0) {
+          const route = data.routes[0];
+          const distKm = Math.round((route.distance / 1000) * 10) / 10;
+          const secs = route.duration;
+          const hrs = Math.floor(secs / 3600);
+          const mins = Math.round((secs % 3600) / 60);
+          const durStr = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+          const coords = route.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+
+          const result = {
+            distanceKm: distKm,
+            durationText: durStr,
+            coordinates: coords,
+            loading: false,
+          };
+          routeCacheRef.current[cacheKey] = result;
+          setRouteInfo(result);
+          if (onRouteCalculated) onRouteCalculated(result);
+        } else {
+          setRouteInfo((prev) => ({ ...prev, loading: false }));
+        }
+      })
+      .catch((err) => {
+        if (!isCancelled) {
+          console.warn("Real driving route fetch error:", err);
+          setRouteInfo((prev) => ({ ...prev, loading: false }));
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [validFarmLat, validFarmLng, selectedWh?.latitude, selectedWh?.longitude, onRouteCalculated]);
+
+  // 2. Render map layers with real road geometry
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
@@ -102,38 +190,31 @@ function ShipmentWarehouseMap({
 
     const bounds = [];
 
-    const validFarmLat = Number(farmLat) || 22.8397;
-    const validFarmLng = Number(farmLng) || 74.2558;
+    // Farm Marker (Emerald Pin)
+    if (validFarmLat !== null && validFarmLng !== null) {
+      bounds.push([validFarmLat, validFarmLng]);
+      const farmIcon = L.divIcon({
+        className: "custom-farm-marker",
+        html: `<div style="background-color: #059669; width: 34px; height: 34px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; color: white;">
+                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+               </div>`,
+        iconSize: [34, 34],
+        iconAnchor: [17, 17],
+      });
 
-    // 1. Farm Marker (Emerald Pin)
-    bounds.push([validFarmLat, validFarmLng]);
-    const farmIcon = L.divIcon({
-      className: "custom-farm-marker",
-      html: `<div style="background-color: #059669; width: 34px; height: 34px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; color: white;">
-               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-             </div>`,
-      iconSize: [34, 34],
-      iconAnchor: [17, 17],
-    });
+      const farmMarker = L.marker([validFarmLat, validFarmLng], {
+        icon: farmIcon,
+      }).bindPopup(`
+        <div style="font-family: system-ui, sans-serif; padding: 2px;">
+          <div style="font-weight: 800; color: #065f46; font-size: 12px;">🌾 ORIGIN FARM</div>
+          <div style="font-size: 11px; color: #1e293b; font-weight: 700; margin-top: 2px;">${farmName || "Origin Farm"}</div>
+          <div style="font-size: 10px; color: #64748b; margin-top: 2px;">GPS: ${validFarmLat.toFixed(4)}°, ${validFarmLng.toFixed(4)}°</div>
+        </div>
+      `);
+      layerGroup.addLayer(farmMarker);
+    }
 
-    const farmMarker = L.marker([validFarmLat, validFarmLng], {
-      icon: farmIcon,
-    }).bindPopup(`
-      <div style="font-family: system-ui, sans-serif; padding: 2px;">
-        <div style="font-weight: 800; color: #065f46; font-size: 12px;">🌾 ORIGIN FARM</div>
-        <div style="font-size: 11px; color: #1e293b; font-weight: 700; margin-top: 2px;">${farmName}</div>
-        <div style="font-size: 10px; color: #64748b; margin-top: 2px;">GPS: ${validFarmLat.toFixed(
-      4
-    )}°, ${validFarmLng.toFixed(4)}°</div>
-      </div>
-    `);
-    layerGroup.addLayer(farmMarker);
-
-    // Find selected warehouse
-    const selectedWh =
-      warehouses.find((w) => w.id === selectedWarehouseId) || warehouses[0];
-
-    // 2. Warehouse Markers
+    // Warehouse Markers
     warehouses.forEach((w) => {
       const wLat = Number(w.latitude);
       const wLng = Number(w.longitude);
@@ -156,21 +237,16 @@ function ShipmentWarehouseMap({
         iconAnchor: [iconSize / 2, iconSize / 2],
       });
 
-      const dist = calculateDistanceKm(
-        validFarmLat,
-        validFarmLng,
-        wLat,
-        wLng
-      );
+      const displayDist = isSelected && routeInfo.distanceKm !== null ? routeInfo.distanceKm : w.distanceKm;
 
       const whMarker = L.marker([wLat, wLng], { icon: whIcon }).bindPopup(`
         <div style="font-family: system-ui, sans-serif; padding: 4px; max-width: 220px;">
-          <div style="font-weight: 800; color: #0f172a; font-size: 13px;">${w.name
-        }</div>
-          <div style="color: #047857; font-weight: 700; font-size: 11px;">📍 ${w.district
-        }, ${w.village}</div>
-          <div style="font-size: 11px; margin-top: 4px; color: #1e293b;"><b>Distance from Farm:</b> ${dist !== null ? dist + " km" : "N/A"
-        }</div>
+          <div style="font-weight: 800; color: #0f172a; font-size: 13px;">${w.name}</div>
+          <div style="color: #047857; font-weight: 700; font-size: 11px;">📍 ${w.district}, ${w.village}</div>
+          <div style="font-size: 11px; margin-top: 4px; color: #1e293b;">
+            <b>${isSelected && routeInfo.distanceKm !== null ? "Road Distance:" : "Distance from Farm:"}</b> ${displayDist !== null ? displayDist + " km" : "N/A"}
+          </div>
+          ${isSelected && routeInfo.durationText ? `<div style="font-size: 11px; color: #2563eb;"><b>Est. Drive Time:</b> ~${routeInfo.durationText}</div>` : ""}
           ${isNearest
           ? '<div style="margin-top: 4px; background-color: #dcfce7; color: #15803d; font-weight: 800; font-size: 10px; padding: 2px 6px; border-radius: 4px; display: inline-block;">⚡ NEAREST WAREHOUSE</div>'
           : ""
@@ -189,39 +265,72 @@ function ShipmentWarehouseMap({
       layerGroup.addLayer(whMarker);
     });
 
-    // 3. Connect Farm -> Selected Warehouse with Dashed Line
-    if (selectedWh && selectedWh.latitude && selectedWh.longitude) {
+    // 3. Connect Farm -> Selected Warehouse with Real Driving Route (or dashed fallback)
+    if (routeInfo.coordinates && routeInfo.coordinates.length > 0) {
+      // Highway casing
+      const casing = L.polyline(routeInfo.coordinates, {
+        color: "#1e3a8a",
+        weight: 6,
+        opacity: 0.5,
+        lineCap: "round",
+        lineJoin: "round",
+      });
+      // Active route line
+      const road = L.polyline(routeInfo.coordinates, {
+        color: "#2563eb",
+        weight: 4,
+        opacity: 0.95,
+        lineCap: "round",
+        lineJoin: "round",
+      }).bindPopup(`
+        <div style="font-family: system-ui, sans-serif; padding: 4px;">
+          <div style="font-weight: 800; color: #1e3a8a; font-size: 12px;">🚚 REAL ROAD DRIVING ROUTE</div>
+          <div style="font-size: 11px; color: #0f172a; margin-top: 2px;"><b>Driving Distance:</b> ${routeInfo.distanceKm} km</div>
+          ${routeInfo.durationText ? `<div style="font-size: 11px; color: #047857; margin-top: 1px;"><b>Est. Duration:</b> ~${routeInfo.durationText}</div>` : ""}
+        </div>
+      `);
+      layerGroup.addLayer(casing);
+      layerGroup.addLayer(road);
+
+      // Expand bounds with real road coordinates so entire route fits map
+      routeInfo.coordinates.forEach((pt) => bounds.push(pt));
+    } else if (validFarmLat !== null && validFarmLng !== null && selectedWh && selectedWh.latitude && selectedWh.longitude) {
       const swLat = Number(selectedWh.latitude);
       const swLng = Number(selectedWh.longitude);
-      const line = L.polyline(
-        [
-          [validFarmLat, validFarmLng],
-          [swLat, swLng],
-        ],
-        {
-          color: "#2563eb",
-          weight: 3.5,
-          dashArray: "8, 8",
-          opacity: 0.85,
-        }
-      );
-      layerGroup.addLayer(line);
+      if (swLat && swLng) {
+        const line = L.polyline(
+          [
+            [validFarmLat, validFarmLng],
+            [swLat, swLng],
+          ],
+          {
+            color: "#2563eb",
+            weight: 3.5,
+            dashArray: "8, 8",
+            opacity: 0.85,
+          }
+        );
+        layerGroup.addLayer(line);
+      }
     }
 
     if (bounds.length > 0) {
       map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
+    } else {
+      map.setView([22.5, 73.0], 8);
     }
   }, [
-    farmLat,
-    farmLng,
+    validFarmLat,
+    validFarmLng,
     farmName,
     warehouses,
-    selectedWarehouseId,
+    selectedWh,
+    routeInfo,
     onSelectWarehouse,
   ]);
 
-  const selectedWh = warehouses.find((w) => w.id === selectedWarehouseId);
-  const routeDistance = selectedWh ? selectedWh.distanceKm : null;
+  const fallbackDist = selectedWh ? selectedWh.distanceKm : null;
+  const displayDistance = routeInfo.distanceKm !== null ? routeInfo.distanceKm : fallbackDist;
 
   return (
     <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-900 shadow-sm relative">
@@ -229,10 +338,17 @@ function ShipmentWarehouseMap({
         <div className="flex items-center gap-2">
           <MapPin className="h-4 w-4 text-emerald-400" />
           <span className="font-bold text-slate-100">Live Route & Warehouse Proximity Map</span>
+          {routeInfo.loading && (
+            <span className="inline-flex items-center gap-1 text-[10px] text-blue-300 bg-blue-950/80 px-2 py-0.5 rounded border border-blue-800 animate-pulse">
+              <Loader2 className="h-2.5 w-2.5 animate-spin" /> Routing real roads...
+            </span>
+          )}
         </div>
-        {routeDistance !== null && (
-          <span className="text-[11px] bg-blue-900/90 text-blue-200 font-bold px-2.5 py-0.5 rounded border border-blue-700">
-            Route Distance: {routeDistance} km
+        {displayDistance !== null && (
+          <span className="text-[11px] bg-blue-900/90 text-blue-100 font-bold px-2.5 py-0.5 rounded border border-blue-600 shadow-xs flex items-center gap-1.5">
+            <Truck className="h-3 w-3 text-blue-300" />
+            {routeInfo.distanceKm !== null ? `Road Distance: ${displayDistance} km` : `Route Distance: ${displayDistance} km`}
+            {routeInfo.durationText ? ` (~${routeInfo.durationText})` : ""}
           </span>
         )}
       </div>
@@ -246,9 +362,17 @@ function ShipmentWarehouseMap({
             {formatCoords(farmLat, farmLng)}
           </span>
         </div>
+        {routeInfo.durationText && (
+          <div className="text-center">
+            <span className="text-slate-500 font-semibold block text-[10px] uppercase">Est. Drive Time</span>
+            <span className="font-bold text-emerald-700 text-xs flex items-center gap-1 justify-center">
+              <Clock className="h-3 w-3" /> ~{routeInfo.durationText}
+            </span>
+          </div>
+        )}
         <div className="text-right">
           <span className="text-slate-500 font-semibold block text-[10px] uppercase">Selected Warehouse</span>
-          <span className="font-bold text-emerald-800">{selectedWh?.name || "Select Warehouse"}</span>
+          <span className="font-bold text-emerald-800">{selectedWh?.name || "None Selected"}</span>
         </div>
       </div>
     </div>
@@ -269,6 +393,7 @@ function CreateShipment() {
   const [selectedOutboundId, setSelectedOutboundId] = useState("");
   const [selectedWarehouseId, setSelectedWarehouseId] = useState("");
   const [selectedDriverId, setSelectedDriverId] = useState("");
+  const [realRouteInfo, setRealRouteInfo] = useState(null);
 
   const [isAddDriverOpen, setIsAddDriverOpen] = useState(false);
   const [newDriverData, setNewDriverData] = useState({
@@ -313,16 +438,16 @@ function CreateShipment() {
         if (Array.isArray(rawWarehouses) && rawWarehouses.length > 0) {
           const mappedWh = rawWarehouses.map((w) => ({
             id: w.id,
-            name: w.name || w.Name || "Warehouse",
-            code: w.warehouseCode || w.code || "WH-GUJ",
-            district: w.district || w.District || "Gujarat",
+            name: w.name || w.Name || "",
+            code: w.warehouseCode || w.code || "",
+            district: w.district || w.District || "",
             village: w.village || w.Village || "",
-            location: w.location || `${w.village || ""}, ${w.district || "Gujarat"}`,
-            latitude: w.latitude ? Number(w.latitude) : 22.8397,
-            longitude: w.longitude ? Number(w.longitude) : 74.2558,
-            capacityInTons: w.capacityInTons || 5000,
-            utilizedCapacityTons: w.utilizedCapacityTons || 1200,
-            managerName: w.managerName || w.manager || "Manager",
+            location: w.location || [w.village || w.Village, w.district || w.District].filter(Boolean).join(", "),
+            latitude: w.latitude !== null && w.latitude !== undefined && !isNaN(Number(w.latitude)) ? Number(w.latitude) : null,
+            longitude: w.longitude !== null && w.longitude !== undefined && !isNaN(Number(w.longitude)) ? Number(w.longitude) : null,
+            capacityInTons: Number(w.capacityInTons || w.CapacityInTons || 0),
+            utilizedCapacityTons: Number(w.utilizedCapacityTons || w.UtilizedCapacityTons || 0),
+            managerName: w.managerName || w.ManagerName || "",
           }));
           setWarehouses(mappedWh);
           if (mappedWh.length > 0) setSelectedWarehouseId(mappedWh[0].id);
@@ -339,130 +464,106 @@ function CreateShipment() {
         const farmMap = {};
         if (Array.isArray(farms)) {
           farms.forEach((f) => {
-            if (f.id) farmMap[f.id] = f;
-            if (f.farmerId) farmMap[`farmer_${f.farmerId}`] = f;
+            if (f.id) {
+              farmMap[f.id] = f;
+              farmMap[String(f.id).toLowerCase()] = f;
+            }
+            if (f.farmerId) {
+              farmMap[`farmer_${f.farmerId}`] = f;
+              farmMap[`farmer_${String(f.farmerId).toLowerCase()}`] = f;
+            }
           });
         }
 
-        const mockCoordsList = [
-          { lat: 37.4219983, lng: -122.084 }, // Real mobile device GPS coordinates
-          { lat: 22.8397, lng: 74.2558 },
-          { lat: 22.8421, lng: 74.2580 },
-          { lat: 22.8405, lng: 74.2602 },
-          { lat: 22.8450, lng: 74.2510 },
-        ];
-
-        const defaultInbound = [
-          {
-            id: "AGR-LOT-1042A",
-            realLotId: "lot-1042a",
-            farmer: "Ramesh Patel",
-            farmerPhone: "+91 98765 43210",
-            farmerAddress: "Bordi, Dahod District Farm",
-            lat: 37.4219983,
-            lng: -122.084,
-            formattedCoords: formatCoords(37.4219983, -122.084),
-            lotId: "1042-A",
-            milletType: "Ragi (Finger Millet)",
-            quantityKg: 3500,
-            status: "Accepted",
-            pickupLocation: "Bordi Farm #1, Dahod",
-            destination: "Mandya Central Warehouse, Dock A",
-          },
-          {
-            id: "AGR-LOT-8472B",
-            realLotId: "lot-8472b",
-            farmer: "Mahesh Vasava",
-            farmerPhone: "+91 98765 43211",
-            farmerAddress: "Bordi, Farm Sector 2",
-            lat: 22.8397,
-            lng: 74.2558,
-            formattedCoords: formatCoords(22.8397, 74.2558),
-            lotId: "8472-B",
-            milletType: "Little Millet",
-            quantityKg: 4200,
-            status: "Accepted",
-            pickupLocation: "Bordi Farm #2, Dahod",
-            destination: "Mandya Central Warehouse, Dock B",
-          },
-          {
-            id: "AGR-LOT-1038C",
-            realLotId: "lot-1038c",
-            farmer: "Suresh Rathod",
-            farmerPhone: "+91 98765 43212",
-            farmerAddress: "Dahod Central Farm",
-            lat: 22.8421,
-            lng: 74.2580,
-            formattedCoords: formatCoords(22.8421, 74.2580),
-            lotId: "1038-C",
-            milletType: "Foxtail Millet",
-            quantityKg: 2800,
-            status: "Accepted",
-            pickupLocation: "Dahod Main Farm Sector 3",
-            destination: "Mandya Central Warehouse, Dock C",
-          },
-          {
-            id: "AGR-LOT-2026D",
-            realLotId: "lot-2026d",
-            farmer: "Ramesh Patel",
-            farmerPhone: "+91 98765 43210",
-            farmerAddress: "Bordi North Farm",
-            lat: 22.8405,
-            lng: 74.2602,
-            formattedCoords: formatCoords(22.8405, 74.2602),
-            lotId: "2026-D",
-            milletType: "Bajra (Pearl Millet)",
-            quantityKg: 5000,
-            status: "Accepted",
-            pickupLocation: "Bordi Farm #4, Dahod",
-            destination: "Mandya Central Warehouse, Dock A",
-          },
-        ];
-
         let mappedInbound = [];
         if (Array.isArray(lots) && lots.length > 0) {
-          mappedInbound = lots.map((l, index) => {
-            const lotCode = l.lotNumber || (typeof l.id === "string" ? l.id.slice(0, 6).toUpperCase() : "LOT");
-            const matchedFarmer = farmerMap[l.farmerId] || farmerMap[(l.farmerName || "").toLowerCase()];
-            const matchedFarm = farmMap[l.farmId] || farmMap[`farmer_${l.farmerId}`];
+          // Strictly filter to ONLY lots whose agreement has been accepted!
+          const acceptedLots = lots.filter((l) => {
+            const st = (l.status || "").toUpperCase().trim();
+            return st === "AGREEMENT_ACCEPTED" || st === "ACCEPTED";
+          });
 
-            const phone = l.farmerPhone || l.phone || l.phoneNumber || matchedFarmer?.phone || matchedFarmer?.phoneNumber || "+91 98765 43210";
-            const addr = l.farmerAddress || l.address || matchedFarmer?.address || matchedFarmer?.location || l.farmName || "Bordi Farm, Dahod";
+          mappedInbound = acceptedLots.map((l, index) => {
+            const lotCode = l.lotNumber || (typeof l.id === "string" ? l.id.slice(0, 6).toUpperCase() : "LOT");
+            const matchedFarmer =
+              farmerMap[l.farmerId] ||
+              farmerMap[String(l.farmerId || "").toLowerCase()] ||
+              farmerMap[(l.farmerName || "").toLowerCase()];
+
+            const matchedFarm =
+              farmMap[l.farmId] ||
+              farmMap[String(l.farmId || "").toLowerCase()] ||
+              farmMap[`farmer_${l.farmerId}`] ||
+              farmMap[`farmer_${String(l.farmerId || "").toLowerCase()}`];
+
+            const phone = l.farmerPhone || l.phone || l.phoneNumber || matchedFarmer?.phone || matchedFarmer?.phoneNumber || "";
+
+            // Farm location resolution:
+            // Pickup location is the actual farm land location, NOT the farmer's personal residential address.
+            const farmName = matchedFarm?.farmName || l.farmName;
+            const village = matchedFarm?.village || l.farmVillage;
+            const taluka = matchedFarm?.taluka || l.farmTaluka;
+            const district = matchedFarm?.district || l.farmDistrict;
+
+            const locParts = [];
+            if (village) locParts.push(village);
+            if (taluka && !locParts.some((p) => p.toLowerCase().includes(taluka.toLowerCase()))) {
+              locParts.push(taluka);
+            }
+            if (district && !locParts.some((p) => p.toLowerCase().includes(district.toLowerCase()))) {
+              locParts.push(district);
+            }
+
+            const geoLoc = locParts.join(", ");
+            let farmLocation = "";
+            if (farmName && geoLoc && farmName.toLowerCase() !== "farm" && farmName.toLowerCase() !== village?.toLowerCase()) {
+              farmLocation = `${farmName}, ${geoLoc}`;
+            } else if (geoLoc) {
+              farmLocation = geoLoc;
+            } else if (farmName && farmName.toLowerCase() !== "farm") {
+              farmLocation = farmName;
+            } else {
+              farmLocation = l.farmerAddress || matchedFarmer?.address || "Farm Location";
+            }
+
+            const farmerAddress = matchedFarmer?.address || l.farmerAddress || "";
 
             let rawLat = l.farmLatitude ?? l.latitude ?? matchedFarm?.latitude ?? matchedFarmer?.latitude;
             let rawLng = l.farmLongitude ?? l.longitude ?? matchedFarm?.longitude ?? matchedFarmer?.longitude;
 
-            if (rawLat === null || rawLat === undefined || rawLat === 0) {
-              const fallback = mockCoordsList[index % mockCoordsList.length];
-              rawLat = fallback.lat;
-              rawLng = fallback.lng;
-            }
-
-            const lat = Number(rawLat);
-            const lng = Number(rawLng);
+            const lat = (rawLat !== null && rawLat !== undefined && rawLat !== "" && !isNaN(Number(rawLat)) && Number(rawLat) !== 0)
+              ? Number(rawLat)
+              : null;
+            const lng = (rawLng !== null && rawLng !== undefined && rawLng !== "" && !isNaN(Number(rawLng)) && Number(rawLng) !== 0)
+              ? Number(rawLng)
+              : null;
 
             return {
               id: `AGR-${lotCode}`,
               realLotId: l.id,
-              farmer: l.farmerName || matchedFarmer?.fullName || "Farmer Member",
+              farmer: l.farmerName || matchedFarmer?.fullName || "",
               farmerPhone: phone,
-              farmerAddress: addr,
+              farmerAddress: farmerAddress,
+              farmLocation: farmLocation,
+              farmName: farmName || "",
               lat: lat,
               lng: lng,
               formattedCoords: formatCoords(lat, lng),
               lotId: lotCode,
-              milletType: l.cropName || l.farmCrop || l.milletType || "Finger Millet",
-              quantityKg: Number(l.agreedQuantityKg || l.actualQuantityKg || l.estimatedQuantityKg || 2500),
-              status: l.status || "Accepted",
-              pickupLocation: addr,
-              destination: "Mandya Central Warehouse, Dock A",
+              milletType: l.cropName || l.farmCrop || l.milletType || "",
+              quantityKg: Number(l.agreedQuantityKg || l.actualQuantityKg || l.estimatedQuantityKg || 0),
+              status: l.status || "AGREEMENT_ACCEPTED",
+              pickupLocation: farmLocation,
+              destination: l.destinationWarehouse || l.warehouseName || l.destination || "",
             };
           });
         }
 
-        const finalInbound = mappedInbound.length > 0 ? mappedInbound : defaultInbound;
+        const finalInbound = mappedInbound;
+
         const availableInbound = finalInbound.filter(
           (agr) =>
+            ((agr.status || "").toUpperCase().trim() === "AGREEMENT_ACCEPTED" || (agr.status || "").toUpperCase().trim() === "ACCEPTED") &&
             !shippedIds.has(agr.id) &&
             !shippedIds.has(agr.lotId) &&
             !shippedIds.has(agr.realLotId)
@@ -477,16 +578,16 @@ function CreateShipment() {
             return {
               id: `PPA-${code}`,
               realBatchId: b.id,
-              processor: b.processorName || "Processor / SHG",
-              processorType: "Processor",
+              processor: b.processorName || b.processor || "",
+              processorType: b.processorType || "Processor",
               batchId: code,
               sourceLotId: b.lotId || "-",
-              milletType: b.milletType || "Millet",
+              milletType: b.milletType || "",
               quantityKg: Number(b.quantityKg || 0),
               availableStockKg: Number(b.quantityKg || 0),
-              status: "Approved",
-              sourceWarehouse: b.warehouseName || "Mandya Central Warehouse",
-              destination: b.destination || "Processing Plant",
+              status: b.status || "Approved",
+              sourceWarehouse: b.warehouseName || "",
+              destination: b.destination || "",
             };
           });
           setOutboundAgreements(mapped);
@@ -566,11 +667,20 @@ function CreateShipment() {
 
   const warehousesWithDistance = useMemo(() => {
     if (!warehouses || warehouses.length === 0) return [];
-    const farmLat = Number(activeInbound?.lat) || 22.8397;
-    const farmLng = Number(activeInbound?.lng) || 74.2558;
+    const farmLat =
+      activeInbound?.lat !== null && activeInbound?.lat !== undefined && !isNaN(Number(activeInbound.lat))
+        ? Number(activeInbound.lat)
+        : null;
+    const farmLng =
+      activeInbound?.lng !== null && activeInbound?.lng !== undefined && !isNaN(Number(activeInbound.lng))
+        ? Number(activeInbound.lng)
+        : null;
 
     const list = warehouses.map((w) => {
-      const dist = calculateDistanceKm(farmLat, farmLng, w.latitude, w.longitude);
+      const dist =
+        farmLat !== null && farmLng !== null && w.latitude !== null && w.longitude !== null
+          ? calculateDistanceKm(farmLat, farmLng, w.latitude, w.longitude)
+          : null;
       return { ...w, distanceKm: dist };
     });
 
@@ -583,7 +693,7 @@ function CreateShipment() {
 
     return list.map((w) => ({
       ...w,
-      isNearest: w.distanceKm !== null && w.distanceKm === min,
+      isNearest: min !== Infinity && w.distanceKm !== null && w.distanceKm === min,
     }));
   }, [warehouses, activeInbound]);
 
@@ -591,7 +701,9 @@ function CreateShipment() {
     warehousesWithDistance.find((w) => w.id === selectedWarehouseId) ||
     warehousesWithDistance.find((w) => w.isNearest) ||
     warehousesWithDistance[0] ||
-    {};
+    null;
+
+  const selectedDriver = drivers.find((d) => d.id === selectedDriverId);
 
   const handleCreate = async () => {
     setSubmitting(true);
@@ -603,45 +715,50 @@ function CreateShipment() {
         const payload = {
           direction: "INBOUND",
           warehouseId: isValidGuid(targetWhId) ? targetWhId : null,
-          agreementId: activeInbound.id || "AGR-LOT-1042A",
-          lotId: activeInbound.lotId || "1042-A",
-          farmerOrProcessorName: activeInbound.farmer || "Ramesh Patel",
-          milletType: activeInbound.milletType || "Finger Millet",
-          totalQuantityKg: Number(activeInbound.quantityKg || 3500),
-          sourceAddress: activeInbound.farmerAddress || activeInbound.pickupLocation || "Bordi Farm, Dahod",
+          agreementId: activeInbound.id || "",
+          lotId: activeInbound.lotId || activeInbound.realLotId || "",
+          farmerOrProcessorName: activeInbound.farmer || "",
+          milletType: activeInbound.milletType || "",
+          totalQuantityKg: Number(activeInbound.quantityKg || 0),
+          sourceAddress: activeInbound.farmLocation || activeInbound.pickupLocation || activeInbound.farmerAddress || "",
           destinationAddress: selectedWarehouse?.name
-            ? `${selectedWarehouse.name} (${selectedWarehouse.location})`
-            : activeInbound.destination || "Dahod Rural Grain Warehouse",
+            ? `${selectedWarehouse.name}${selectedWarehouse.location ? ` (${selectedWarehouse.location})` : ""}`
+            : (activeInbound.destination || ""),
           transportResponsibility: inboundTransport || "FPO Pickup",
-          vehicleNumber: inboundVehicle || "KA-09-AB-4521",
-          vehicleCapacityKg: 7000,
-          driverName: inboundDriver || "Mukesh Parmar",
-          driverPhone: inboundDriverPhone || "+91 98765 43210",
-          scheduledDate: inboundDate ? new Date(inboundDate).toISOString() : new Date().toISOString(),
+          vehicleNumber: inboundVehicle || "",
+          vehicleCapacityKg: Number(selectedDriver?.vehicleCapacityKg || 7000),
+          driverName: inboundDriver || "",
+          driverPhone: inboundDriverPhone || "",
           scheduledDate: inboundDate,
           scheduledStartTime: inboundTime,
           specialInstructions: inboundInstructions || "",
+          pickupLatitude: (activeInbound?.lat !== null && activeInbound?.lat !== undefined && !isNaN(Number(activeInbound.lat))) ? Number(activeInbound.lat) : null,
+          pickupLongitude: (activeInbound?.lng !== null && activeInbound?.lng !== undefined && !isNaN(Number(activeInbound.lng))) ? Number(activeInbound.lng) : null,
+          destinationLatitude: selectedWarehouse?.latitude !== null && selectedWarehouse?.latitude !== undefined && !isNaN(Number(selectedWarehouse.latitude)) ? Number(selectedWarehouse.latitude) : null,
+          destinationLongitude: selectedWarehouse?.longitude !== null && selectedWarehouse?.longitude !== undefined && !isNaN(Number(selectedWarehouse.longitude)) ? Number(selectedWarehouse.longitude) : null,
           status: "SCHEDULED",
         };
         await logisticsApi.create(payload);
       } else {
+        const dispatchQty = Number(outboundDispatchQty || 0);
+        const availableStock = Number(activeOutbound.availableStockKg || 0);
         const payload = {
           direction: "OUTBOUND",
-          agreementId: activeOutbound.id || "PPA-2026-004",
-          lotId: activeOutbound.sourceLotId || "LOT-001",
-          batchId: activeOutbound.batchId || "WB-004",
-          farmerOrProcessorName: activeOutbound.processor || "Processor / SHG",
+          agreementId: activeOutbound.id || "",
+          lotId: activeOutbound.sourceLotId || "",
+          batchId: activeOutbound.batchId || "",
+          farmerOrProcessorName: activeOutbound.processor || "",
           processorType: activeOutbound.processorType || "Processor",
-          milletType: activeOutbound.milletType || "Finger Millet",
-          totalQuantityKg: Number(outboundDispatchQty || 1000),
-          warehouseStockAfterDispatchKg: (activeOutbound.availableStockKg || 5000) - Number(outboundDispatchQty || 1000),
-          sourceAddress: activeOutbound.sourceWarehouse || "Mandya Central Warehouse",
-          destinationAddress: activeOutbound.destination || "Processing Plant",
+          milletType: activeOutbound.milletType || "",
+          totalQuantityKg: dispatchQty,
+          warehouseStockAfterDispatchKg: availableStock - dispatchQty,
+          sourceAddress: activeOutbound.sourceWarehouse || "",
+          destinationAddress: activeOutbound.destination || "",
           transportResponsibility: outboundTransport || "Processor Pickup",
-          vehicleNumber: outboundVehicle || "MH-31-AG-8892",
-          vehicleCapacityKg: 7000,
-          driverName: outboundDriver || "Suresh Deshmukh",
-          driverPhone: outboundDriverPhone || "+91 98765 43210",
+          vehicleNumber: outboundVehicle || "",
+          vehicleCapacityKg: Number(selectedDriver?.vehicleCapacityKg || 7000),
+          driverName: outboundDriver || "",
+          driverPhone: outboundDriverPhone || "",
           scheduledDate: outboundDate,
           scheduledStartTime: outboundTime,
           specialInstructions: outboundInstructions || "",
@@ -718,32 +835,14 @@ function CreateShipment() {
             </CardHeader>
             <CardContent className="pt-4 space-y-4">
               {/* Filter controls inside table box */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="relative">
+              <div className="flex items-center gap-3">
+                <div className="relative w-full max-w-sm">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
                   <Input
                     placeholder="Search agreements..."
                     className="pl-8 h-8 text-xs bg-slate-50 border-slate-200"
                   />
                 </div>
-                <Select defaultValue="All">
-                  <SelectTrigger className="h-8 text-xs bg-slate-50 border-slate-200">
-                    <SelectValue placeholder="Millet Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="All">Millet Type (All)</SelectItem>
-                    <SelectItem value="Pearl Millet">Pearl Millet</SelectItem>
-                    <SelectItem value="Finger Millet">Finger Millet</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select defaultValue="Mandya">
-                  <SelectTrigger className="h-8 text-xs bg-slate-50 border-slate-200">
-                    <SelectValue placeholder="Warehouse" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Mandya">Mandya Warehouse</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
 
               {/* Table listing agreements */}
@@ -794,9 +893,9 @@ function CreateShipment() {
                               </p>
                             </td>
                             <td className="p-3 min-w-[180px]">
-                              <p className="text-slate-700 text-[11px] flex items-start gap-1">
+                              <p className="text-slate-700 text-[11px] flex items-start gap-1 font-medium">
                                 <MapPin className="h-3.5 w-3.5 text-emerald-700 shrink-0 mt-0.5" />
-                                <span>{agr.farmerAddress}</span>
+                                <span>{agr.farmLocation}</span>
                               </p>
                               <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold mt-1">
                                 <Compass className="h-3 w-3 text-slate-500" />
@@ -919,11 +1018,16 @@ function CreateShipment() {
                     </div>
 
                     <div className="col-span-1 sm:col-span-3 border-t border-slate-200/80 pt-3">
-                      <span className="text-slate-500 block text-[11px] font-medium">Farmer Address & Farm Location</span>
+                      <span className="text-slate-500 block text-[11px] font-medium">Farm Location (Pickup Origin)</span>
                       <span className="font-bold text-slate-900 flex items-center gap-1.5 mt-1 text-xs">
                         <MapPin className="h-4 w-4 text-emerald-700 shrink-0" />
-                        {activeInbound.farmerAddress || activeInbound.pickupLocation || "N/A"}
+                        {activeInbound.farmLocation || activeInbound.pickupLocation || "N/A"}
                       </span>
+                      {activeInbound.farmerAddress && activeInbound.farmerAddress !== activeInbound.farmLocation && (
+                        <span className="text-slate-500 text-[10px] block mt-1 pl-5.5">
+                          Farmer Home Address: {activeInbound.farmerAddress}
+                        </span>
+                      )}
 
                       {/* Exact Farm Geolocation Coordinates Badge */}
                       <div className="mt-2.5 flex flex-wrap items-center gap-2">
@@ -931,14 +1035,16 @@ function CreateShipment() {
                           <Compass className="h-3.5 w-3.5 text-emerald-700" />
                           Real Farm GPS Coordinates: {activeInbound.formattedCoords || formatCoords(activeInbound.lat, activeInbound.lng)}
                         </span>
-                        <a
-                          href={`https://www.google.com/maps/search/?api=1&query=${activeInbound.lat || 37.4219983},${activeInbound.lng || -122.084}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-emerald-700 hover:text-emerald-900 font-bold hover:underline flex items-center gap-1"
-                        >
-                          View on Google Maps ↗
-                        </a>
+                        {activeInbound.lat && activeInbound.lng ? (
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${activeInbound.lat},${activeInbound.lng}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-emerald-700 hover:text-emerald-900 font-bold hover:underline flex items-center gap-1"
+                          >
+                            View on Google Maps ↗
+                          </a>
+                        ) : null}
                       </div>
                     </div>
 
@@ -948,11 +1054,16 @@ function CreateShipment() {
                           <Building2 className="h-4 w-4 text-emerald-800" />
                           Select Destination Warehouse (Gujarat Network)
                         </span>
-                        {selectedWarehouse?.isNearest && (
+                        {realRouteInfo?.distanceKm ? (
+                          <Badge className="bg-blue-100 text-blue-900 border-blue-300 font-bold text-[10px] flex items-center gap-1">
+                            <Truck className="h-3 w-3" />
+                            Real Road Distance: {realRouteInfo.distanceKm} km {realRouteInfo.durationText ? `(~${realRouteInfo.durationText})` : ""}
+                          </Badge>
+                        ) : selectedWarehouse?.isNearest ? (
                           <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 font-bold text-[10px] animate-pulse">
                             ⚡ NEAREST WAREHOUSE ({selectedWarehouse.distanceKm} km away)
                           </Badge>
-                        )}
+                        ) : null}
                       </div>
 
                       <Select
@@ -983,10 +1094,11 @@ function CreateShipment() {
                     <ShipmentWarehouseMap
                       farmLat={activeInbound.lat}
                       farmLng={activeInbound.lng}
-                      farmName={activeInbound.farmerAddress}
+                      farmName={activeInbound.farmLocation || activeInbound.farmName || "Farm Location"}
                       warehouses={warehousesWithDistance}
                       selectedWarehouseId={selectedWarehouseId || selectedWarehouse?.id}
                       onSelectWarehouse={(id) => setSelectedWarehouseId(id)}
+                      onRouteCalculated={setRealRouteInfo}
                     />
                   </div>
                 </div>
@@ -1199,7 +1311,9 @@ function CreateShipment() {
               <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-start gap-2.5">
                 <CheckCircle2 className="h-4 w-4 text-emerald-700 shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-bold text-emerald-900">Vehicle Capacity: 7,000 kg</p>
+                  <p className="font-bold text-emerald-900">
+                    Vehicle Capacity: {Number(selectedDriver?.vehicleCapacityKg || 7000).toLocaleString("en-IN")} kg
+                  </p>
                   <p className="text-[11px] text-emerald-700 mt-0.5">
                     {direction === "INBOUND"
                       ? "Vehicle capacity is sufficient for the expected quantity."
@@ -1356,6 +1470,20 @@ function CreateShipment() {
                        {inboundDate} ({inboundTime})
                     </span>
                   </div>
+                  <div className="flex justify-between border-t border-slate-100 pt-2">
+                    <span className="text-slate-500">Real Road Distance</span>
+                    <span className="font-bold text-blue-900 font-mono">
+                      {realRouteInfo?.distanceKm ? `${realRouteInfo.distanceKm} km` : selectedWarehouse?.distanceKm ? `${selectedWarehouse.distanceKm} km (est.)` : "N/A"}
+                    </span>
+                  </div>
+                  {realRouteInfo?.durationText && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Est. Driving Duration</span>
+                      <span className="font-bold text-emerald-800 font-mono">
+                        ~{realRouteInfo.durationText}
+                      </span>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3 border-b border-slate-100 pb-3">
@@ -1403,7 +1531,7 @@ function CreateShipment() {
                   <span className="text-slate-900 font-medium flex items-center gap-1 mt-0.5">
                     <MapPin className="h-3 w-3 text-emerald-700 shrink-0" />
                     {direction === "INBOUND"
-                      ? (activeInbound.farmerAddress || activeInbound.pickupLocation)
+                      ? (activeInbound.farmLocation || activeInbound.pickupLocation)
                       : activeOutbound.sourceWarehouse}
                   </span>
                 </div>
@@ -1412,8 +1540,10 @@ function CreateShipment() {
                   <span className="text-slate-900 font-medium flex items-center gap-1 mt-0.5">
                     <Building2 className="h-3 w-3 text-slate-600 shrink-0" />
                     {direction === "INBOUND"
-                      ? activeInbound.destination
-                      : activeOutbound.destination}
+                      ? (selectedWarehouse?.name
+                          ? `${selectedWarehouse.name}${selectedWarehouse.location ? ` (${selectedWarehouse.location})` : ""}`
+                          : (activeInbound.destination || "N/A"))
+                      : (activeOutbound.destination || "N/A")}
                   </span>
                 </div>
               </div>

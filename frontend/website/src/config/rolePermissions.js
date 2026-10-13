@@ -56,9 +56,9 @@ export const ROLE_CONFIGS = {
             label: "Warehouse & Inventory",
             icon: Warehouse,
             items: [
-              { to: "/inventory", icon: Warehouse, label: "Inventory", end: true },
-              { to: "/inventory/movements", icon: Factory, label: "Stock Movements" },
               { to: "/warehouses", icon: Warehouse, label: "Warehouses", end: true },
+              { to: "/warehouses/receiving", icon: FileCheck, label: "Warehouse Receiving" },
+              { to: "/inventory/movements", icon: Factory, label: "Stock Movements" },
               { to: "/warehouses/lots", icon: Package, label: "Lot Allocation" },
             ],
           },
@@ -171,10 +171,9 @@ export const ROLE_CONFIGS = {
       {
         title: "WAREHOUSE OPERATIONS",
         items: [
-          { to: "/inventory", icon: Warehouse, label: "Inventory" },
+          { to: "/warehouses", icon: Building2, label: "Warehouses" },
           { to: "/warehouses/receiving", icon: FileCheck, label: "Warehouse Receiving" },
           { to: "/inventory/movements", icon: Factory, label: "Stock Movements" },
-          { to: "/warehouses", icon: Building2, label: "Warehouses" },
           { to: "/warehouses/lots", icon: Package, label: "Lot Allocation" },
         ],
       },
@@ -182,7 +181,7 @@ export const ROLE_CONFIGS = {
         title: "PROCUREMENT",
         items: [
           { to: "/procurement-lots", icon: Package, label: "Procurement Lots" },
-          { to: "/quality?tab=history", icon: ClipboardCheck, label: "Quality Results" },
+          { to: "/quality?tab=certifications", icon: ClipboardCheck, label: "Quality Results" },
         ],
       },
       {
@@ -231,7 +230,6 @@ export const ROLE_CONFIGS = {
         title: "INVENTORY",
         items: [
           { to: "/warehouses", icon: Warehouse, label: "Warehouses" },
-          { to: "/inventory", icon: Package, label: "Available Stock" },
         ],
       },
       {

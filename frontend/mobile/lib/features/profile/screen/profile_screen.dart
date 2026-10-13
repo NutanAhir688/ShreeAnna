@@ -9,6 +9,10 @@ import '../../../l10n/generated/app_localizations.dart';
 import '../../auth/screen/welcome_screen.dart';
 import '../../support/screen/support_screen.dart';
 import '../../driver/screens/driver_journey_screen.dart';
+import 'edit_profile_screen.dart';
+import 'notifications_screen.dart';
+import 'terms_conditions_screen.dart';
+import 'privacy_policy_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -339,11 +343,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
 
                 IconButton(
-                  onPressed: () {
-                    debugPrint('Edit profile pressed');
-
-                    // TODO:
-                    // Open edit profile screen.
+                  onPressed: () async {
+                    final updated = await Navigator.push<Farmer?>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => EditProfileScreen(farmer: farmer),
+                      ),
+                    );
+                    if (updated != null) {
+                      _refreshProfile();
+                    }
                   },
                   icon: const Icon(
                     Icons.edit_outlined,
@@ -549,13 +558,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             child: Column(
               children: [
-                _buildActionTile(
-                  icon: Icons.lock_outline,
-                  title: 'Change Password',
-                  onTap: () {
-                    debugPrint('Change password pressed');
-                  },
-                ),
+                // _buildActionTile(
+                //   icon: Icons.lock_outline,
+                //   title: 'Change Password',
+                //   onTap: () {
+                //     debugPrint('Change password pressed');
+                //   },
+                // ),
 
                 _buildDivider(),
 
@@ -563,7 +572,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   icon: Icons.notifications_none,
                   title: 'Notifications',
                   onTap: () {
-                    debugPrint('Notifications pressed');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+                    );
                   },
                 ),
 
@@ -638,7 +650,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   icon: Icons.description_outlined,
                   title: 'Terms & Conditions',
                   onTap: () {
-                    debugPrint('Terms pressed');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const TermsConditionsScreen()),
+                    );
                   },
                 ),
 
@@ -648,7 +663,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   icon: Icons.privacy_tip_outlined,
                   title: 'Privacy Policy',
                   onTap: () {
-                    debugPrint('Privacy policy pressed');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
+                    );
                   },
                 ),
               ],

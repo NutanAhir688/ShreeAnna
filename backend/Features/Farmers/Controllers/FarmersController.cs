@@ -94,12 +94,47 @@ public class FarmersController : ControllerBase
         return Ok(farmer);
     }
 
+    [HttpPut("me")]
+    [Authorize(Roles = Roles.Farmer)]
+    public async Task<ActionResult<FarmerResponse>> UpdateMe(UpdateFarmerRequest request)
+    {
+        var farmerIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(farmerIdClaim, out var farmerId))
+        {
+            return Unauthorized();
+        }
+
+        var farmer = await _farmerService.UpdateAsync(farmerId, request);
+        if (farmer is null)
+        {
+            return NotFound(new
+            {
+                message = "Farmer profile not found."
+            });
+        }
+
+        return Ok(farmer);
+    }
+
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = Roles.FpoManager)]
+    [Authorize]
     public async Task<ActionResult<FarmerResponse>> Update(
         Guid id,
         UpdateFarmerRequest request)
     {
+        if (User.IsInRole(Roles.Farmer))
+        {
+            var farmerIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!Guid.TryParse(farmerIdClaim, out var farmerId) || farmerId != id)
+            {
+                return Forbid();
+            }
+        }
+        else if (!User.IsInRole(Roles.FpoManager))
+        {
+            return Forbid();
+        }
+
         var farmer = await _farmerService.UpdateAsync(id, request);
 
         if (farmer is null)

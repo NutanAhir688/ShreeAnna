@@ -36,7 +36,7 @@ dependencies:
   flutter_svg: ^2.3.0
   flutter_launcher_icons: ^0.14.4
   image_picker: ^0.8.7+5
-  geolocator: ^9.0.2
+  geolocator: ^14.1.1
   http: ^1.6.0
   flutter_secure_storage: ^11.0.0
   flutter_localizations:
@@ -47,6 +47,11 @@ dependencies:
   path: ^1.9.0
   pdf: ^3.11.1
   qr_flutter: ^4.1.0
+  flutter_map: ^8.3.2
+  latlong2: ^0.10.1
+  flutter_local_notifications: ^22.3.2
+  url_launcher: ^6.3.3
+  flutter_dotenv: ^6.0.1
 
 dev_dependencies:
   flutter_test:
@@ -72,6 +77,7 @@ flutter:
   generate: true
   # To add assets to your application, add an assets section, like this:
   assets:
+    - .env
     - assets/images/logo.svg
     - assets/data/gujarat_land_records.json
   #   - images/a_dot_burr.jpeg

@@ -7,6 +7,8 @@ using backend.Features.Quality.Entities;
 using backend.Features.Warehouses.Entities;
 using backend.Features.Inventory.Entities;
 using backend.Features.Logistics.Entities;
+using backend.Features.Notifications.Entities;
+using backend.Features.Settlements.Entities;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -58,6 +60,9 @@ public class AppDbContext : DbContext
     public DbSet<ShipmentIssue> ShipmentIssues => Set<ShipmentIssue>();
     public DbSet<FarmCrop> FarmCrops => Set<FarmCrop>();
     public DbSet<Driver> Drivers => Set<Driver>();
+    public DbSet<DriverLocationLog> DriverLocationLogs => Set<DriverLocationLog>();
+    public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<Settlement> Settlements => Set<Settlement>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -84,6 +89,20 @@ public class AppDbContext : DbContext
         ConfigureProcurementLot(modelBuilder);
         ConfigureFarmCrop(modelBuilder);
         ConfigureDriver(modelBuilder);
+        ConfigureDriverLocationLog(modelBuilder);
+    }
+
+    private static void ConfigureDriverLocationLog(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<DriverLocationLog>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.DriverIdOrPhone).IsRequired().HasMaxLength(150);
+            entity.Property(x => x.Latitude).HasPrecision(10, 7);
+            entity.Property(x => x.Longitude).HasPrecision(10, 7);
+            entity.Property(x => x.AccuracyMeters).HasPrecision(10, 2);
+            entity.HasIndex(x => x.LotId);
+        });
     }
 
     private static void ConfigureDriver(ModelBuilder modelBuilder)

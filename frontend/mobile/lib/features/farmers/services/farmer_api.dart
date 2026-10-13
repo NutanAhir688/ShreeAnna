@@ -31,6 +31,42 @@ class FarmerApi {
     throw Exception('Failed to load farmer profile.');
   }
 
+  Future<Farmer> updateProfile({
+    required String fullName,
+    required String phone,
+    required String email,
+    required String address,
+    required String district,
+    required String taluka,
+    required String village,
+    DateTime? dateOfBirth,
+  }) async {
+    final response = await _apiClient.put(
+      ApiConfig.farmerMe,
+      body: {
+        'fullName': fullName,
+        'phone': phone,
+        'email': email,
+        'address': address,
+        'district': district,
+        'taluka': taluka,
+        'village': village,
+        'dateOfBirth': (dateOfBirth ?? DateTime.utc(1990, 1, 1)).toIso8601String(),
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      return Farmer.fromJson(json);
+    }
+
+    if (response.statusCode == 401) {
+      throw Exception('Your session has expired. Please login again.');
+    }
+
+    throw Exception('Failed to update profile: ${response.body}');
+  }
+
   Future<void> registerFarmer({
     required String fullName,
     required String phone,

@@ -489,8 +489,8 @@ class PdfGenerator {
                       child: pw.Column(
                         crossAxisAlignment: pw.CrossAxisAlignment.start,
                         children: [
-                          pw.Text('BLOCKCHAIN REGISTRY AUTHENTICITY', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
-                          pw.SizedBox(height: 2),
+                          // pw.Text('BLOCKCHAIN REGISTRY AUTHENTICITY', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+                          // pw.SizedBox(height: 2),
                           pw.Text('Verification URL: https://shreeanna.gov.in/verify?cert=$certNum', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey800)),
                         ],
                       ),
@@ -734,6 +734,296 @@ class PdfGenerator {
                       pw.Text('FPO Procurement Office', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
                       pw.SizedBox(height: 2),
                       pw.Text('System Generated Verification Seal', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    return pdf.save();
+  }
+
+  /// Generates a binary PDF for Farmer Settlement & Disbursement Bill
+  static Future<Uint8List> generateSettlementBillPdf({
+    required String settlementCode,
+    required String orderId,
+    required String lotNumber,
+    required String milletType,
+    required String farmerName,
+    required String buyerOrg,
+    required double quantity,
+    required double pricePerKg,
+    required double grossAmount,
+    required double fpoMargin,
+    required double transportCost,
+    required double otherCharges,
+    required double finalPayout,
+    required String status,
+    required String paymentMethod,
+    required String transactionId,
+    required String paymentDate,
+  }) async {
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // Header Banner
+              pw.Container(
+                padding: const pw.EdgeInsets.all(16),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.green900,
+                  borderRadius: pw.BorderRadius.circular(8),
+                ),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          'SHREE ANNA PROCUREMENT COOPERATIVE',
+                          style: pw.TextStyle(
+                            color: PdfColors.white,
+                            fontSize: 13,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                        pw.SizedBox(height: 4),
+                        pw.Text(
+                          'OFFICIAL FARMER SETTLEMENT BILL & PAYMENT VOUCHER',
+                          style: pw.TextStyle(
+                            color: PdfColors.green100,
+                            fontSize: 8.5,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    pw.Container(
+                      padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: pw.BoxDecoration(
+                        color: PdfColors.white,
+                        borderRadius: pw.BorderRadius.circular(4),
+                      ),
+                      child: pw.Text(
+                        status.toUpperCase(),
+                        style: pw.TextStyle(
+                          color: PdfColors.green900,
+                          fontSize: 10,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              pw.SizedBox(height: 18),
+
+              // Metadata Row
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('BILL / SETTLEMENT ID', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey700, fontWeight: pw.FontWeight.bold)),
+                      pw.Text(settlementCode, style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: PdfColors.green900)),
+                      pw.SizedBox(height: 4),
+                      pw.Text('ORDER REF: $orderId', style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700)),
+                    ],
+                  ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text('DISBURSEMENT DATE', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey700, fontWeight: pw.FontWeight.bold)),
+                      pw.Text(paymentDate, style: pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold)),
+                      pw.SizedBox(height: 4),
+                      pw.Text('LOT: $lotNumber', style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700)),
+                    ],
+                  ),
+                ],
+              ),
+
+              pw.SizedBox(height: 14),
+              pw.Divider(color: PdfColors.grey300),
+              pw.SizedBox(height: 10),
+
+              // Parties Info
+              pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Expanded(
+                    child: pw.Container(
+                      padding: const pw.EdgeInsets.all(10),
+                      decoration: pw.BoxDecoration(
+                        color: PdfColors.grey100,
+                        borderRadius: pw.BorderRadius.circular(6),
+                      ),
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text('BENEFICIARY FARMER', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.green800)),
+                          pw.SizedBox(height: 4),
+                          pw.Text(farmerName, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+                          pw.SizedBox(height: 2),
+                          pw.Text('Direct Bank Transfer Beneficiary', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  pw.SizedBox(width: 12),
+                  pw.Expanded(
+                    child: pw.Container(
+                      padding: const pw.EdgeInsets.all(10),
+                      decoration: pw.BoxDecoration(
+                        color: PdfColors.grey100,
+                        borderRadius: pw.BorderRadius.circular(6),
+                      ),
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text('BUYER / FPO ENTITY', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.green800)),
+                          pw.SizedBox(height: 4),
+                          pw.Text(buyerOrg, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+                          pw.SizedBox(height: 2),
+                          pw.Text('Central Millet Procurement Center', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              pw.SizedBox(height: 16),
+              pw.Text('SETTLEMENT BREAKDOWN & CALCULATION', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.green900)),
+              pw.SizedBox(height: 8),
+
+              // Itemized Table
+              pw.Container(
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(color: PdfColors.grey300),
+                  borderRadius: pw.BorderRadius.circular(6),
+                ),
+                child: pw.Column(
+                  children: [
+                    // Header
+                    pw.Container(
+                      padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                      decoration: const pw.BoxDecoration(
+                        color: PdfColors.grey200,
+                        borderRadius: pw.BorderRadius.vertical(top: pw.Radius.circular(5)),
+                      ),
+                      child: pw.Row(
+                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                        children: [
+                          pw.Text('DESCRIPTION', style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
+                          pw.Text('AMOUNT (INR)', style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
+                        ],
+                      ),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(10),
+                      child: pw.Column(
+                        children: [
+                          _pdfRow('Procured Commodity & Variety', milletType),
+                          pw.SizedBox(height: 4),
+                          _pdfRow('Procured Quantity', '${quantity.toStringAsFixed(1)} kg'),
+                          pw.SizedBox(height: 4),
+                          _pdfRow('Agreed Price Rate', 'Rs. ${pricePerKg.toStringAsFixed(2)} / kg'),
+                          pw.SizedBox(height: 4),
+                          _pdfRow('Gross Procurement Value', 'Rs. ${grossAmount.toStringAsFixed(2)}'),
+                          pw.Divider(color: PdfColors.grey200),
+                          _pdfRow('FPO Facilitation Fee (5%)', '- Rs. ${fpoMargin.toStringAsFixed(2)}'),
+                          pw.SizedBox(height: 4),
+                          _pdfRow('Transport & Logistics Charges', '- Rs. ${transportCost.toStringAsFixed(2)}'),
+                          if (otherCharges > 0) ...[
+                            pw.SizedBox(height: 4),
+                            _pdfRow('Other Adjustments / Deductions', '- Rs. ${otherCharges.toStringAsFixed(2)}'),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              pw.SizedBox(height: 12),
+
+              // Total Payout Card
+              pw.Container(
+                padding: const pw.EdgeInsets.all(12),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.green50,
+                  borderRadius: pw.BorderRadius.circular(6),
+                  border: pw.Border.all(color: PdfColors.green300),
+                ),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('NET DISBURSED TO FARMER:', style: pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold, color: PdfColors.green900)),
+                    pw.Text('Rs. ${finalPayout.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.green900)),
+                  ],
+                ),
+              ),
+
+              pw.SizedBox(height: 14),
+
+              // Transaction Info Box
+              pw.Container(
+                padding: const pw.EdgeInsets.all(10),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.grey100,
+                  borderRadius: pw.BorderRadius.circular(6),
+                  border: pw.Border.all(color: PdfColors.grey300),
+                ),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('TRANSACTION / PAYMENT GATEWAY DETAILS', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
+                    pw.SizedBox(height: 6),
+                    _pdfRow('Payment Gateway / Mode', paymentMethod),
+                    pw.SizedBox(height: 3),
+                    _pdfRow('Transaction Reference ID', transactionId),
+                    pw.SizedBox(height: 3),
+                    _pdfRow('Payment Time', paymentDate),
+                    pw.SizedBox(height: 3),
+                    _pdfRow('Transfer Settlement Status', status),
+                  ],
+                ),
+              ),
+
+              pw.Spacer(),
+
+              // Signatures & Legal Disclaimer
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('FPO Accounts & Disbursement Officer', style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold)),
+                      pw.SizedBox(height: 2),
+                      pw.Text('Digitally Signed & Reconciled', style: pw.TextStyle(fontSize: 7.5, color: PdfColors.green800, fontWeight: pw.FontWeight.bold)),
+                    ],
+                  ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text('Automated System Seal', style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold)),
+                      pw.SizedBox(height: 2),
+                      pw.Text('Razorpay MockGateway Direct Payout', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600)),
                     ],
                   ),
                 ],

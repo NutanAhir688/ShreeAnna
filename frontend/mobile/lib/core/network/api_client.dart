@@ -16,20 +16,22 @@ class ApiClient {
 
   Future<http.Response> get(String url) async {
     final token = await _tokenStorage.getAccessToken();
-    final response = await http.get(Uri.parse(url), headers: _headers(token));
-    _checkUnauthorized(response);
-    return response;
+    return _sendWithFallback(
+      (targetUrl) => http.get(Uri.parse(targetUrl), headers: _headers(token)),
+      url,
+    );
   }
 
   Future<http.Response> post(String url, {Map<String, dynamic>? body}) async {
     final token = await _tokenStorage.getAccessToken();
-    final response = await http.post(
-      Uri.parse(url),
-      headers: _headers(token),
-      body: body == null ? null : jsonEncode(body),
+    return _sendWithFallback(
+      (targetUrl) => http.post(
+        Uri.parse(targetUrl),
+        headers: _headers(token),
+        body: body == null ? null : jsonEncode(body),
+      ),
+      url,
     );
-    _checkUnauthorized(response);
-    return response;
   }
 
   Future<http.Response> uploadFile(
@@ -38,43 +40,76 @@ class ApiClient {
     String fieldName = 'file',
   }) async {
     final token = await _tokenStorage.getAccessToken();
-    final request = http.MultipartRequest('POST', Uri.parse(url));
-    if (token != null && token.isNotEmpty) {
-      request.headers['Authorization'] = 'Bearer $token';
-    }
-    request.files.add(await http.MultipartFile.fromPath(fieldName, file.path));
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
-    _checkUnauthorized(response);
-    return response;
+    return _sendWithFallback((targetUrl) async {
+      final request = http.MultipartRequest('POST', Uri.parse(targetUrl));
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      request.files
+          .add(await http.MultipartFile.fromPath(fieldName, file.path));
+      final streamedResponse = await request.send();
+      return http.Response.fromStream(streamedResponse);
+    }, url);
   }
 
   Future<http.Response> put(String url, {Map<String, dynamic>? body}) async {
     final token = await _tokenStorage.getAccessToken();
-    final response = await http.put(
-      Uri.parse(url),
-      headers: _headers(token),
-      body: body == null ? null : jsonEncode(body),
+    return _sendWithFallback(
+      (targetUrl) => http.put(
+        Uri.parse(targetUrl),
+        headers: _headers(token),
+        body: body == null ? null : jsonEncode(body),
+      ),
+      url,
     );
-    _checkUnauthorized(response);
-    return response;
   }
 
   Future<http.Response> patch(String url, {Map<String, dynamic>? body}) async {
     final token = await _tokenStorage.getAccessToken();
-    final response = await http.patch(
-      Uri.parse(url),
-      headers: _headers(token),
-      body: body == null ? null : jsonEncode(body),
+    return _sendWithFallback(
+      (targetUrl) => http.patch(
+        Uri.parse(targetUrl),
+        headers: _headers(token),
+        body: body == null ? null : jsonEncode(body),
+      ),
+      url,
     );
-    _checkUnauthorized(response);
-    return response;
   }
 
   Future<http.Response> delete(String url) async {
     final token = await _tokenStorage.getAccessToken();
+    return _sendWithFallback(
+      (targetUrl) => http.delete(Uri.parse(targetUrl), headers: _headers(token)),
+      url,
+    );
+  }
 
-    return await http.delete(Uri.parse(url), headers: _headers(token));
+  Future<http.Response> _sendWithFallback(
+    Future<http.Response> Function(String url) action,
+    String url,
+  ) async {
+    try {
+      final response = await action(url);
+      _checkUnauthorized(response, url: url);
+      return response;
+    } catch (e) {
+      if (url.contains('10.0.2.2')) {
+        try {
+          final fallbackUrl = url.replaceAll('10.0.2.2', '127.0.0.1');
+          final response = await action(fallbackUrl);
+          _checkUnauthorized(response, url: fallbackUrl);
+          return response;
+        } catch (_) {
+          try {
+            final fallbackUrl = url.replaceAll('10.0.2.2', 'localhost');
+            final response = await action(fallbackUrl);
+            _checkUnauthorized(response, url: fallbackUrl);
+            return response;
+          } catch (_) {}
+        }
+      }
+      rethrow;
+    }
   }
 
   Map<String, String> _headers(String? token) {
@@ -87,8 +122,14 @@ class ApiClient {
   /// Called after every response. If the server returns 401 we clear
   /// the stored token and push WelcomeScreen as the new root so the
   /// user is forced to log in again.
-  void _checkUnauthorized(http.Response response) {
+  void _checkUnauthorized(http.Response response, {String? url}) {
     if (response.statusCode == 401) {
+      // Do not boot the user out if background polling for notifications returned 401
+      if (url != null && url.contains('/api/notifications')) {
+        debugPrint('Ignored 401 on notification endpoint: $url');
+        return;
+      }
+
       _tokenStorage.clearAccessToken();
       navigatorKey.currentState?.pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const WelcomeScreen()),

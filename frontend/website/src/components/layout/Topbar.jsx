@@ -1,5 +1,6 @@
-import { Bell, ChevronDown, Search, LogOut, User as UserIcon, RefreshCw } from "lucide-react";
+import { Bell, ChevronDown, Search, LogOut, User as UserIcon, RefreshCw, Sun, Moon } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
 import { ROLE_CONFIGS } from "@/config/rolePermissions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 
 function Topbar() {
   const { user, logout, switchRole } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const userRole = user?.role || "FpoManager";
@@ -34,22 +36,22 @@ function Topbar() {
   };
 
   return (
-    <header className="sticky top-0 z-30 h-16 border-b bg-background shadow-2xs">
+    <header className="sticky top-0 z-30 h-16 border-b border-slate-200 dark:border-slate-800 bg-background/95 backdrop-blur-xs shadow-2xs transition-colors">
       <div className="flex h-full items-center justify-between px-6">
 
         {/* Left side: Active Page & Role indicator */}
         <div className="flex items-center gap-4">
           <div>
-            <h2 className="text-lg font-bold text-slate-900">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white transition-colors">
               {roleConfig.portalTitle}
             </h2>
             <p className="text-xs text-muted-foreground font-medium">
-              Role: <span className="font-semibold text-slate-800">{roleConfig.roleName}</span>
+              Role: <span className="font-semibold text-slate-800 dark:text-slate-200">{roleConfig.roleName}</span>
             </p>
           </div>
         </div>
 
-        {/* Right side: Role Switcher, Search, Notifications, User Menu */}
+        {/* Right side: Role Switcher, Search, Theme Toggle, Notifications, User Menu */}
         <div className="flex items-center gap-3">
 
           {/* Quick Role Switcher Dropdown in Topbar */}
@@ -70,7 +72,7 @@ function Topbar() {
                 <DropdownMenuItem
                   key={key}
                   onClick={() => switchRole(key, config.roleName)}
-                  className={`text-xs flex items-center justify-between cursor-pointer ${userRole === key ? "font-bold text-emerald-600 bg-emerald-50" : ""}`}
+                  className={`text-xs flex items-center justify-between cursor-pointer ${userRole === key ? "font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/50" : ""}`}
                 >
                   <span>{config.roleName}</span>
                   {userRole === key && <span className="h-2 w-2 rounded-full bg-emerald-600" />}
@@ -88,17 +90,33 @@ function Topbar() {
             />
           </div>
 
+          {/* Dark / Light Mode Toggle Button */}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={toggleTheme}
+            title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            className="h-9 w-9 rounded-lg border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer shadow-2xs"
+          >
+            {theme === "dark" ? (
+              <Sun className="h-4 w-4 text-amber-400 fill-amber-400 transition-transform hover:rotate-45" />
+            ) : (
+              <Moon className="h-4 w-4 text-slate-700 transition-transform hover:-rotate-12" />
+            )}
+            <span className="sr-only">Toggle Dark / Light Theme</span>
+          </Button>
+
           {/* Notifications */}
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-4 w-4 text-slate-600" />
-            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white" />
+          <Button variant="ghost" size="icon" className="relative cursor-pointer">
+            <Bell className="h-4 w-4 text-slate-600 dark:text-slate-300" />
+            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900" />
           </Button>
 
           {/* User Profile Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-2.5 px-2 hover:bg-slate-100">
-                <Avatar className="h-8 w-8 border border-slate-200">
+              <Button variant="ghost" className="flex items-center gap-2.5 px-2 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">
+                <Avatar className="h-8 w-8 border border-slate-200 dark:border-slate-700">
                   <AvatarImage src="" />
                   <AvatarFallback className="bg-emerald-600 text-white font-bold text-xs">
                     {getInitials(user?.memberName || user?.email)}
@@ -106,10 +124,10 @@ function Topbar() {
                 </Avatar>
 
                 <div className="hidden text-left md:block">
-                  <p className="text-xs font-bold text-slate-900 leading-tight">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white leading-tight">
                     {user?.memberName || "User"}
                   </p>
-                  <p className="text-[11px] text-emerald-600 font-semibold leading-tight">
+                  <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold leading-tight">
                     {roleConfig.roleName}
                   </p>
                 </div>
@@ -122,16 +140,20 @@ function Topbar() {
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-semibold">{user?.memberName || "User"}</p>
-                  <p className="text-xs text-slate-500 font-mono">{user?.email}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">{user?.email}</p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={toggleTheme} className="cursor-pointer">
+                {theme === "dark" ? <Sun className="mr-2 h-4 w-4 text-amber-400" /> : <Moon className="mr-2 h-4 w-4 text-slate-600" />}
+                <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+              </DropdownMenuItem>
               <DropdownMenuItem className="cursor-pointer">
                 <UserIcon className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
+              <DropdownMenuItem onClick={handleLogout} className="text-red-600 dark:text-red-400 cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Sign out</span>
               </DropdownMenuItem>
