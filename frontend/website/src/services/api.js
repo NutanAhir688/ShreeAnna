@@ -3,7 +3,7 @@
 // All calls go through here so the base URL is one place.
 // ============================================================
 
-export const API_BASE = "http://localhost:5066";
+export const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5066";
 
 /**
  * In-Memory Token Storage

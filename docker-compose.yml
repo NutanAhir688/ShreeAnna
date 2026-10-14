@@ -1,0 +1,82 @@
+services:
+  # ----------------------------------------------------------------------------
+  # 1. PostgreSQL Database
+  # ----------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: shreeanna-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-shreeanna_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-shreeanna_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-shreeanna}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-shreeanna_user} -d ${POSTGRES_DB:-shreeanna}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - shreeanna-network
+
+  # ----------------------------------------------------------------------------
+  # 2. .NET 10 Web API Backend
+  # ----------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: shreeanna-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_URLS: "http://0.0.0.0:5066"
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-shreeanna};Username=${POSTGRES_USER:-shreeanna_user};Password=${POSTGRES_PASSWORD:-shreeanna_dev}"
+      Jwt__Key: ${JWT_KEY}
+      Jwt__Issuer: ${JWT_ISSUER:-ShreeAnna}
+      Jwt__Audience: ${JWT_AUDIENCE:-ShreeAnnaClient}
+      Jwt__ExpirationMinutes: ${JWT_EXPIRATION_MINUTES:-60}
+      AzureStorage__ConnectionString: ${AzureStorage__ConnectionString}
+      AzureStorage__CdnBaseUrl: ${AzureStorage__CdnBaseUrl}
+      AzureStorage__AccountName: ${AzureStorage__AccountName:-shreeannafarmimages}
+      AzureStorage__ContainerName: ${AzureStorage__ContainerName:-farm-images}
+      MockGateway__BaseUrl: ${MockGateway__BaseUrl}
+      MockGateway__KeyId: ${MockGateway__KeyId}
+      MockGateway__KeySecret: ${MockGateway__KeySecret}
+      MockGateway__AuthHeader: ${MockGateway__AuthHeader}
+    ports:
+      - "${BACKEND_PORT:-5066}:5066"
+    networks:
+      - shreeanna-network
+
+  # ----------------------------------------------------------------------------
+  # 3. Frontend Web Dashboard (React 19 + Vite + Nginx)
+  # ----------------------------------------------------------------------------
+  website:
+    build:
+      context: ./frontend/website
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:5066}
+    container_name: shreeanna-website
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${WEBSITE_PORT:-5173}:80"
+    networks:
+      - shreeanna-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  shreeanna-network:
+    driver: bridge

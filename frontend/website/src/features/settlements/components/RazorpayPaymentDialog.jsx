@@ -167,7 +167,7 @@ export default function RazorpayPaymentDialog({
                 Razorpay Payment Gateway
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
-                MockGateway integration • Key: {import.meta.env.VITE_MOCKGATEWAY_KEY_ID || "rzp_test_P6JuER2JQ580UR"}
+                Secure Escrow Settlement • Backend Gateway Integration
               </DialogDescription>
             </div>
           </div>

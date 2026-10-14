@@ -3,7 +3,7 @@ import { auth, setInMemoryToken } from "@/services/api";
 
 const AuthContext = createContext(null);
 
-export const API_BASE_URL = "http://localhost:5066";
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5066";
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);

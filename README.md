@@ -15,6 +15,200 @@ These percentages reflect actual functional implementations across frontend, bac
 
 ---
 
+# 🚀 Getting Started & How to Run
+
+This project consists of three main sub-systems working end-to-end:
+1. **Backend:** .NET 10 Web API + Entity Framework Core + PostgreSQL (`http://localhost:5066`)
+2. **Web Portal:** React 19 + Vite + Tailwind CSS + shadcn/ui (`http://localhost:5173`)
+3. **Mobile App:** Flutter 3.x for Farmers & Drivers (Android / iOS)
+
+---
+
+## 🐳 Quick Start with Docker Compose (One-Click Setup)
+
+You can spin up the entire backend, database, and web dashboard with Docker Compose. Environment variables and secrets are read directly from the root `.env` file.
+
+1. **Configure Environment Variables:**
+   ```bash
+   cp .env.example .env
+   ```
+   *(The default `.env` is pre-configured with local database credentials, JWT keys, and Razorpay MockGateway keys).*
+
+2. **Build and Start All Containers:**
+   ```bash
+   docker compose up --build -d
+   ```
+
+3. **Verify Service Status:**
+   ```bash
+   docker compose ps
+   ```
+
+4. **Access Applications:**
+   - **FPO Web Portal:** [http://localhost:5173](http://localhost:5173)
+   - **Backend REST API & Swagger UI:** [http://localhost:5066/swagger](http://localhost:5066/swagger)
+   - **PostgreSQL Database:** `localhost:5432` (`shreeanna` / `shreeanna_user`)
+
+5. **Stop All Services:**
+   ```bash
+   docker compose down
+   ```
+
+---
+
+## 📋 Prerequisites
+
+Ensure you have the following installed on your machine:
+- [**.NET 10 SDK**](https://dotnet.microsoft.com/download) (or .NET 9+)
+- [**PostgreSQL 16+**](https://www.postgresql.org/download/) (or Docker)
+- [**Node.js 18+ & npm**](https://nodejs.org/)
+- [**Flutter SDK 3.x+**](https://docs.flutter.dev/get-started/install) with Android Studio / Xcode
+
+---
+
+## 🗄️ 1. Database Setup (PostgreSQL)
+
+The backend expects PostgreSQL to be running on port `5432`.
+
+### Option A: Local PostgreSQL
+Create the user and database in `psql`:
+```bash
+psql -U postgres -c "CREATE USER shreeanna_user WITH PASSWORD 'shreeanna_dev';"
+psql -U postgres -c "CREATE DATABASE shreeanna OWNER shreeanna_user;"
+```
+
+### Option B: Using Docker
+Alternatively, spin up a PostgreSQL container in one command:
+```bash
+docker run --name shreeanna-pg \
+  -e POSTGRES_DB=shreeanna \
+  -e POSTGRES_USER=shreeanna_user \
+  -e POSTGRES_PASSWORD=shreeanna_dev \
+  -p 5432:5432 -d postgres:16
+```
+
+> **Note:** The database migrations and initial seed records (users, test farmers, lots, warehouses, drivers) are applied **automatically on application startup** by `DbSeeder.cs`.
+
+---
+
+## ⚙️ 2. Run the Backend (.NET 10 Web API)
+
+1. Open a terminal and navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
+
+2. (Optional) Configure environment variables:
+   ```bash
+   cp .env.example .env
+   ```
+   *(Defaults in `appsettings.json` work out of the box for local development).*
+
+3. Run the backend:
+   ```bash
+   dotnet run
+   ```
+
+4. Verify the API:
+   - **Base API URL:** `http://localhost:5066`
+   - **Swagger / OpenAPI Documentation:** [http://localhost:5066/swagger](http://localhost:5066/swagger)
+
+---
+
+## 💻 3. Run the Web Dashboard (React + Vite)
+
+1. Open a new terminal and navigate to the website directory:
+   ```bash
+   cd frontend/website
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. (Optional) Set up environment variables:
+   ```bash
+   cp .env.example .env
+   ```
+
+4. Start the Vite development server:
+   ```bash
+   npm run dev
+   ```
+
+5. Open your browser and navigate to:
+   - **Portal URL:** [http://localhost:5173](http://localhost:5173)
+
+### 🔑 Demo Login Credentials (All Portals)
+The system is seeded with dedicated role accounts. **All accounts use the password:** `Password123!`
+
+| Role | Email | Password | Access & Features |
+| :--- | :--- | :--- | :--- |
+| **FPO Manager** | `fpo@shreeanna.com` | `Password123!` | Full dashboard, farmer/farm approvals, lots |
+| **Accountant** | `accountant@shreeanna.com` | `Password123!` | Finance portal, settlement ledger, Razorpay payout |
+| **Logistics Coordinator** | `logistics@shreeanna.com` | `Password123!` | Dispatch scheduling, driver vehicle assignment |
+| **Warehouse Manager** | `warehouse@shreeanna.com` | `Password123!` | Intake receiving, lot allocation, capacity |
+| **Quality Inspector** | `quality@shreeanna.com` | `Password123!` | Quality grading, moisture test, issue certificates |
+| **Procurement Officer** | `procurement@shreeanna.com` | `Password123!` | Procurement contracts & pricing agreements |
+| **Driver** | `driver@shreeanna.com` | `Password123!` | Web driver view |
+
+---
+
+## 📱 4. Run the Mobile App (Flutter)
+
+1. Open a new terminal and navigate to the mobile app directory:
+   ```bash
+   cd frontend/mobile
+   ```
+
+2. (Optional) Set up environment variables:
+   ```bash
+   cp .env.example .env
+   ```
+
+3. Install Flutter dependencies:
+   ```bash
+   flutter pub get
+   ```
+
+4. Check connected devices or start an Android emulator:
+   ```bash
+   flutter devices
+   # or launch an emulator via Android Studio / command line
+   ```
+
+5. Run the application:
+   ```bash
+   flutter run
+   ```
+
+### 📱 Mobile Login & OTP Guide
+- **Farmer Login:**
+  - Enter any registered farmer phone number (e.g., `9876543210`, `9876543211`, or `8612489824`).
+  - Click **Send OTP**.
+  - In development mode, the 6-digit OTP is printed directly in the **Backend terminal logs** (`Development OTP for ...`). Enter the OTP to log in.
+- **Driver Login:**
+  - Switch to the **Driver** tab on the login screen.
+  - Enter driver phone (e.g. `9876543210`) or use one-tap direct driver login.
+- **Network Note:**
+  - On the Android emulator, `http://10.0.2.2:5066` automatically maps to `localhost:5066` on your host machine.
+  - If running on a physical Android/iOS phone over Wi-Fi, change `baseUrl` in `frontend/mobile/lib/core/network/api_config.dart` to your computer's local IP address (e.g., `http://192.168.1.X:5066`).
+
+---
+
+## 🌐 Summary of Ports & Services
+
+| Service | Technology | Port / URL | Description |
+| :--- | :--- | :--- | :--- |
+| **Backend API** | .NET 10 | `http://localhost:5066` | Core REST API & Business Logic |
+| **Swagger UI** | Swashbuckle | `http://localhost:5066/swagger` | Interactive API documentation |
+| **FPO Web Portal** | React 19 + Vite | `http://localhost:5173` | Management & Staff Dashboard |
+| **Mobile App** | Flutter 3.x | Emulator / Device | Farmer & Driver Native Mobile App |
+| **Database** | PostgreSQL | `localhost:5432` | Primary Database (`shreeanna`) |
+
+---
+
 # 📱 1. FARMER & DRIVER MOBILE APP — Flutter
 
 ## Authentication & Onboarding
