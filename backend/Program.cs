@@ -25,7 +25,11 @@ AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 // ASP.NET Core's config system reads environment variables automatically,
 // and the double-underscore (__) maps to nested JSON keys, e.g.
 //   AzureStorage__ConnectionString  →  AzureStorage:ConnectionString
-DotNetEnv.Env.Load(Path.Combine(Directory.GetCurrentDirectory(), ".env"));
+var envPath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
+if (File.Exists(envPath))
+{
+    DotNetEnv.Env.Load(envPath);
+}
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.UseUrls("http://0.0.0.0:5066");

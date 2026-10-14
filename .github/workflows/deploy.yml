@@ -1,0 +1,44 @@
+
+name: ShreeAnna - Verify Azure OIDC
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  verify-azure-login:
+    name: Verify Azure Authentication
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Azure login using OIDC
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Verify Azure subscription
+        run: |
+          az account show \
+            --query "{subscription:name, subscriptionId:id, tenantId:tenantId}" \
+            --output table
+
+      - name: Verify resource group
+        run: |
+          az group show \
+            --name shreeanna-rg \
+            --query "{name:name, location:location, provisioningState:properties.provisioningState}" \
+            --output table
+
+      - name: Deployment prerequisites verified
+        run: echo "Azure OIDC authentication succeeded."
