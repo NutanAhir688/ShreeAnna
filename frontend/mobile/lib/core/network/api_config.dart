@@ -1,7 +1,10 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiConfig {
-  static const String baseUrl = 'http://10.0.2.2:5066';
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://shreeanna.delightfulfield-3bc26253.centralindia.azurecontainerapps.io',
+  );
 
   static const String sendFarmerOtp = '$baseUrl/api/auth/farmer/send-otp';
 
