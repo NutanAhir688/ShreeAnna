@@ -126,6 +126,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<IRazorpayMockGatewayService, RazorpayMockGatewayService>();
 builder.Services.AddScoped<ISettlementService, SettlementService>();
 builder.Services.AddScoped<IReportsService, ReportsService>();
+builder.Services.AddScoped<backend.Features.Procurement.Services.IPurchaseRequestService, backend.Features.Procurement.Services.PurchaseRequestService>();
 
 // --------------------------------------------------
 // Controllers & Swagger
@@ -163,24 +164,32 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// 1. RUN SEEDING FIRST (Before handling any requests)
+// 1. RUN MIGRATIONS & SEEDING FIRST (Before handling any requests)
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider
-        .GetRequiredService<AppDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    await DbSeeder.SeedAsync(db);
+    try
+    {
+        await db.Database.MigrateAsync();
+        await DbSeeder.SeedAsync(db);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "An error occurred during database migration or seeding.");
+    }
 }
 
 // 2. CONFIGURE PIPELINE
-if (app.Environment.IsDevelopment())
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "ShreeAnna API v1");
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "ShreeAnna API v1");
+    c.RoutePrefix = "swagger";
+});
+
+app.MapGet("/", () => Results.Redirect("/swagger"));
 
 if (!app.Environment.IsDevelopment())
 {

@@ -16,6 +16,9 @@ import { farmersApi, farmsApi } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
 import LogisticsDashboard from "@/features/logistics/pages/LogisticsDashboard";
 import AccountantDashboard from "./AccountantDashboard";
+import ProcessorDashboard from "./ProcessorDashboard";
+import ProcurementOfficerDashboard from "./ProcurementOfficerDashboard";
+import WarehouseDashboard from "./WarehouseDashboard";
 
 function Dashboard() {
   const { user } = useAuth();
@@ -27,6 +30,22 @@ function Dashboard() {
 
   if (userRole === "Accountant" || userRole?.toLowerCase() === "accountant") {
     return <AccountantDashboard />;
+  }
+
+  if (userRole === "Processor" || userRole?.toLowerCase() === "processor") {
+    return <ProcessorDashboard />;
+  }
+
+  if (userRole === "ProcurementOfficer" || userRole?.toLowerCase() === "procurementofficer") {
+    return <ProcurementOfficerDashboard />;
+  }
+
+  if (
+    userRole === "WarehouseManager" ||
+    userRole === "WarehouseOfficer" ||
+    userRole?.toLowerCase()?.includes("warehouse")
+  ) {
+    return <WarehouseDashboard />;
   }
 
   const [stats, setStats] = useState({

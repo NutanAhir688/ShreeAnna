@@ -40,6 +40,7 @@ class FarmerApi {
     required String taluka,
     required String village,
     DateTime? dateOfBirth,
+    String? status,
   }) async {
     final response = await _apiClient.put(
       ApiConfig.farmerMe,
@@ -52,6 +53,7 @@ class FarmerApi {
         'taluka': taluka,
         'village': village,
         'dateOfBirth': (dateOfBirth ?? DateTime.utc(1990, 1, 1)).toIso8601String(),
+        if (status != null && status.isNotEmpty) 'status': status,
       },
     );
 

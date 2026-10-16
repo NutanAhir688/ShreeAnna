@@ -466,6 +466,12 @@ namespace backend.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<decimal?>("DestinationLatitude")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("DestinationLongitude")
+                        .HasColumnType("numeric");
+
                     b.Property<string>("Direction")
                         .IsRequired()
                         .HasColumnType("text");
@@ -508,6 +514,12 @@ namespace backend.Migrations
                     b.Property<string>("MilletType")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<decimal?>("PickupLatitude")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("PickupLongitude")
+                        .HasColumnType("numeric");
 
                     b.Property<string>("ProcessorType")
                         .IsRequired()
@@ -717,6 +729,47 @@ namespace backend.Migrations
                     b.ToTable("ShipmentIssues");
                 });
 
+            modelBuilder.Entity("backend.Features.Notifications.Entities.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<Guid?>("FarmerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RelatedEntityId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RelatedEntityType")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Notifications");
+                });
+
             modelBuilder.Entity("backend.Features.Procurement.Entities.ProcurementLot", b =>
                 {
                     b.Property<Guid>("Id")
@@ -831,6 +884,123 @@ namespace backend.Migrations
                     b.ToTable("ProcurementLots");
                 });
 
+            modelBuilder.Entity("backend.Features.Procurement.Entities.PurchaseRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("AgreedQuantityKg")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("AgreementId")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("AgreementValidUntil")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("CancellationTerms")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("DeliveredAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("DeliveryChallanNumber")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DeliveryNotes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DeliveryOtp")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DeliveryProofPhotoUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DispatchCode")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FpoName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("IndicativePricePerKg")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("IndicativeValue")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("InvoiceNumber")
+                        .HasColumnType("text");
+
+                    b.Property<string>("LotId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("MilletType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("OwnershipTransfer")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("PaymentDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("PaymentMethod")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PaymentStatus")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PaymentTerms")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PaymentTransactionId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProcessorId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProcessorName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RequestCode")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("RequestedQuantityKg")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("SellingPricePerKg")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid?>("ShipmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("SubmittedDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<decimal?>("TotalValue")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PurchaseRequests");
+                });
+
             modelBuilder.Entity("backend.Features.Quality.Entities.Inspection", b =>
                 {
                     b.Property<Guid>("Id")
@@ -916,6 +1086,102 @@ namespace backend.Migrations
                     b.HasIndex("LotId");
 
                     b.ToTable("QualityCertificates");
+                });
+
+            modelBuilder.Entity("backend.Features.Settlements.Entities.Settlement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BuyerName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BuyerType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("DeliveryDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<Guid?>("FarmerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("FarmerName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("FarmerPhone")
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("FinalAmount")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("FpoMargin")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("GrossAmount")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid?>("LotId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("LotNumber")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MilletType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("OrderId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("OtherCharges")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime?>("PaymentDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("PaymentMethod")
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("PricePerKg")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("QuantityKg")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("RazorpayPaymentLinkId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RazorpayShortUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SettlementCode")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("TransactionId")
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("TransportCost")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Settlements");
                 });
 
             modelBuilder.Entity("backend.Features.Warehouses.Entities.Warehouse", b =>

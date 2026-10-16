@@ -1,44 +1,115 @@
-
-name: ShreeAnna - Verify Azure OIDC
+name: Build and Deploy ShreeAnna
 
 on:
   push:
     branches:
       - main
+      - master
   workflow_dispatch:
 
 permissions:
   contents: read
   id-token: write
 
+env:
+  BACKEND_IMAGE_NAME: shreeanna-api
+  FRONTEND_IMAGE_NAME: shreeanna-website
+  AZURE_RESOURCE_GROUP: shreeanna-rg
+  AZURE_CONTAINER_APP: shreeanna
+
 jobs:
-  verify-azure-login:
-    name: Verify Azure Authentication
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Azure login using OIDC
-        uses: azure/login@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
         with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Verify Azure subscription
+      - name: Build and push backend image
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
-          az account show \
-            --query "{subscription:name, subscriptionId:id, tenantId:tenantId}" \
-            --output table
+          IMAGE="docker.io/${DOCKERHUB_USERNAME}/${BACKEND_IMAGE_NAME}"
+          SHA_TAG="${GITHUB_SHA}"
 
-      - name: Verify resource group
+          docker build \
+            -f backend/Dockerfile \
+            -t "${IMAGE}:${SHA_TAG}" \
+            -t "${IMAGE}:latest" \
+            backend
+
+          docker push "${IMAGE}:${SHA_TAG}"
+          docker push "${IMAGE}:latest"
+
+      - name: Build and push frontend image
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          FRONTEND_API_BASE_URL: ${{ secrets.FRONTEND_API_BASE_URL }}
         run: |
-          az group show \
-            --name shreeanna-rg \
-            --query "{name:name, location:location, provisioningState:properties.provisioningState}" \
-            --output table
+          IMAGE="docker.io/${DOCKERHUB_USERNAME}/${FRONTEND_IMAGE_NAME}"
 
-      - name: Deployment prerequisites verified
-        run: echo "Azure OIDC authentication succeeded."
+          docker build \
+            -f frontend/website/Dockerfile \
+            --build-arg VITE_API_BASE_URL="${FRONTEND_API_BASE_URL}" \
+            -t "${IMAGE}:${GITHUB_SHA}" \
+            -t "${IMAGE}:latest" \
+            frontend/website
+
+          docker push "${IMAGE}:${GITHUB_SHA}"
+          docker push "${IMAGE}:latest"
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.15.9
+          terraform_wrapper: false
+
+      - name: Configure Azure Credentials for Terraform
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+        run: |
+          if [ -n "$AZURE_CREDENTIALS" ]; then
+            echo "ARM_CLIENT_ID=$(echo "$AZURE_CREDENTIALS" | jq -r '.clientId // empty')" >> $GITHUB_ENV
+            echo "ARM_CLIENT_SECRET=$(echo "$AZURE_CREDENTIALS" | jq -r '.clientSecret // empty')" >> $GITHUB_ENV
+            echo "ARM_SUBSCRIPTION_ID=$(echo "$AZURE_CREDENTIALS" | jq -r '.subscriptionId // empty')" >> $GITHUB_ENV
+            echo "ARM_TENANT_ID=$(echo "$AZURE_CREDENTIALS" | jq -r '.tenantId // empty')" >> $GITHUB_ENV
+          fi
+
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
+
+      - name: Terraform Apply
+        working-directory: terraform
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          BACKEND_IMAGE="${DOCKERHUB_USERNAME}/${BACKEND_IMAGE_NAME}:${GITHUB_SHA}"
+          FRONTEND_IMAGE="${DOCKERHUB_USERNAME}/${FRONTEND_IMAGE_NAME}:${GITHUB_SHA}"
+
+          terraform apply -auto-approve \
+            -var="backend_image=${BACKEND_IMAGE}" \
+            -var="frontend_image=${FRONTEND_IMAGE}" \
+            -var="enable_frontend=true" \
+            -var="dockerhub_username=${DOCKERHUB_USERNAME}" \
+            -var="dockerhub_token=${DOCKERHUB_TOKEN}"
+
+      - name: Verify Terraform Deployment Outputs
+        working-directory: terraform
+        run: |
+          echo "============================================="
+          echo "Terraform Deployment Completed Successfully!"
+          echo "============================================="
+          terraform output

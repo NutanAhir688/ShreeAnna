@@ -109,6 +109,10 @@ public class FarmerService : IFarmerService
         farmer.Taluka = request.Taluka;
         farmer.Village = request.Village;
         farmer.DateOfBirth = request.DateOfBirth;
+        if (!string.IsNullOrWhiteSpace(request.Status))
+        {
+            farmer.Status = request.Status;
+        }
 
         await _context.SaveChangesAsync();
 

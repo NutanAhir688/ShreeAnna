@@ -215,6 +215,7 @@ export const logisticsApi = {
   },
   getDrivers: () => request("/api/dispatches/drivers"),
   createDriver: (data) => request("/api/dispatches/drivers", { method: "POST", body: data }),
+  assignDriver: (id, data) => request(`/api/dispatches/${id}/assign-driver`, { method: "POST", body: data }),
   verifyPickup: (id, code) => request(`/api/dispatches/${id}/verify-pickup`, { method: "POST", body: { verificationCode: code } }),
 };
 
@@ -350,5 +351,24 @@ export const uploadApi = {
     const data = await res.json();
     return data.imageUrl || data.url;
   },
+};
+
+// ─────────────────────────────────────────────────────────────
+// PROCESSOR PURCHASE REQUESTS & AGREEMENTS
+// ─────────────────────────────────────────────────────────────
+export const purchaseRequestsApi = {
+  getAll: (status, processorId) => {
+    const params = new URLSearchParams();
+    if (status) params.append("status", status);
+    if (processorId) params.append("processorId", processorId);
+    const qs = params.toString();
+    return request(`/api/purchase-requests${qs ? `?${qs}` : ""}`);
+  },
+  getById: (id) => request(`/api/purchase-requests/${id}`),
+  create: (data) => request("/api/purchase-requests", { method: "POST", body: data }),
+  proposeAgreement: (id, data) => request(`/api/purchase-requests/${id}/propose-agreement`, { method: "POST", body: data }),
+  acceptAgreement: (id) => request(`/api/purchase-requests/${id}/accept-agreement`, { method: "POST" }),
+  pay: (id, data) => request(`/api/purchase-requests/${id}/pay`, { method: "POST", body: data }),
+  confirmDelivery: (id, data) => request(`/api/purchase-requests/${id}/confirm-delivery`, { method: "POST", body: data }),
 };
 

@@ -61,6 +61,7 @@ public class LogisticsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/status")]
+    [AllowAnonymous]
     public async Task<ActionResult<DispatchResponse>> UpdateStatus(Guid id, [FromBody] UpdateDispatchStatusRequest request)
     {
         try
@@ -74,7 +75,42 @@ public class LogisticsController : ControllerBase
         }
     }
 
+    [HttpPost("{id:guid}/assign-driver")]
+    [AllowAnonymous]
+    public async Task<ActionResult<DispatchResponse>> AssignDriver(Guid id, [FromBody] AssignDriverRequest request)
+    {
+        try
+        {
+            var dispatch = await _logisticsService.AssignDriverAsync(id, request);
+            return Ok(dispatch);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("{id:guid}/abort-ride")]
+    [AllowAnonymous]
+    public async Task<ActionResult<DispatchResponse>> AbortRide(Guid id, [FromBody] AbortRideRequest? request)
+    {
+        try
+        {
+            var dispatch = await _logisticsService.AbortRideAsync(id, request?.Reason ?? "Aborted by driver");
+            return Ok(dispatch);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
+
     [HttpPost("{id:guid}/confirm-delivery")]
+    [AllowAnonymous]
     public async Task<ActionResult<DispatchResponse>> ConfirmDelivery(Guid id, [FromBody] ConfirmDeliveryRequest request)
     {
         try

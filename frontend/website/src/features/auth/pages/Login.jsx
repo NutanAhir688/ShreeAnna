@@ -53,6 +53,7 @@ export default function Login() {
     { roleKey: "WarehouseManager", email: "warehouse@shreeanna.com", label: "Warehouse Manager" },
     { roleKey: "LogisticsCoordinator", email: "logistics@shreeanna.com", label: "Logistics Coordinator" },
     { roleKey: "Accountant", email: "accountant@shreeanna.com", label: "Accountant" },
+    { roleKey: "Processor", email: "processor@shreeanna.com", label: "Processor (SHG / Buyer)" },
   ];
 
   return (

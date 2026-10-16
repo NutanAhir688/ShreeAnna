@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Truck,
@@ -14,6 +14,8 @@ import {
   FileText,
   ShieldCheck,
   Package,
+  Camera,
+  Upload,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -27,12 +29,26 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { logisticsApi } from "@/services/api";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useAuth } from "@/context/AuthContext";
+import { logisticsApi, purchaseRequestsApi } from "@/services/api";
 import DeliveryChallanModal from "@/features/logistics/components/DeliveryChallanModal";
 
 function ShipmentDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const userRole = (user?.role || "").toLowerCase();
+  const isProcessor = userRole.includes("processor");
+  const isDriver = userRole.includes("driver");
+  const isLogisticsCoordinator = userRole.includes("logistic");
+  const isLogisticsOrAdmin = isLogisticsCoordinator || userRole.includes("fpo") || userRole.includes("manager") || userRole.includes("admin");
 
   const [shipment, setShipment] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -49,59 +65,154 @@ function ShipmentDetails() {
   const [reportedIssue, setReportedIssue] = useState(null);
   const [submittingReport, setSubmittingReport] = useState(false);
 
-  useEffect(() => {
-    async function loadShipment() {
-      setLoading(true);
-      try {
-        let data = null;
-        try {
-          data = await logisticsApi.getById(id);
-        } catch {
-          // If direct ID lookup fails (e.g. mock slug or code), search all active dispatches
-          const all = await logisticsApi.getAll().catch(() => []);
-          data = all.find((d) => d.id === id || d.dispatchCode?.toLowerCase() === id?.toLowerCase()) || all[0];
-        }
+  // Assign Driver Modal State
+  const [assignDriverModalOpen, setAssignDriverModalOpen] = useState(false);
+  const [driversList, setDriversList] = useState([]);
+  const [selectedDriverId, setSelectedDriverId] = useState("");
+  const [assignDriverName, setAssignDriverName] = useState("");
+  const [assignDriverPhone, setAssignDriverPhone] = useState("");
+  const [assignVehicleNo, setAssignVehicleNo] = useState("");
+  const [submittingAssign, setSubmittingAssign] = useState(false);
+  const [assignError, setAssignError] = useState("");
 
-        if (data) {
-          setShipment({
-            id: data.id,
-            shipmentCode: data.dispatchCode || data.id,
-            direction: (data.direction || "INBOUND").toUpperCase(),
-            farmerOrProcessorName: data.farmerOrProcessorName || "-",
-            processorType: data.processorType || "SHG",
-            agreementId: data.agreementId || "-",
-            lotId: data.lotId || "-",
-            batchId: data.batchId || "-",
-            milletType: data.milletType || "-",
-            quantityKg: data.totalQuantityKg || 0,
-            expectedQuantityKg: data.totalQuantityKg || 0,
-            finalReceivedQuantityKg: data.finalReceivedQuantityKg || null,
-            warehouseStockAfterDispatchKg: data.warehouseStockAfterDispatchKg || 0,
-            sourceAddress: data.sourceAddress || "-",
-            destinationAddress: data.destinationAddress || "-",
-            transportResponsibility: data.transportResponsibility || "-",
-            vehicleNumber: data.vehicleNumber || "",
-            vehicleCapacityKg: data.vehicleCapacityKg || 0,
-            driverName: data.driverName || "-",
-            driverPhone: data.driverPhone || "-",
-            assignedDate: data.createdAt ? new Date(data.createdAt).toLocaleDateString("en-GB") : "-",
-            scheduledPickup: data.scheduledDate ? `${data.scheduledDate} ${data.scheduledStartTime || ""}` : "-",
-            status: data.status || "SCHEDULED",
-            warehouseReceiptStatus: data.warehouseReceiptStatus || "PENDING",
-          });
-        } else {
-          setShipment(null);
-        }
-      } catch (err) {
-        console.error("Error loading shipment details:", err);
-        setShipment(null);
-      } finally {
-        setLoading(false);
+  const handleOpenAssignModal = async () => {
+    setAssignError("");
+    try {
+      const drvs = await logisticsApi.getDrivers().catch(() => []);
+      setDriversList(Array.isArray(drvs) ? drvs : []);
+      const firstAvail = Array.isArray(drvs) ? drvs.find(d => (d.status || "").toUpperCase() === "AVAILABLE" || (d.status || "").toUpperCase() === "ACTIVE") : null;
+      if (firstAvail) {
+        setSelectedDriverId(firstAvail.id);
+        setAssignDriverName(firstAvail.name || "");
+        setAssignDriverPhone(firstAvail.phone || "");
+        setAssignVehicleNo(firstAvail.vehicleNumber || "");
+      } else {
+        setSelectedDriverId("");
+        setAssignDriverName("");
+        setAssignDriverPhone("");
+        setAssignVehicleNo("");
       }
+      setAssignDriverModalOpen(true);
+    } catch (err) {
+      console.error("Failed to load drivers", err);
     }
+  };
 
-    loadShipment();
+  const handleAssignDriver = async (e) => {
+    e.preventDefault();
+    setSubmittingAssign(true);
+    setAssignError("");
+    try {
+      await logisticsApi.assignDriver(shipment.id, {
+        driverId: selectedDriverId || undefined,
+        driverName: assignDriverName,
+        driverPhone: assignDriverPhone,
+        vehicleNumber: assignVehicleNo,
+      });
+      setAssignDriverModalOpen(false);
+      await loadShipment();
+    } catch (err) {
+      setAssignError(err.message || "Failed to assign driver.");
+    } finally {
+      setSubmittingAssign(false);
+    }
+  };
+
+  // Outbound Delivery Confirmation (Photo + OTP)
+  const [processorDeliveryModalOpen, setProcessorDeliveryModalOpen] = useState(false);
+  const [deliveryOtp, setDeliveryOtp] = useState("");
+  const [deliveryPhoto, setDeliveryPhoto] = useState("https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80");
+  const [deliveryNotes, setDeliveryNotes] = useState("Delivered full batch of pearl millet bags in dry condition.");
+  const [deliveryError, setDeliveryError] = useState("");
+  const [submittingDelivery, setSubmittingDelivery] = useState(false);
+
+  const handleConfirmProcessorDelivery = async () => {
+    if (!deliveryOtp || deliveryOtp.trim().length !== 4) {
+      setDeliveryError("Please enter the 4-digit OTP provided by the processor.");
+      return;
+    }
+    setSubmittingDelivery(true);
+    setDeliveryError("");
+    try {
+      const allRequests = await purchaseRequestsApi.getAll().catch(() => []);
+      const req = allRequests.find(
+        (r) => r.shipmentId === shipment.id || r.lotId === shipment.lotId || r.agreementId === shipment.agreementId
+      );
+      if (req) {
+        await purchaseRequestsApi.confirmDelivery(req.id, {
+          otp: deliveryOtp.trim(),
+          photoUrl: deliveryPhoto,
+          notes: deliveryNotes,
+        });
+      } else {
+        await handleStatusUpdate("DELIVERED");
+      }
+      setShipment((prev) => ({ ...prev, status: "DELIVERED" }));
+      setProcessorDeliveryModalOpen(false);
+    } catch (err) {
+      setDeliveryError(err.message || "Failed to confirm delivery. Please check the OTP.");
+    } finally {
+      setSubmittingDelivery(false);
+    }
+  };
+
+  const loadShipment = useCallback(async () => {
+    setLoading(true);
+    try {
+      let data = null;
+      try {
+        data = await logisticsApi.getById(id);
+      } catch {
+        // If direct ID lookup fails (e.g. mock slug or code), search all active dispatches
+        const all = await logisticsApi.getAll().catch(() => []);
+        data = all.find((d) => d.id === id || d.dispatchCode?.toLowerCase() === id?.toLowerCase()) || all[0];
+      }
+
+      if (data) {
+        const rawDriver = data.driverName?.trim();
+        const hasDriver = Boolean(rawDriver && rawDriver !== "-" && rawDriver !== "Unassigned");
+
+        setShipment({
+          id: data.id,
+          shipmentCode: data.dispatchCode || data.id,
+          direction: (data.direction || "INBOUND").toUpperCase(),
+          farmerOrProcessorName: data.farmerOrProcessorName || "-",
+          processorType: data.processorType || "SHG",
+          agreementId: data.agreementId || "-",
+          lotId: data.lotId || "-",
+          batchId: data.batchId || "-",
+          milletType: data.milletType || "-",
+          quantityKg: data.totalQuantityKg || 0,
+          expectedQuantityKg: data.totalQuantityKg || 0,
+          finalReceivedQuantityKg: data.finalReceivedQuantityKg || null,
+          warehouseStockAfterDispatchKg: data.warehouseStockAfterDispatchKg || 0,
+          sourceAddress: data.sourceAddress || "-",
+          destinationAddress: data.destinationAddress || "-",
+          transportResponsibility: data.transportResponsibility || "-",
+          vehicleNumber: hasDriver ? (data.vehicleNumber || "") : "",
+          vehicleCapacityKg: data.vehicleCapacityKg || 0,
+          driverName: hasDriver ? rawDriver : "",
+          driverPhone: hasDriver ? (data.driverPhone || "") : "",
+          assignedDate: data.createdAt ? new Date(data.createdAt).toLocaleDateString("en-GB") : "-",
+          scheduledPickup: data.scheduledDate ? `${data.scheduledDate} ${data.scheduledStartTime || ""}` : "-",
+          status: data.status || "SCHEDULED",
+          warehouseReceiptStatus: data.warehouseReceiptStatus || "PENDING",
+          verificationCode: data.verificationCode || "9304",
+        });
+      } else {
+        setShipment(null);
+      }
+    } catch (err) {
+      console.error("Error loading shipment details:", err);
+      setShipment(null);
+    } finally {
+      setLoading(false);
+    }
   }, [id]);
+
+  useEffect(() => {
+    loadShipment();
+  }, [loadShipment]);
 
   const handleStatusUpdate = async (nextStatus) => {
     setUpdating(true);
@@ -192,6 +303,15 @@ function ShipmentDetails() {
           </div>
 
           <div className="flex items-center gap-2 self-start sm:self-auto">
+            {isLogisticsOrAdmin && shipment.status !== "DELIVERED" && (
+              <Button
+                onClick={handleOpenAssignModal}
+                className="h-9 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-2xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <Truck className="h-4 w-4" />
+                {shipment.driverName ? "Reassign Driver" : "Assign Active Driver"}
+              </Button>
+            )}
             <Button
               onClick={() => setChallanModalOpen(true)}
               className="h-9 bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow-2xs flex items-center gap-1.5"
@@ -465,10 +585,20 @@ function ShipmentDetails() {
 
           {/* Card 2: Transport Details */}
           <Card className="border-slate-200/90 bg-white shadow-xs">
-            <CardHeader className="pb-3 border-b border-slate-100">
+            <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-bold text-slate-900">
                 Transport Details
               </CardTitle>
+              {isLogisticsOrAdmin && shipment.status !== "DELIVERED" && (
+                <Button
+                  size="sm"
+                  onClick={handleOpenAssignModal}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-8 shadow-xs cursor-pointer flex items-center gap-1.5"
+                >
+                  <Truck className="h-3.5 w-3.5" />
+                  {shipment.driverName ? "Change / Reassign Driver" : "Assign Active Driver"}
+                </Button>
+              )}
             </CardHeader>
             <CardContent className="pt-4 text-xs space-y-4">
               <div className="grid grid-cols-2 gap-y-4 gap-x-6">
@@ -476,10 +606,16 @@ function ShipmentDetails() {
                   <span className="text-slate-500 block text-[11px] font-medium mb-1">
                     Vehicle Number
                   </span>
-                  <Badge className="bg-slate-100 text-slate-900 border-slate-300 font-mono text-xs font-bold px-2.5 py-1">
-                    <Truck className="h-3.5 w-3.5 mr-1 text-slate-600" />
-                    {shipment.vehicleNumber}
-                  </Badge>
+                  {shipment.vehicleNumber ? (
+                    <Badge className="bg-slate-100 text-slate-900 border-slate-300 font-mono text-xs font-bold px-2.5 py-1">
+                      <Truck className="h-3.5 w-3.5 mr-1 text-slate-600" />
+                      {shipment.vehicleNumber}
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-amber-700 bg-amber-50 border-amber-300 font-medium text-xs">
+                      Unassigned
+                    </Badge>
+                  )}
                 </div>
 
                 <div>
@@ -487,7 +623,7 @@ function ShipmentDetails() {
                     Vehicle Capacity
                   </span>
                   <span className="font-bold text-slate-900">
-                    {shipment.vehicleCapacityKg?.toLocaleString("en-IN")} kg
+                    {shipment.vehicleCapacityKg ? `${shipment.vehicleCapacityKg.toLocaleString("en-IN")} kg` : "7,000 kg"}
                   </span>
                 </div>
 
@@ -495,7 +631,13 @@ function ShipmentDetails() {
                   <span className="text-slate-500 block text-[11px] font-medium">
                     Driver Name
                   </span>
-                  <span className="font-bold text-slate-900">{shipment.driverName}</span>
+                  <span className="font-bold text-slate-900">
+                    {shipment.driverName ? (
+                      shipment.driverName
+                    ) : (
+                      <span className="text-amber-700 font-medium">Pending Assignment</span>
+                    )}
+                  </span>
                 </div>
 
                 <div className="border-t border-slate-100 pt-3">
@@ -503,17 +645,56 @@ function ShipmentDetails() {
                     Driver Mobile
                   </span>
                   <span className="font-bold text-slate-900 flex items-center gap-1">
-                    <Phone className="h-3 w-3 text-slate-400" /> {shipment.driverPhone}
+                    {shipment.driverPhone ? (
+                      <>
+                        <Phone className="h-3 w-3 text-slate-400" /> {shipment.driverPhone}
+                      </>
+                    ) : (
+                      <span className="text-slate-400 font-normal">Not assigned</span>
+                    )}
                   </span>
                 </div>
 
-                <div className="border-t border-slate-100 pt-3 col-span-2">
-                  <span className="text-slate-500 block text-[11px] font-medium">
-                    Assigned On
-                  </span>
-                  <span className="font-bold text-slate-900">{shipment.assignedDate}</span>
+                <div className="border-t border-slate-100 pt-3 col-span-2 flex items-center justify-between">
+                  <div>
+                    <span className="text-slate-500 block text-[11px] font-medium">
+                      Assigned On
+                    </span>
+                    <span className="font-bold text-slate-900">
+                      {shipment.driverName ? shipment.assignedDate : "Awaiting assignment"}
+                    </span>
+                  </div>
+
+                  {isLogisticsOrAdmin && shipment.status !== "DELIVERED" && (
+                    <Button
+                      size="sm"
+                      onClick={handleOpenAssignModal}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-8 shadow-xs cursor-pointer flex items-center gap-1"
+                    >
+                      <Truck className="h-3.5 w-3.5 mr-1" />
+                      {shipment.driverName ? "Reassign Driver" : "Assign Active Driver"}
+                    </Button>
+                  )}
                 </div>
               </div>
+
+              {!shipment.driverName && (
+                <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-lg flex items-center justify-between text-[11px] text-amber-900 font-medium">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-700 shrink-0" />
+                    <span>No driver currently assigned. Assign an active driver to schedule route.</span>
+                  </div>
+                  {isLogisticsOrAdmin && (
+                    <Button
+                      size="sm"
+                      onClick={handleOpenAssignModal}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-7 px-3 shadow-xs"
+                    >
+                      Assign Driver
+                    </Button>
+                  )}
+                </div>
+              )}
 
               {isOutbound && (
                 <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-2 text-[11px] text-emerald-900 font-bold">
@@ -795,32 +976,116 @@ function ShipmentDetails() {
             <AlertCircle className="h-3.5 w-3.5 mr-1" /> Report Issue
           </Button>
 
-          {isDelivered ? (
-            <Button
-              disabled
-              className="h-10 bg-emerald-800 text-white font-bold text-xs px-6 opacity-90"
-            >
-              <CheckCircle2 className="h-4 w-4 mr-1.5" /> Delivered
-            </Button>
-          ) : isInTransit ? (
-            <Button
-              onClick={() => handleStatusUpdate("DELIVERED")}
-              disabled={updating}
-              className="h-10 bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs px-6"
-            >
-              <CheckCircle2 className="h-4 w-4 mr-1.5" /> Confirm Delivery to Warehouse
-            </Button>
+          {/* Role-Specific Action Controls */}
+          {isLogisticsCoordinator ? (
+            /* Logistics Coordinator View: Assign/Reassign driver, NO confirm delivery/pickup buttons */
+            <div className="flex items-center gap-3">
+              {isDelivered ? (
+                <div className="h-10 bg-emerald-800 text-white font-bold text-xs px-5 rounded-lg flex items-center gap-1.5 opacity-90">
+                  <CheckCircle2 className="h-4 w-4" /> Delivered &amp; Verified
+                </div>
+              ) : isInTransit ? (
+                <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-900 text-xs px-4 py-2.5 rounded-xl font-medium">
+                  <Truck className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span>
+                    In Transit with Driver <strong>{shipment.driverName}</strong> ({shipment.vehicleNumber}). Delivery confirmation is performed by the driver via mobile app.
+                  </span>
+                </div>
+              ) : !shipment.driverName ? (
+                <Button
+                  onClick={handleOpenAssignModal}
+                  className="h-10 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-6 shadow-xs cursor-pointer flex items-center gap-1.5"
+                >
+                  <Truck className="h-4 w-4" /> Assign Active Driver
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 text-slate-800 text-xs px-3.5 py-2 rounded-xl font-medium">
+                    <Clock className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span>
+                      Driver Assigned: <strong>{shipment.driverName}</strong> ({shipment.vehicleNumber})
+                    </span>
+                  </div>
+                  <Button
+                    onClick={handleOpenAssignModal}
+                    variant="outline"
+                    className="h-10 border-blue-300 text-blue-700 hover:bg-blue-50 font-bold text-xs px-4 cursor-pointer flex items-center gap-1"
+                  >
+                    <Truck className="h-3.5 w-3.5" /> Reassign Driver
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : isProcessor ? (
+            /* Processor View: Shows delivery OTP banner, NO confirm delivery button */
+            isInTransit ? (
+              <div className="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700/60 rounded-xl px-4 py-2.5 shadow-2xs">
+                <Clock className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
+                <div className="text-xs">
+                  <span className="font-bold text-slate-900 dark:text-slate-100">
+                    In Transit &mdash; Awaiting Driver Delivery
+                  </span>
+                  <span className="text-slate-600 dark:text-slate-400 block text-[11px] mt-0.5">
+                    Your Delivery OTP is <strong className="font-mono text-emerald-800 dark:text-emerald-300 font-black text-sm">{shipment.verificationCode || "9304"}</strong>. Provide this code to the driver upon delivery.
+                  </span>
+                </div>
+              </div>
+            ) : isDelivered ? (
+              <div className="h-10 bg-emerald-800 text-white font-bold text-xs px-5 rounded-lg flex items-center gap-1.5 opacity-90">
+                <CheckCircle2 className="h-4 w-4" /> Delivered &amp; Verified
+              </div>
+            ) : (
+              <div className="text-xs font-semibold text-slate-600 bg-slate-100 px-4 py-2.5 rounded-lg">
+                Status: {shipment.status?.replace(/_/g, " ")}
+              </div>
+            )
           ) : (
-            <Button
-              onClick={() => {
-                setInputCode("");
-                setCodeError("");
-                setConfirmModalOpen(true);
-              }}
-              className="h-10 bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs px-6 shadow-xs"
-            >
-              <Truck className="h-4 w-4 mr-1.5" /> Confirm Pickup
-            </Button>
+            /* Driver View: Confirms pickup and confirms delivery */
+            isDelivered ? (
+              <Button
+                disabled
+                className="h-10 bg-emerald-800 text-white font-bold text-xs px-6 opacity-90"
+              >
+                <CheckCircle2 className="h-4 w-4 mr-1.5" /> Delivered
+              </Button>
+            ) : isInTransit ? (
+              isOutbound ? (
+                <Button
+                  onClick={() => {
+                    setDeliveryOtp("");
+                    setDeliveryError("");
+                    setProcessorDeliveryModalOpen(true);
+                  }}
+                  disabled={updating}
+                  className="h-10 bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs px-6 shadow-xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Camera className="h-4 w-4" /> Confirm Delivery (Photo + OTP)
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => handleStatusUpdate("DELIVERED")}
+                  disabled={updating}
+                  className="h-10 bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs px-6"
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-1.5" /> Confirm Delivery to Warehouse
+                </Button>
+              )
+            ) : !shipment.driverName ? (
+              <div className="text-xs font-semibold text-amber-800 bg-amber-50 px-4 py-2.5 rounded-lg border border-amber-200">
+                <Clock className="inline w-3.5 h-3.5 mr-1 text-amber-600" /> Awaiting Driver Assignment
+              </div>
+            ) : (
+              <Button
+                onClick={() => {
+                  setInputCode("");
+                  setCodeError("");
+                  setConfirmModalOpen(true);
+                }}
+                className="h-10 bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs px-6 shadow-xs"
+              >
+                <Truck className="h-4 w-4 mr-1.5" /> Confirm Pickup
+              </Button>
+            )
           )}
         </div>
       </div>
@@ -971,6 +1236,260 @@ function ShipmentDetails() {
               {submittingReport ? "Submitting..." : "Submit Issue Report"}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Outbound Processor Delivery Confirmation Dialog (Photo + OTP) */}
+      <Dialog open={processorDeliveryModalOpen} onOpenChange={setProcessorDeliveryModalOpen}>
+        <DialogContent className="max-w-md bg-white p-6 rounded-xl shadow-xl">
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-emerald-100 text-emerald-800">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-base font-bold text-slate-900">
+                  Confirm Delivery to Processor
+                </DialogTitle>
+                <DialogDescription className="text-xs text-slate-500">
+                  Driver must verify delivery with proof photo and processor OTP.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-4 my-3">
+            {deliveryError && (
+              <div className="p-2.5 bg-red-50 border border-red-200 text-red-700 text-xs rounded-md flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{deliveryError}</span>
+              </div>
+            )}
+
+            {/* Photo Proof */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                <span>Proof of Delivery Photo</span>
+                <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-medium">Required</span>
+              </label>
+              
+              <div className="border-2 border-dashed border-slate-200 rounded-lg p-3 text-center bg-slate-50 hover:bg-slate-100/60 transition-colors">
+                {deliveryPhoto ? (
+                  <div className="space-y-2">
+                    <img
+                      src={deliveryPhoto}
+                      alt="Delivery Proof"
+                      className="w-full h-36 object-cover rounded-md border border-slate-200 shadow-xs"
+                    />
+                    <div className="flex items-center justify-center gap-2">
+                      <label className="cursor-pointer text-[11px] font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1">
+                        <Camera className="h-3.5 w-3.5" /> Retake / Change Photo
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => setDeliveryPhoto(reader.result);
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="cursor-pointer py-4 flex flex-col items-center justify-center">
+                    <Upload className="h-8 w-8 text-slate-400 mb-1" />
+                    <span className="text-xs font-semibold text-slate-700">Click to upload delivery photo</span>
+                    <span className="text-[10px] text-slate-400">or capture using mobile camera</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => setDeliveryPhoto(reader.result);
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+
+            {/* OTP Verification */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                <span>Recipient Verification OTP</span>
+                <span className="text-[10px] text-slate-400">Ask processor for 4-digit code</span>
+              </label>
+              <Input
+                type="text"
+                maxLength={4}
+                value={deliveryOtp}
+                onChange={(e) => setDeliveryOtp(e.target.value.replace(/\D/g, ""))}
+                placeholder="e.g. 9304"
+                className="text-center font-mono tracking-widest text-lg font-bold h-11 border-slate-300 focus:border-emerald-600 focus:ring-emerald-600"
+              />
+              <p className="text-[10px] text-slate-500 mt-1">
+                The processor can see this OTP on their Purchase Requests &amp; Payment page.
+              </p>
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Delivery Notes / Condition
+              </label>
+              <Input
+                type="text"
+                value={deliveryNotes}
+                onChange={(e) => setDeliveryNotes(e.target.value)}
+                placeholder="e.g. Delivered 1,250 kg bags in good condition"
+                className="text-xs h-9 border-slate-300"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <Button
+              variant="outline"
+              onClick={() => setProcessorDeliveryModalOpen(false)}
+              className="h-9 text-xs font-bold"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmProcessorDelivery}
+              disabled={submittingDelivery || !deliveryOtp || deliveryOtp.length !== 4}
+              className="h-9 bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs px-5 flex items-center gap-1.5"
+            >
+              {submittingDelivery ? (
+                "Verifying..."
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4" /> Verify OTP &amp; Confirm Delivery
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Active Driver Modal */}
+      <Dialog open={assignDriverModalOpen} onOpenChange={setAssignDriverModalOpen}>
+        <DialogContent className="max-w-md bg-white p-6 border border-slate-200">
+          <DialogHeader className="border-b pb-3">
+            <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <Truck className="h-5 w-5 text-blue-600" />
+              Assign Active Driver &amp; Vehicle
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500 mt-1">
+              Select an available registered driver for shipment <b>{shipment?.dispatchCode || shipment?.id}</b>. Drivers in transit or inactive cannot be assigned.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleAssignDriver} className="space-y-4 py-3 text-xs">
+            {assignError && (
+              <div className="p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs font-semibold">
+                {assignError}
+              </div>
+            )}
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Select Registered Driver</label>
+              <Select
+                value={selectedDriverId}
+                onValueChange={(val) => {
+                  setSelectedDriverId(val);
+                  const found = driversList.find((d) => d.id === val);
+                  if (found) {
+                    setAssignDriverName(found.name || "");
+                    setAssignDriverPhone(found.phone || "");
+                    setAssignVehicleNo(found.vehicleNumber || "");
+                  }
+                }}
+              >
+                <SelectTrigger className="h-10 text-xs bg-slate-50 border-slate-300 font-bold text-slate-900">
+                  <SelectValue placeholder="Choose an active, available driver..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {driversList.map((drv) => {
+                    const isAvail = (drv.status || "").toUpperCase() === "AVAILABLE" || (drv.status || "").toUpperCase() === "ACTIVE";
+                    const isInTransit = (drv.status || "").toUpperCase() === "IN_TRANSIT" || (drv.status || "").toUpperCase() === "ON_JOURNEY";
+                    const isDisabled = !isAvail;
+
+                    return (
+                      <SelectItem key={drv.id} value={drv.id} disabled={isDisabled}>
+                        <div className="flex items-center justify-between gap-3 text-xs">
+                          <span className={`font-semibold ${isDisabled ? "text-slate-400 line-through" : "text-slate-900"}`}>
+                            {drv.name} ({drv.phone})
+                          </span>
+                          <span className="font-mono text-[10px]">
+                            {isAvail ? (
+                              <span className="text-emerald-700 font-bold">Active • {drv.vehicleNumber || "Available"}</span>
+                            ) : isInTransit ? (
+                              <span className="text-amber-700 font-bold bg-amber-50 px-1 py-0.5 rounded">In Transit (Unavailable)</span>
+                            ) : (
+                              <span className="text-red-600 font-bold bg-red-50 px-1 py-0.5 rounded">Inactive (Off-Duty)</span>
+                            )}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Vehicle Registration Number</label>
+              <Input
+                required
+                placeholder="e.g. KA-09-AB-4521"
+                value={assignVehicleNo}
+                onChange={(e) => setAssignVehicleNo(e.target.value)}
+                className="bg-slate-50 border-slate-300 font-mono text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Driver Full Name</label>
+              <Input
+                required
+                placeholder="Driver Name"
+                value={assignDriverName}
+                onChange={(e) => setAssignDriverName(e.target.value)}
+                className="bg-slate-50 border-slate-300 text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Driver Phone Number</label>
+              <Input
+                required
+                placeholder="Driver Phone"
+                value={assignDriverPhone}
+                onChange={(e) => setAssignDriverPhone(e.target.value)}
+                className="bg-slate-50 border-slate-300 text-xs font-mono"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 border-t pt-3">
+              <Button variant="outline" size="sm" type="button" onClick={() => setAssignDriverModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" size="sm" className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs" disabled={submittingAssign}>
+                {submittingAssign ? "Assigning..." : "Assign Active Driver"}
+              </Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

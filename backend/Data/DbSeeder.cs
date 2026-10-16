@@ -2,6 +2,7 @@ using backend.Features.Farmers.Entities;
 using backend.Features.Farms.Entities;
 using backend.Features.Procurement.Entities;
 using backend.Features.Warehouses.Entities;
+using backend.Features.Inventory.Entities;
 using Microsoft.EntityFrameworkCore;
 using backend.Features.Fpo.Entities;
 using backend.Features.Auth.Entities;
@@ -38,6 +39,10 @@ public static class DbSeeder
                 ALTER TABLE ""Dispatches"" ADD COLUMN IF NOT EXISTS ""PickupLongitude"" numeric(10,7);
                 ALTER TABLE ""Dispatches"" ADD COLUMN IF NOT EXISTS ""DestinationLatitude"" numeric(10,7);
                 ALTER TABLE ""Dispatches"" ADD COLUMN IF NOT EXISTS ""DestinationLongitude"" numeric(10,7);
+                UPDATE ""Dispatches"" SET ""PickupLatitude"" = 22.5645, ""PickupLongitude"" = 72.9289 WHERE ""PickupLatitude"" IS NULL OR ""PickupLatitude"" < 20;
+                UPDATE ""Dispatches"" SET ""DestinationLatitude"" = 22.9754, ""DestinationLongitude"" = 72.6322 WHERE ""DestinationLatitude"" IS NULL OR ""DestinationLatitude"" < 20;
+                UPDATE ""Dispatches"" SET ""SourceAddress"" = 'Gujarat FPO Central Storage, Anand, Gujarat' WHERE ""SourceAddress"" LIKE '%Mandya%';
+                UPDATE ""Dispatches"" SET ""DestinationAddress"" = 'Millet Shakti Processing Unit, GIDC Phase 2, Vatva, Ahmedabad, Gujarat - 382445' WHERE ""DestinationAddress"" LIKE '%Mandya%';
                 ALTER TABLE ""ProcurementLots"" ADD COLUMN IF NOT EXISTS ""DriverLatitude"" numeric(10,7);
                 ALTER TABLE ""ProcurementLots"" ADD COLUMN IF NOT EXISTS ""DriverLongitude"" numeric(10,7);
                 ALTER TABLE ""ProcurementLots"" ADD COLUMN IF NOT EXISTS ""DriverAccuracyMeters"" numeric(10,2);
@@ -93,6 +98,42 @@ public static class DbSeeder
                     ""CreatedAt"" timestamp with time zone NOT NULL,
                     ""UpdatedAt"" timestamp with time zone
                 );
+                CREATE TABLE IF NOT EXISTS ""PurchaseRequests"" (
+                    ""Id"" uuid NOT NULL PRIMARY KEY,
+                    ""RequestCode"" text NOT NULL,
+                    ""LotId"" text NOT NULL,
+                    ""MilletType"" text NOT NULL,
+                    ""RequestedQuantityKg"" numeric(12,2) NOT NULL,
+                    ""IndicativePricePerKg"" numeric(10,2) NOT NULL,
+                    ""IndicativeValue"" numeric(12,2) NOT NULL,
+                    ""FpoName"" text NOT NULL,
+                    ""ProcessorId"" text NOT NULL,
+                    ""ProcessorName"" text NOT NULL,
+                    ""SubmittedDate"" timestamp with time zone NOT NULL,
+                    ""Status"" text NOT NULL,
+                    ""AgreementId"" text,
+                    ""AgreedQuantityKg"" numeric(12,2),
+                    ""SellingPricePerKg"" numeric(10,2),
+                    ""TotalValue"" numeric(12,2),
+                    ""AgreementValidUntil"" timestamp with time zone,
+                    ""PaymentTerms"" text,
+                    ""OwnershipTransfer"" text,
+                    ""CancellationTerms"" text,
+                    ""PaymentStatus"" text,
+                    ""PaymentMethod"" text,
+                    ""PaymentTransactionId"" text,
+                    ""PaymentDate"" timestamp with time zone,
+                    ""InvoiceNumber"" text,
+                    ""ShipmentId"" uuid,
+                    ""DispatchCode"" text,
+                    ""DeliveryChallanNumber"" text,
+                    ""DeliveryOtp"" text,
+                    ""DeliveryProofPhotoUrl"" text,
+                    ""DeliveredAt"" timestamp with time zone,
+                    ""DeliveryNotes"" text,
+                    ""CreatedAt"" timestamp with time zone NOT NULL,
+                    ""UpdatedAt"" timestamp with time zone NOT NULL
+                );
             ");
         }
         catch { }
@@ -104,6 +145,8 @@ public static class DbSeeder
         await SeedProcurementLotsAsync(context);
         await SeedWarehousesAsync(context);
         await SeedDriversAsync(context);
+        await SeedPurchaseRequestsAsync(context);
+        await SeedInventoryBatchesAsync(context);
     }
 
     private static async Task SeedFarmCropsAsync(AppDbContext context)
@@ -177,7 +220,8 @@ public static class DbSeeder
             ("warehouse@shreeanna.com", Roles.WarehouseManager, "Suresh Kumar (Warehouse Manager)"),
             ("logistics@shreeanna.com", Roles.LogisticsCoordinator, "Ramesh Verma (Logistics Coordinator)"),
             ("accountant@shreeanna.com", Roles.Accountant, "Priya Sharma (Accountant)"),
-            ("driver@shreeanna.com", Roles.Driver, "Ravi Kumar (Driver)")
+            ("driver@shreeanna.com", Roles.Driver, "Ravi Kumar (Driver)"),
+            ("processor@shreeanna.com", Roles.Processor, "Pooja Hegde (Millet Shakti SHG / Processor)")
         };
 
         foreach (var acc in seedAccounts)
@@ -534,6 +578,22 @@ public static class DbSeeder
     {
         if (await context.Drivers.AnyAsync())
         {
+            if (!await context.Drivers.AnyAsync(d => d.DriverCode == "DRV-005"))
+            {
+                context.Drivers.Add(new backend.Features.Logistics.Entities.Driver
+                {
+                    Id = Guid.Parse("d5555555-5555-5555-5555-555555555555"),
+                    DriverCode = "DRV-005",
+                    Name = "Vijay Patil (Inactive / Leave)",
+                    Phone = "9876543215",
+                    LicenseNumber = "KA0920190011223",
+                    VehicleNumber = "KA-09-XX-9900",
+                    VehicleCapacityKg = 6000,
+                    Status = "INACTIVE",
+                    CreatedAt = DateTime.UtcNow
+                });
+                await context.SaveChangesAsync();
+            }
             return;
         }
 
@@ -578,6 +638,221 @@ public static class DbSeeder
         };
 
         await context.Drivers.AddRangeAsync(drivers);
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task SeedPurchaseRequestsAsync(AppDbContext context)
+    {
+        if (await context.PurchaseRequests.AnyAsync())
+        {
+            return;
+        }
+
+        var requests = new List<PurchaseRequest>
+        {
+            new PurchaseRequest
+            {
+                Id = Guid.Parse("aa111111-1111-1111-1111-111111111111"),
+                RequestCode = "PR-2026-001",
+                LotId = "LOT-2026-004",
+                MilletType = "Pearl Millet",
+                RequestedQuantityKg = 1250,
+                IndicativePricePerKg = 32.00m,
+                IndicativeValue = 40000m,
+                FpoName = "Mandya FPO",
+                ProcessorId = "proc-001",
+                ProcessorName = "Millet Shakti SHG",
+                SubmittedDate = DateTime.SpecifyKind(new DateTime(2026, 8, 22, 10, 15, 0), DateTimeKind.Utc),
+                Status = "AGREEMENT_PROPOSED",
+                AgreementId = "PPA-2026-004",
+                AgreedQuantityKg = 1250,
+                SellingPricePerKg = 32.50m,
+                TotalValue = 40625m,
+                AgreementValidUntil = DateTime.SpecifyKind(new DateTime(2026, 8, 27, 23, 59, 59), DateTimeKind.Utc),
+                PaymentTerms = "100% advance before dispatch",
+                OwnershipTransfer = "After payment confirmation and delivery",
+                CancellationTerms = "Subject to agreement terms",
+                PaymentStatus = "PENDING",
+                DeliveryOtp = "9304",
+                CreatedAt = DateTime.SpecifyKind(new DateTime(2026, 8, 22, 10, 15, 0), DateTimeKind.Utc),
+                UpdatedAt = DateTime.SpecifyKind(new DateTime(2026, 8, 22, 14, 30, 0), DateTimeKind.Utc)
+            },
+            new PurchaseRequest
+            {
+                Id = Guid.Parse("aa222222-2222-2222-2222-222222222222"),
+                RequestCode = "PR-2026-002",
+                LotId = "LOT-2026-006",
+                MilletType = "Foxtail Millet",
+                RequestedQuantityKg = 800,
+                IndicativePricePerKg = 34.00m,
+                IndicativeValue = 27200m,
+                FpoName = "Mysore FPO",
+                ProcessorId = "proc-001",
+                ProcessorName = "Millet Shakti SHG",
+                SubmittedDate = DateTime.SpecifyKind(new DateTime(2026, 8, 21, 11, 30, 0), DateTimeKind.Utc),
+                Status = "UNDER_NEGOTIATION",
+                CreatedAt = DateTime.SpecifyKind(new DateTime(2026, 8, 21, 11, 30, 0), DateTimeKind.Utc),
+                UpdatedAt = DateTime.SpecifyKind(new DateTime(2026, 8, 21, 16, 0, 0), DateTimeKind.Utc)
+            },
+            new PurchaseRequest
+            {
+                Id = Guid.Parse("aa333333-3333-3333-3333-333333333333"),
+                RequestCode = "PR-2026-003",
+                LotId = "LOT-2026-008",
+                MilletType = "Finger Millet",
+                RequestedQuantityKg = 500,
+                IndicativePricePerKg = 30.00m,
+                IndicativeValue = 15000m,
+                FpoName = "Hassan FPO",
+                ProcessorId = "proc-001",
+                ProcessorName = "Millet Shakti SHG",
+                SubmittedDate = DateTime.SpecifyKind(new DateTime(2026, 8, 20, 9, 0, 0), DateTimeKind.Utc),
+                Status = "REQUESTED",
+                CreatedAt = DateTime.SpecifyKind(new DateTime(2026, 8, 20, 9, 0, 0), DateTimeKind.Utc),
+                UpdatedAt = DateTime.SpecifyKind(new DateTime(2026, 8, 20, 9, 0, 0), DateTimeKind.Utc)
+            },
+            new PurchaseRequest
+            {
+                Id = Guid.Parse("aa444444-4444-4444-4444-444444444444"),
+                RequestCode = "PR-2026-004",
+                LotId = "LOT-2026-002",
+                MilletType = "Pearl Millet",
+                RequestedQuantityKg = 1000,
+                IndicativePricePerKg = 31.00m,
+                IndicativeValue = 31000m,
+                FpoName = "Mandya FPO",
+                ProcessorId = "proc-001",
+                ProcessorName = "Millet Shakti SHG",
+                SubmittedDate = DateTime.SpecifyKind(new DateTime(2026, 8, 18, 14, 0, 0), DateTimeKind.Utc),
+                Status = "REJECTED",
+                CreatedAt = DateTime.SpecifyKind(new DateTime(2026, 8, 18, 14, 0, 0), DateTimeKind.Utc),
+                UpdatedAt = DateTime.SpecifyKind(new DateTime(2026, 8, 19, 10, 0, 0), DateTimeKind.Utc)
+            }
+        };
+
+        await context.PurchaseRequests.AddRangeAsync(requests);
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task SeedInventoryBatchesAsync(AppDbContext context)
+    {
+        if (await context.InventoryBatches.AnyAsync())
+        {
+            return;
+        }
+
+        var wh1 = await context.Warehouses.FirstOrDefaultAsync(w => w.WarehouseCode == "WH-GUJ-001")
+                  ?? await context.Warehouses.FirstOrDefaultAsync();
+        var wh2 = await context.Warehouses.FirstOrDefaultAsync(w => w.WarehouseCode == "WH-GUJ-004")
+                  ?? wh1;
+        var wh3 = await context.Warehouses.FirstOrDefaultAsync(w => w.WarehouseCode == "WH-GUJ-002")
+                  ?? wh1;
+
+        if (wh1 == null)
+        {
+            return;
+        }
+
+        var batch1 = new InventoryBatch
+        {
+            Id = Guid.Parse("b1111111-1111-1111-1111-111111111111"),
+            BatchCode = "BAT-2026-FING-01",
+            WarehouseId = wh1.Id,
+            MilletType = "Finger Millet (Ragi)",
+            QuantityInKg = 4500,
+            Grade = "Grade A",
+            Status = "IN_STOCK",
+            ReceivedDate = DateTime.SpecifyKind(new DateTime(2026, 10, 4, 10, 0, 0), DateTimeKind.Utc)
+        };
+
+        var batch2 = new InventoryBatch
+        {
+            Id = Guid.Parse("b2222222-2222-2222-2222-222222222222"),
+            BatchCode = "BAT-2026-PEARL-02",
+            WarehouseId = wh1.Id,
+            MilletType = "Pearl Millet (Bajra)",
+            QuantityInKg = 3200,
+            Grade = "Grade A",
+            Status = "IN_STOCK",
+            ReceivedDate = DateTime.SpecifyKind(new DateTime(2026, 10, 8, 11, 30, 0), DateTimeKind.Utc)
+        };
+
+        var batch3 = new InventoryBatch
+        {
+            Id = Guid.Parse("b3333333-3333-3333-3333-333333333333"),
+            BatchCode = "BAT-2026-FOX-03",
+            WarehouseId = (wh2 ?? wh1).Id,
+            MilletType = "Foxtail Millet",
+            QuantityInKg = 2800,
+            Grade = "Grade A+",
+            Status = "IN_STOCK",
+            ReceivedDate = DateTime.SpecifyKind(new DateTime(2026, 10, 11, 9, 15, 0), DateTimeKind.Utc)
+        };
+
+        var batch4 = new InventoryBatch
+        {
+            Id = Guid.Parse("b4444444-4444-4444-4444-444444444444"),
+            BatchCode = "BAT-2026-LIT-04",
+            WarehouseId = (wh3 ?? wh1).Id,
+            MilletType = "Little Millet",
+            QuantityInKg = 1950,
+            Grade = "Grade A",
+            Status = "ALLOCATED",
+            ReceivedDate = DateTime.SpecifyKind(new DateTime(2026, 10, 13, 14, 0, 0), DateTimeKind.Utc)
+        };
+
+        var batches = new List<InventoryBatch> { batch1, batch2, batch3, batch4 };
+        await context.InventoryBatches.AddRangeAsync(batches);
+
+        var movements = new List<StockMovement>
+        {
+            new StockMovement
+            {
+                Id = Guid.NewGuid(),
+                MovementCode = "MOV-2026-001",
+                BatchId = batch1.Id,
+                MovementType = "INBOUND",
+                QuantityKg = 4500,
+                FromLocation = "Procurement Lot LOT-001 (Dahod)",
+                ToLocation = "Silo Bin Bay A-01",
+                MovementDate = DateTime.SpecifyKind(new DateTime(2026, 10, 4, 11, 0, 0), DateTimeKind.Utc)
+            },
+            new StockMovement
+            {
+                Id = Guid.NewGuid(),
+                MovementCode = "MOV-2026-002",
+                BatchId = batch2.Id,
+                MovementType = "INBOUND",
+                QuantityKg = 3200,
+                FromLocation = "Procurement Lot LOT-002 (Bhavnagar)",
+                ToLocation = "Silo Bin Bay B-04",
+                MovementDate = DateTime.SpecifyKind(new DateTime(2026, 10, 8, 12, 15, 0), DateTimeKind.Utc)
+            },
+            new StockMovement
+            {
+                Id = Guid.NewGuid(),
+                MovementCode = "MOV-2026-003",
+                BatchId = batch3.Id,
+                MovementType = "INBOUND",
+                QuantityKg = 2800,
+                FromLocation = "Weighbridge Reception Bay",
+                ToLocation = "Silo Bin Bay C-02",
+                MovementDate = DateTime.SpecifyKind(new DateTime(2026, 10, 11, 10, 0, 0), DateTimeKind.Utc)
+            },
+            new StockMovement
+            {
+                Id = Guid.NewGuid(),
+                MovementCode = "MOV-2026-004",
+                BatchId = batch4.Id,
+                MovementType = "TRANSFER",
+                QuantityKg = 500,
+                FromLocation = "Silo Bin Bay C-02",
+                ToLocation = "Processor Packing Bay (DSP-2026-001)",
+                MovementDate = DateTime.SpecifyKind(new DateTime(2026, 10, 15, 16, 20, 0), DateTimeKind.Utc)
+            }
+        };
+
+        await context.StockMovements.AddRangeAsync(movements);
         await context.SaveChangesAsync();
     }
 }

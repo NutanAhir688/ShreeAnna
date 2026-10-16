@@ -21,6 +21,8 @@ public interface ILogisticsService
     Task<List<DispatchResponse>> GetDriverDispatchesAsync(string? phoneOrName);
     Task<DispatchResponse> ConfirmWarehouseReceiptAsync(Guid id);
     Task<DispatchResponse?> GetByLotIdAsync(string lotId);
+    Task<DispatchResponse> AssignDriverAsync(Guid id, AssignDriverRequest request);
+    Task<DispatchResponse> AbortRideAsync(Guid id, string reason);
 }
 
 public class LogisticsService : ILogisticsService
@@ -235,6 +237,24 @@ public class LogisticsService : ILogisticsService
             }
         }
 
+        if (!string.IsNullOrWhiteSpace(dispatch.DriverPhone))
+        {
+            var driver = await _context.Drivers.FirstOrDefaultAsync(d => d.Phone == dispatch.DriverPhone || d.Name == dispatch.DriverName);
+            if (driver != null)
+            {
+                driver.Status = "AVAILABLE";
+            }
+        }
+
+        // Also update any linked purchase request
+        var pr = await _context.PurchaseRequests.FirstOrDefaultAsync(r => r.ShipmentId == dispatch.Id || r.DispatchCode == dispatch.DispatchCode);
+        if (pr != null)
+        {
+            pr.Status = "DELIVERED";
+            pr.DeliveredAt = DateTime.UtcNow;
+            pr.UpdatedAt = DateTime.UtcNow;
+        }
+
         await _context.SaveChangesAsync();
         return Map(dispatch);
     }
@@ -319,17 +339,156 @@ public class LogisticsService : ILogisticsService
         var drivers = await _context.Drivers
             .OrderByDescending(d => d.CreatedAt)
             .ToListAsync();
-        return drivers.Select(d => new DriverResponse(
-            d.Id,
-            d.DriverCode,
-            d.Name,
-            d.Phone,
-            d.LicenseNumber,
-            d.VehicleNumber,
-            d.VehicleCapacityKg,
-            d.Status,
-            d.CreatedAt
-        )).ToList();
+
+        var inTransitDriverPhones = await _context.Dispatches
+            .Where(d => d.Status == "IN_TRANSIT" || d.Status == "DISPATCHED" || d.Status == "PICKED_UP")
+            .Select(d => d.DriverPhone)
+            .ToListAsync();
+
+        return drivers.Select(d =>
+        {
+            var status = d.Status ?? "AVAILABLE";
+            if (status != "INACTIVE" && status != "OFF_DUTY" && !string.IsNullOrWhiteSpace(d.Phone) && inTransitDriverPhones.Contains(d.Phone))
+            {
+                status = "IN_TRANSIT";
+            }
+            return new DriverResponse(
+                d.Id,
+                d.DriverCode,
+                d.Name,
+                d.Phone,
+                d.LicenseNumber,
+                d.VehicleNumber,
+                d.VehicleCapacityKg,
+                status,
+                d.CreatedAt
+            );
+        }).ToList();
+    }
+
+    public async Task<DispatchResponse> AssignDriverAsync(Guid id, AssignDriverRequest request)
+    {
+        var dispatch = await _context.Dispatches
+            .Include(d => d.Warehouse)
+            .FirstOrDefaultAsync(d => d.Id == id);
+        if (dispatch is null) throw new KeyNotFoundException("Dispatch not found.");
+
+        Driver? driver = null;
+        if (request.DriverId.HasValue && request.DriverId.Value != Guid.Empty)
+        {
+            driver = await _context.Drivers.FirstOrDefaultAsync(d => d.Id == request.DriverId.Value);
+        }
+        else if (!string.IsNullOrWhiteSpace(request.DriverPhone))
+        {
+            driver = await _context.Drivers.FirstOrDefaultAsync(d => d.Phone == request.DriverPhone.Trim());
+        }
+        else if (!string.IsNullOrWhiteSpace(request.DriverName))
+        {
+            driver = await _context.Drivers.FirstOrDefaultAsync(d => d.Name.ToLower() == request.DriverName.Trim().ToLower());
+        }
+
+        if (driver == null)
+        {
+            throw new KeyNotFoundException("Driver not found in system records.");
+        }
+
+        var drvStatus = (driver.Status ?? "AVAILABLE").ToUpper();
+        if (drvStatus == "INACTIVE" || drvStatus == "OFF_DUTY" || drvStatus == "SUSPENDED")
+        {
+            throw new InvalidOperationException($"Cannot assign driver {driver.Name}: Driver is currently INACTIVE ({driver.Status}).");
+        }
+
+        var isDriverInTransit = await _context.Dispatches.AnyAsync(d =>
+            d.Id != id &&
+            (d.Status == "IN_TRANSIT" || d.Status == "DISPATCHED" || d.Status == "PICKED_UP") &&
+            (d.DriverPhone == driver.Phone || (d.DriverName != "" && d.DriverName.ToLower() == driver.Name.ToLower()))
+        );
+
+        if (isDriverInTransit || drvStatus == "IN_TRANSIT" || drvStatus == "ON_JOURNEY")
+        {
+            throw new InvalidOperationException($"Cannot assign driver {driver.Name}: Driver is currently IN TRANSIT on another active shipment.");
+        }
+
+        dispatch.DriverName = driver.Name;
+        dispatch.DriverPhone = driver.Phone;
+        dispatch.VehicleNumber = !string.IsNullOrWhiteSpace(request.VehicleNumber) ? request.VehicleNumber : driver.VehicleNumber;
+        dispatch.VehicleCapacityKg = request.VehicleCapacityKg ?? driver.VehicleCapacityKg;
+        dispatch.Status = "VEHICLE_ASSIGNED";
+        dispatch.DriverLatitude = 22.5645m;
+        dispatch.DriverLongitude = 72.9289m;
+        dispatch.DriverAccuracyMeters = 5.0m;
+        dispatch.DriverLastUpdated = DateTime.UtcNow;
+
+        driver.Status = "ASSIGNED";
+
+        // Also update any linked purchase request
+        var pr = await _context.PurchaseRequests.FirstOrDefaultAsync(r => r.ShipmentId == dispatch.Id || r.DispatchCode == dispatch.DispatchCode);
+        if (pr != null)
+        {
+            pr.Status = "VEHICLE_ASSIGNED";
+            pr.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+        return Map(dispatch);
+    }
+
+    public async Task<DispatchResponse> AbortRideAsync(Guid id, string reason)
+    {
+        var dispatch = await _context.Dispatches
+            .Include(d => d.Warehouse)
+            .FirstOrDefaultAsync(d => d.Id == id);
+        if (dispatch is null) throw new KeyNotFoundException("Dispatch not found.");
+
+        dispatch.Status = "PENDING_DISPATCH";
+        dispatch.SpecialInstructions = string.IsNullOrWhiteSpace(dispatch.SpecialInstructions)
+            ? $"[ABORTED]: {reason}"
+            : $"{dispatch.SpecialInstructions} | [ABORTED]: {reason}";
+
+        // Free up the driver
+        if (!string.IsNullOrWhiteSpace(dispatch.DriverPhone))
+        {
+            var driver = await _context.Drivers.FirstOrDefaultAsync(d => d.Phone == dispatch.DriverPhone || d.Name == dispatch.DriverName);
+            if (driver != null)
+            {
+                driver.Status = "AVAILABLE";
+            }
+        }
+
+        // Also update any linked purchase request
+        var pr = await _context.PurchaseRequests.FirstOrDefaultAsync(r => r.ShipmentId == dispatch.Id || r.DispatchCode == dispatch.DispatchCode);
+        if (pr != null)
+        {
+            pr.Status = "PENDING_DISPATCH";
+            pr.UpdatedAt = DateTime.UtcNow;
+        }
+
+        // Log shipment issue automatically
+        var issue = new ShipmentIssue
+        {
+            Id = Guid.NewGuid(),
+            DispatchId = dispatch.Id,
+            ReferenceType = "Dispatch",
+            ReferenceId = dispatch.DispatchCode,
+            FarmerName = dispatch.FarmerOrProcessorName,
+            DriverName = dispatch.DriverName,
+            IssueCategory = "Journey Aborted / Route Emergency",
+            IncidentDateTime = DateTime.UtcNow,
+            PriorityLevel = "High",
+            Subject = $"Journey Aborted for {dispatch.DispatchCode}",
+            DetailedDescription = reason,
+            Status = "OPEN",
+            ReportedAt = DateTime.UtcNow
+        };
+        _context.ShipmentIssues.Add(issue);
+
+        // Reset driver assignment on dispatch
+        dispatch.DriverName = "";
+        dispatch.DriverPhone = "";
+        dispatch.VehicleNumber = "";
+
+        await _context.SaveChangesAsync();
+        return Map(dispatch);
     }
 
     public async Task<DriverResponse> CreateDriverAsync(CreateDriverRequest request)
@@ -386,6 +545,22 @@ public class LogisticsService : ILogisticsService
             {
                 lot.Status = "IN_TRANSIT";
             }
+        }
+
+        if (!string.IsNullOrWhiteSpace(dispatch.DriverPhone))
+        {
+            var driver = await _context.Drivers.FirstOrDefaultAsync(d => d.Phone == dispatch.DriverPhone || d.Name == dispatch.DriverName);
+            if (driver != null)
+            {
+                driver.Status = "IN_TRANSIT";
+            }
+        }
+
+        var pr = await _context.PurchaseRequests.FirstOrDefaultAsync(r => r.ShipmentId == dispatch.Id || r.DispatchCode == dispatch.DispatchCode);
+        if (pr != null)
+        {
+            pr.Status = "IN_TRANSIT";
+            pr.UpdatedAt = DateTime.UtcNow;
         }
 
         await _context.SaveChangesAsync();

@@ -24,6 +24,7 @@ class DriverDispatchModel {
   final double? pickupLongitude;
   final double? destinationLatitude;
   final double? destinationLongitude;
+  final double? finalReceivedQuantityKg;
 
   DriverDispatchModel({
     required this.id,
@@ -51,6 +52,7 @@ class DriverDispatchModel {
     this.pickupLongitude,
     this.destinationLatitude,
     this.destinationLongitude,
+    this.finalReceivedQuantityKg,
   });
 
   factory DriverDispatchModel.fromJson(Map<String, dynamic> json) {
@@ -62,10 +64,11 @@ class DriverDispatchModel {
       farmerOrProcessorName: json['farmerOrProcessorName']?.toString() ?? 'Ramesh Patel',
       milletType: json['milletType']?.toString() ?? 'Finger Millet',
       totalQuantityKg: (json['totalQuantityKg'] as num?)?.toDouble() ?? 3500.0,
-      sourceAddress: json['sourceAddress']?.toString() ?? 'Bordi Farm, Dahod',
-      destinationAddress: json['destinationAddress']?.toString() ?? 'Mandya Central Warehouse',
+      finalReceivedQuantityKg: (json['finalReceivedQuantityKg'] as num?)?.toDouble(),
+      sourceAddress: json['sourceAddress']?.toString() ?? 'Gujarat FPO Central Storage, Anand, Gujarat',
+      destinationAddress: json['destinationAddress']?.toString() ?? 'Millet Processing Unit, Vatva, Ahmedabad, Gujarat',
       transportResponsibility: json['transportResponsibility']?.toString() ?? 'FPO Pickup',
-      vehicleNumber: json['vehicleNumber']?.toString() ?? 'KA-09-AB-4521',
+      vehicleNumber: json['vehicleNumber']?.toString() ?? 'GJ-01-AB-4521',
       vehicleCapacityKg: (json['vehicleCapacityKg'] as num?)?.toDouble() ?? 7000.0,
       driverName: json['driverName']?.toString() ?? 'Ravi Kumar',
       driverPhone: json['driverPhone']?.toString() ?? '9876543210',
