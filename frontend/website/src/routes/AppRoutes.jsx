@@ -47,17 +47,16 @@ import FPOMemberDetails from "@/features/fpo/pages/FPOMemberDetails";
 import Reports from "@/features/reports/pages/Reports";
 
 import VerifyCertificate from "../features/quality/pages/VerifyCertificate";
+import LandingPage from "../features/landing/pages/LandingPage";
 
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public Login & Verification Routes */}
+      {/* Public Landing, Login & Verification Routes */}
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/verify-certificate" element={<VerifyCertificate />} />
       <Route path="/verify" element={<VerifyCertificate />} />
-
-      {/* Default redirect to /dashboard */}
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
 
       {/* Protected Dashboard Layout */}
