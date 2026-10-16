@@ -57,11 +57,13 @@ export default function ProcessorDashboard() {
 
   const totalRawProcuredKg = requests
     .filter((r) => r.status === "PAID" || r.status === "DELIVERED" || r.status === "ACCEPTED")
-    .reduce((acc, r) => acc + (r.agreedQuantityKg || r.requestedQuantityKg || 0), 1300);
+    .reduce((acc, r) => acc + (r.agreedQuantityKg || r.requestedQuantityKg || 0), 0);
 
   const totalContractValue = requests
     .filter((r) => r.totalValue)
     .reduce((acc, r) => acc + r.totalValue, 0);
+
+  const estimatedYieldKg = Math.round(totalRawProcuredKg * 0.9);
 
   const handleCopyOtp = (code) => {
     navigator.clipboard.writeText(code);
@@ -159,7 +161,7 @@ export default function ProcessorDashboard() {
         <StatCard
           title="Active Logistics Dispatch"
           value={inTransitReq ? "1 In Transit" : "0 Dispatches"}
-          trendText={inTransitReq ? `OTP: ${inTransitReq.deliveryOtp || "9304"}` : "No active loads"}
+          trendText={inTransitReq ? (inTransitReq.deliveryOtp ? `OTP: ${inTransitReq.deliveryOtp}` : "In Transit") : "No active loads"}
           trendColor="emerald"
           icon={Truck}
           iconBgClass="bg-amber-100/80"
@@ -168,9 +170,9 @@ export default function ProcessorDashboard() {
 
         <StatCard
           title="Finished Goods Yield"
-          value="1,090 kg"
-          trendText="91.5% Milling Yield"
-          trendColor="emerald"
+          value={estimatedYieldKg > 0 ? `${estimatedYieldKg.toLocaleString()} kg` : "0 kg"}
+          trendText={totalRawProcuredKg > 0 ? "Estimated 90% Milling Yield" : "No processed batches"}
+          trendColor={totalRawProcuredKg > 0 ? "emerald" : "slate"}
           icon={TrendingUp}
           iconBgClass="bg-purple-100/80"
           iconColorClass="text-purple-700"
@@ -392,22 +394,26 @@ export default function ProcessorDashboard() {
                 <div className="flex items-center justify-center gap-1.5 text-emerald-800 dark:text-emerald-300 font-bold text-xs uppercase tracking-wider">
                   <Key className="w-3.5 h-3.5" /> Recipient Verification OTP
                 </div>
-                <div className="flex items-center justify-center gap-2">
-                  <span className="font-mono text-2xl font-black tracking-widest text-emerald-900 dark:text-emerald-200 bg-white dark:bg-slate-900 px-4 py-1 rounded-lg border border-emerald-200 shadow-2xs">
-                    {inTransitReq?.deliveryOtp || "9304"}
-                  </span>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => handleCopyOtp(inTransitReq?.deliveryOtp || "9304")}
-                    className="h-8 w-8 text-emerald-700 hover:bg-emerald-100"
-                    title="Copy OTP"
-                  >
-                    {copiedOtp ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-                  </Button>
-                </div>
+                {inTransitReq?.deliveryOtp ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="font-mono text-2xl font-black tracking-widest text-emerald-900 dark:text-emerald-200 bg-white dark:bg-slate-900 px-4 py-1 rounded-lg border border-emerald-200 shadow-2xs">
+                      {inTransitReq.deliveryOtp}
+                    </span>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => handleCopyOtp(inTransitReq.deliveryOtp)}
+                      className="h-8 w-8 text-emerald-700 hover:bg-emerald-100 cursor-pointer"
+                      title="Copy OTP"
+                    >
+                      {copiedOtp ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="font-mono text-sm text-slate-500 py-1">Generated upon dispatch</p>
+                )}
                 <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                  Provide this 4-digit OTP to driver upon truck arrival and unloading inspection.
+                  Provide this verification OTP to the driver upon unloading inspection.
                 </p>
               </div>
 
@@ -416,31 +422,33 @@ export default function ProcessorDashboard() {
                 <div className="flex justify-between">
                   <span>Dispatch Code</span>
                   <span className="font-mono font-bold text-slate-900 dark:text-white">
-                    {inTransitReq?.dispatchCode || "DSP-2026-001"}
+                    {inTransitReq?.dispatchCode || inTransitReq?.id?.slice(0, 8) || "None active"}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Delivery Challan</span>
                   <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
-                    {inTransitReq?.deliveryChallanNumber || "DC-2026-001"}
+                    {inTransitReq?.deliveryChallanNumber || "Pending"}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Assigned Driver</span>
                   <span className="font-bold text-slate-800 dark:text-slate-200">
-                    {inTransitReq?.driverName || "Ravi Kumar"}
+                    {inTransitReq?.driverName || "Pending Assignment"}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Vehicle Number</span>
                   <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
-                    {inTransitReq?.vehicleNumber || "KA-09-AB-4521"}
+                    {inTransitReq?.vehicleNumber || "Pending Vehicle"}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Cargo</span>
                   <span className="font-semibold text-slate-800 dark:text-slate-200">
-                    1,250 kg Pearl Millet
+                    {inTransitReq
+                      ? `${(inTransitReq.agreedQuantityKg || inTransitReq.requestedQuantityKg || 0).toLocaleString()} kg ${inTransitReq.milletType || "Millet"}`
+                      : "No active cargo"}
                   </span>
                 </div>
               </div>

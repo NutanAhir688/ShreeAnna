@@ -27,7 +27,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import StatCard from "../components/StatCard";
-import { warehousesApi, inventoryApi, lotsApi, logisticsApi } from "@/services/api";
+import { warehousesApi, inventoryApi, lotsApi, logisticsApi, qualityApi } from "@/services/api";
 
 export default function WarehouseDashboard() {
   const navigate = useNavigate();
@@ -37,17 +37,19 @@ export default function WarehouseDashboard() {
   const [movements, setMovements] = useState([]);
   const [lots, setLots] = useState([]);
   const [dispatches, setDispatches] = useState([]);
+  const [inspections, setInspections] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [whData, batchesData, movementsData, lotsData, dispatchesData] = await Promise.all([
+      const [whData, batchesData, movementsData, lotsData, dispatchesData, inspectionsData] = await Promise.all([
         warehousesApi.getAll().catch(() => []),
         inventoryApi.getBatches().catch(() => []),
         inventoryApi.getMovements().catch(() => []),
         lotsApi.getAll().catch(() => []),
         logisticsApi.getAll().catch(() => []),
+        qualityApi.getAll().catch(() => []),
       ]);
 
       setWarehouses(Array.isArray(whData) ? whData : []);
@@ -55,6 +57,7 @@ export default function WarehouseDashboard() {
       setMovements(Array.isArray(movementsData) ? movementsData : []);
       setLots(Array.isArray(lotsData) ? lotsData : []);
       setDispatches(Array.isArray(dispatchesData) ? dispatchesData : []);
+      setInspections(Array.isArray(inspectionsData) ? inspectionsData : []);
     } catch (err) {
       console.error("Failed to load warehouse dashboard data:", err);
     } finally {
@@ -67,23 +70,23 @@ export default function WarehouseDashboard() {
   }, []);
 
   // Compute key warehouse metrics
-  const totalWarehousesCount = warehouses.length || 5;
+  const totalWarehousesCount = warehouses.length;
 
   // Total capacity in tons
   const totalCapacityTons = warehouses.reduce(
     (acc, w) => acc + Number(w.capacityInTons || w.capacity || 0),
     0
-  ) || 28000;
+  );
 
   // Utilized capacity in tons
   const totalUtilizedTons = warehouses.reduce(
     (acc, w) => acc + Number(w.utilizedCapacityTons || w.usedCapacity || 0),
     0
-  ) || 8950;
+  );
 
   const overallUtilizationPercent = totalCapacityTons > 0
     ? Math.round((totalUtilizedTons / totalCapacityTons) * 100)
-    : 32;
+    : 0;
 
   // Batches calculation
   const totalStoredBatchKg = batches.reduce(
@@ -99,11 +102,11 @@ export default function WarehouseDashboard() {
   );
 
   const totalLotStoredKg = storedLots.reduce(
-    (acc, l) => acc + Number(l.actualQuantityKg || l.estimatedQuantityKg || l.quantity || 0),
+    (acc, l) => acc + Number(l.actualQuantityKg || l.estimatedQuantityKg || 0),
     0
   );
 
-  const displayTotalStoredKg = totalStoredBatchKg > 0 ? totalStoredBatchKg : (totalLotStoredKg > 0 ? totalLotStoredKg : 12450);
+  const displayTotalStoredKg = totalStoredBatchKg > 0 ? totalStoredBatchKg : totalLotStoredKg;
 
   // Inbound Pending Receipts: dispatches or lots arriving/in transit
   const inboundPendingList = dispatches.filter((d) => {
@@ -111,12 +114,19 @@ export default function WarehouseDashboard() {
     return s.includes("TRANSIT") || s.includes("SCHEDULED") || s.includes("DISPATCH") || s.includes("PENDING");
   });
 
-  const displayInboundCount = inboundPendingList.length > 0 ? inboundPendingList.length : 3;
+  const displayInboundCount = inboundPendingList.length;
 
   // Outbound / Allocated
   const allocatedBatches = batches.filter((b) => String(b.status || "").toUpperCase().includes("ALLOC"));
   const allocatedLots = lots.filter((l) => String(l.status || "").toUpperCase().includes("ALLOC"));
-  const allocatedCount = (allocatedBatches.length + allocatedLots.length) || 2;
+  const allocatedCount = allocatedBatches.length + allocatedLots.length;
+
+  // Lots ready for inbound intake
+  const pendingIntakeLots = lots.filter((l) =>
+    ["PROCURED", "QUALITY_APPROVED", "IN_TRANSIT", "READY_FOR_INTAKE"].includes(
+      String(l.status || "").toUpperCase()
+    )
+  );
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
@@ -178,10 +188,20 @@ export default function WarehouseDashboard() {
         <StatCard
           title="Total Stored Grain Stock"
           value={`${displayTotalStoredKg.toLocaleString()} kg`}
-          description={`${(displayTotalStoredKg / 1000).toFixed(2)} Metric Tons across silos`}
-          trendText="+14.2% this month"
-          trendType="up"
-          trendColor="emerald"
+          description={
+            displayTotalStoredKg > 0
+              ? `${(displayTotalStoredKg / 1000).toFixed(2)} Metric Tons across silos`
+              : "No grain stock in silos"
+          }
+          trendText={
+            batches.length > 0
+              ? `${batches.length} Active Batches`
+              : storedLots.length > 0
+              ? `${storedLots.length} Received Lots`
+              : "Zero Batches"
+          }
+          trendType={displayTotalStoredKg > 0 ? "up" : "neutral"}
+          trendColor={displayTotalStoredKg > 0 ? "emerald" : "slate"}
           icon={Boxes}
           iconBgClass="bg-amber-100"
           iconColorClass="text-amber-700"
@@ -190,10 +210,20 @@ export default function WarehouseDashboard() {
         <StatCard
           title="Active Warehouses & Silos"
           value={`${totalWarehousesCount} Facilities`}
-          description={`${totalCapacityTons.toLocaleString()} MT Total Capacity (${overallUtilizationPercent}% Utilized)`}
-          trendText="Safe Capacity"
+          description={
+            totalCapacityTons > 0
+              ? `${totalCapacityTons.toLocaleString()} MT Total Capacity (${overallUtilizationPercent}% Utilized)`
+              : "No facilities registered"
+          }
+          trendText={
+            overallUtilizationPercent > 80
+              ? "High Utilization"
+              : overallUtilizationPercent > 0
+              ? "Safe Capacity"
+              : "Zero Utilization"
+          }
           trendType="up"
-          trendColor="emerald"
+          trendColor={overallUtilizationPercent > 80 ? "amber" : "emerald"}
           icon={Building2}
           iconBgClass="bg-emerald-100"
           iconColorClass="text-emerald-700"
@@ -202,10 +232,14 @@ export default function WarehouseDashboard() {
         <StatCard
           title="Inbound Receipts Queue"
           value={`${displayInboundCount} Shipments`}
-          description="Awaiting weighbridge & bin intake"
-          trendText="Action Required"
-          trendType="up"
-          trendColor="red"
+          description={
+            displayInboundCount > 0
+              ? "Awaiting weighbridge & bin intake"
+              : "No inbound shipments pending"
+          }
+          trendText={displayInboundCount > 0 ? "Action Required" : "Intake Clear"}
+          trendType={displayInboundCount > 0 ? "up" : "neutral"}
+          trendColor={displayInboundCount > 0 ? "amber" : "emerald"}
           icon={Truck}
           iconBgClass="bg-blue-100"
           iconColorClass="text-blue-700"
@@ -214,10 +248,14 @@ export default function WarehouseDashboard() {
         <StatCard
           title="Allocated / Outbound Ready"
           value={`${allocatedCount} Lots`}
-          description="Reserved for verified processors"
-          trendText="On Schedule"
+          description={
+            allocatedCount > 0
+              ? "Reserved for verified processors"
+              : "No lots currently allocated"
+          }
+          trendText={allocatedCount > 0 ? "Reserved Stock" : "Available Stock"}
           trendType="up"
-          trendColor="emerald"
+          trendColor={allocatedCount > 0 ? "emerald" : "slate"}
           icon={CheckCircle2}
           iconBgClass="bg-purple-100"
           iconColorClass="text-purple-700"
@@ -251,84 +289,90 @@ export default function WarehouseDashboard() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {warehouses.slice(0, 4).map((wh) => {
-                  const cap = Number(wh.capacityInTons || wh.capacity || 5000);
-                  const util = Number(wh.utilizedCapacityTons || wh.usedCapacity || 0);
-                  const percent = cap > 0 ? Math.min(100, Math.round((util / cap) * 100)) : 0;
-                  const isHigh = percent > 80;
-                  const isMid = percent > 50 && percent <= 80;
+                {warehouses.length > 0 ? (
+                  warehouses.slice(0, 4).map((wh) => {
+                    const cap = Number(wh.capacityInTons || wh.capacity || 0);
+                    const util = Number(wh.utilizedCapacityTons || wh.usedCapacity || 0);
+                    const percent = cap > 0 ? Math.min(100, Math.round((util / cap) * 100)) : 0;
+                    const isHigh = percent > 80;
+                    const isMid = percent > 50 && percent <= 80;
 
-                  return (
-                    <div
-                      key={wh.id}
-                      className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-slate-50 hover:border-amber-300 transition-all flex flex-col justify-between"
-                    >
-                      <div className="space-y-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <span className="text-[11px] font-mono font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                              {wh.warehouseCode || "WH-001"}
-                            </span>
-                            <h4 className="font-semibold text-sm text-slate-900 mt-1 line-clamp-1">
-                              {wh.name}
-                            </h4>
-                            <p className="text-xs text-slate-500">
-                              {wh.district ? `${wh.district}, ${wh.taluka || "Gujarat"}` : wh.location || "Gujarat"}
-                            </p>
-                          </div>
-                          <Badge
-                            variant="outline"
-                            className={`text-[10px] uppercase font-bold shrink-0 ${
-                              isHigh
-                                ? "bg-red-50 text-red-700 border-red-200"
-                                : isMid
-                                ? "bg-amber-50 text-amber-700 border-amber-200"
-                                : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            }`}
-                          >
-                            {percent}% Utilized
-                          </Badge>
-                        </div>
-
-                        {/* Capacity Progress Bar */}
-                        <div className="space-y-1 pt-1">
-                          <div className="flex justify-between text-xs text-slate-600 font-medium">
-                            <span>{util.toLocaleString()} MT Utilized</span>
-                            <span className="text-slate-400">{cap.toLocaleString()} MT Total</span>
-                          </div>
-                          <div className="w-full h-2 bg-slate-200/80 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full transition-all duration-300 rounded-full ${
-                                isHigh
-                                  ? "bg-red-500"
-                                  : isMid
-                                  ? "bg-amber-500"
-                                  : "bg-emerald-500"
-                              }`}
-                              style={{ width: `${percent}%` }}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="pt-2 text-[11px] text-slate-500 flex items-center justify-between border-t border-slate-200/60">
-                          <span>
-                            Manager: <strong className="text-slate-700">{wh.managerName || "Staff"}</strong>
-                          </span>
-                          <span className="text-slate-400">{wh.storageCondition?.slice(0, 18) || "Dry Aerated"}</span>
-                        </div>
-                      </div>
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => navigate(`/warehouses/${wh.id}`)}
-                        className="mt-3 w-full text-xs h-7 text-slate-700 hover:text-amber-700 border-slate-200"
+                    return (
+                      <div
+                        key={wh.id}
+                        className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-slate-50 hover:border-amber-300 transition-all flex flex-col justify-between"
                       >
-                        Manage Silo Bins <ChevronRight className="w-3 h-3 ml-1" />
-                      </Button>
-                    </div>
-                  );
-                })}
+                        <div className="space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <span className="text-[11px] font-mono font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                {wh.warehouseCode || "WH-DEPOT"}
+                              </span>
+                              <h4 className="font-semibold text-sm text-slate-900 mt-1 line-clamp-1">
+                                {wh.name}
+                              </h4>
+                              <p className="text-xs text-slate-500">
+                                {wh.district ? `${wh.district}, ${wh.taluka || wh.village || "Gujarat"}` : wh.location || "Facility Location"}
+                              </p>
+                            </div>
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] uppercase font-bold shrink-0 ${
+                                isHigh
+                                  ? "bg-red-50 text-red-700 border-red-200"
+                                  : isMid
+                                  ? "bg-amber-50 text-amber-700 border-amber-200"
+                                  : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              }`}
+                            >
+                              {percent}% Utilized
+                            </Badge>
+                          </div>
+
+                          {/* Capacity Progress Bar */}
+                          <div className="space-y-1 pt-1">
+                            <div className="flex justify-between text-xs text-slate-600 font-medium">
+                              <span>{util.toLocaleString()} MT Utilized</span>
+                              <span className="text-slate-400">{cap.toLocaleString()} MT Total</span>
+                            </div>
+                            <div className="w-full h-2 bg-slate-200/80 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full transition-all duration-300 rounded-full ${
+                                  isHigh
+                                    ? "bg-red-500"
+                                    : isMid
+                                    ? "bg-amber-500"
+                                    : "bg-emerald-500"
+                                }`}
+                                style={{ width: `${percent}%` }}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="pt-2 text-[11px] text-slate-500 flex items-center justify-between border-t border-slate-200/60">
+                            <span>
+                              Manager: <strong className="text-slate-700">{wh.managerName || "Staff"}</strong>
+                            </span>
+                            <span className="text-slate-400">{wh.storageCondition || "Standard Storage"}</span>
+                          </div>
+                        </div>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/warehouses/${wh.id}`)}
+                          className="mt-3 w-full text-xs h-7 text-slate-700 hover:text-amber-700 border-slate-200 cursor-pointer"
+                        >
+                          Manage Silo Bins <ChevronRight className="w-3 h-3 ml-1" />
+                        </Button>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="col-span-full py-8 text-center text-xs text-slate-500">
+                    No warehouses registered in the network.
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -348,7 +392,7 @@ export default function WarehouseDashboard() {
               <Button
                 size="sm"
                 onClick={() => navigate("/warehouses/receiving")}
-                className="bg-amber-600 hover:bg-amber-500 text-white text-xs h-8"
+                className="bg-amber-600 hover:bg-amber-500 text-white text-xs h-8 cursor-pointer"
               >
                 <FileCheck className="w-3.5 h-3.5 mr-1" /> Process Receipt
               </Button>
@@ -370,7 +414,7 @@ export default function WarehouseDashboard() {
                             variant="outline"
                             className="text-[10px] font-semibold bg-blue-50 text-blue-700 border-blue-200"
                           >
-                            {d.milletType || "Finger Millet (Ragi)"}
+                            {d.milletType || "Millet"}
                           </Badge>
                           <Badge
                             variant="secondary"
@@ -380,9 +424,9 @@ export default function WarehouseDashboard() {
                           </Badge>
                         </div>
                         <p className="text-xs text-slate-500">
-                          Origin: <span className="text-slate-700 font-medium">{d.sourceAddress || "Dahod Cluster Center"}</span> •
-                          Vehicle: <span className="font-mono text-slate-700">{d.vehicleNumber || "KA-09-AB-4521"}</span> •
-                          Qty: <strong className="text-slate-900">{Number(d.totalQuantityKg || 1200).toLocaleString()} kg</strong>
+                          Origin: <span className="text-slate-700 font-medium">{d.sourceAddress || "Procurement Cluster"}</span> •
+                          Vehicle: <span className="font-mono text-slate-700">{d.vehicleNumber || "Pending Assignment"}</span> •
+                          Qty: <strong className="text-slate-900">{Number(d.totalQuantityKg || 0).toLocaleString()} kg</strong>
                         </p>
                       </div>
 
@@ -391,7 +435,7 @@ export default function WarehouseDashboard() {
                           size="sm"
                           variant="outline"
                           onClick={() => navigate(`/warehouses/receiving/${d.id}`)}
-                          className="text-xs h-7 text-amber-700 border-amber-300 hover:bg-amber-50"
+                          className="text-xs h-7 text-amber-700 border-amber-300 hover:bg-amber-50 cursor-pointer"
                         >
                           Weigh & Intake <ArrowRight className="w-3 h-3 ml-1" />
                         </Button>
@@ -399,10 +443,9 @@ export default function WarehouseDashboard() {
                     </div>
                   ))}
                 </div>
-              ) : (
+              ) : pendingIntakeLots.length > 0 ? (
                 <div className="divide-y divide-slate-100">
-                  {/* Standalone fallback records from lots */}
-                  {lots.slice(0, 3).map((lot) => (
+                  {pendingIntakeLots.slice(0, 4).map((lot) => (
                     <div
                       key={lot.id}
                       className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/80 px-2 rounded-lg transition-colors"
@@ -416,7 +459,7 @@ export default function WarehouseDashboard() {
                             variant="outline"
                             className="text-[10px] font-semibold bg-emerald-50 text-emerald-700 border-emerald-200"
                           >
-                            {lot.milletType || "Pearl Millet"}
+                            {lot.milletType || "Grain"}
                           </Badge>
                           <Badge
                             variant="secondary"
@@ -426,8 +469,8 @@ export default function WarehouseDashboard() {
                           </Badge>
                         </div>
                         <p className="text-xs text-slate-500">
-                          Target Warehouse: <span className="text-slate-700 font-medium">{lot.warehouseName || "Dahod Central Depot"}</span> •
-                          Qty: <strong className="text-slate-900">{Number(lot.actualQuantityKg || lot.estimatedQuantityKg || 1500).toLocaleString()} kg</strong>
+                          Target Warehouse: <span className="text-slate-700 font-medium">{lot.warehouseName || "Designated Depot"}</span> •
+                          Qty: <strong className="text-slate-900">{Number(lot.actualQuantityKg || lot.estimatedQuantityKg || 0).toLocaleString()} kg</strong>
                         </p>
                       </div>
 
@@ -435,12 +478,16 @@ export default function WarehouseDashboard() {
                         size="sm"
                         variant="outline"
                         onClick={() => navigate(`/warehouses/receiving?lotId=${lot.id}`)}
-                        className="text-xs h-7 text-amber-700 border-amber-300 hover:bg-amber-50"
+                        className="text-xs h-7 text-amber-700 border-amber-300 hover:bg-amber-50 cursor-pointer"
                       >
                         Receive Lot <ArrowRight className="w-3 h-3 ml-1" />
                       </Button>
                     </div>
                   ))}
+                </div>
+              ) : (
+                <div className="py-8 text-center text-xs text-slate-500">
+                  No inbound shipments or pending intake lots in the queue.
                 </div>
               )}
             </CardContent>
@@ -461,46 +508,71 @@ export default function WarehouseDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3.5">
-              <div className="p-3 rounded-lg border border-emerald-200 bg-emerald-50/50 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-emerald-950">Dahod Silo Bay A & B</p>
-                  <p className="text-[11px] text-emerald-700">Finger Millet & Pearl Millet</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-emerald-800">10.8%</p>
-                  <span className="text-[10px] uppercase font-bold text-emerald-600">Optimal</span>
-                </div>
-              </div>
+              {inspections.length > 0 ? (
+                inspections.slice(0, 3).map((insp) => {
+                  const moisture = Number(insp.moisturePercentage || 0);
+                  const isOptimal = moisture <= 12.0;
 
-              <div className="p-3 rounded-lg border border-emerald-200 bg-emerald-50/50 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-emerald-950">Anand Warehouse Bin C</p>
-                  <p className="text-[11px] text-emerald-700">Foxtail Millet Aerated Bay</p>
+                  return (
+                    <div
+                      key={insp.id}
+                      className={`p-3 rounded-lg border flex items-center justify-between ${
+                        isOptimal
+                          ? "border-emerald-200 bg-emerald-50/50"
+                          : "border-amber-200 bg-amber-50/50"
+                      }`}
+                    >
+                      <div>
+                        <p className="text-xs font-semibold text-slate-900">
+                          {insp.lotNumber || "Inspection Lot"}
+                        </p>
+                        <p className="text-[11px] text-slate-600">
+                          Grade {insp.grade || "A"} • {insp.inspectorName ? `Inspected by ${insp.inspectorName}` : "Standard Inspection"}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-sm font-bold ${isOptimal ? "text-emerald-800" : "text-amber-800"}`}>
+                          {moisture.toFixed(1)}%
+                        </p>
+                        <span
+                          className={`text-[10px] uppercase font-bold ${
+                            isOptimal ? "text-emerald-600" : "text-amber-600"
+                          }`}
+                        >
+                          {isOptimal ? "Optimal" : "Elevated"}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="py-6 px-3 text-center text-xs text-slate-500 rounded-lg border border-dashed border-slate-200">
+                  No moisture test records yet. Incoming grain lots are tested at weighbridge intake.
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-emerald-800">11.4%</p>
-                  <span className="text-[10px] uppercase font-bold text-emerald-600">Optimal</span>
-                </div>
-              </div>
-
-              <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/60 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-slate-900">Bharuch Grain Depository</p>
-                  <p className="text-[11px] text-slate-500">Little Millet Cold Bay</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-slate-800">11.1%</p>
-                  <span className="text-[10px] uppercase font-bold text-emerald-600">Optimal</span>
-                </div>
-              </div>
+              )}
 
               <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                <span className="flex items-center gap-1">
-                  <Thermometer className="w-3.5 h-3.5 text-amber-500" /> Temp: 22°C - 24°C
-                </span>
-                <span className="text-emerald-600 font-semibold flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5" /> 100% Certified Safe
-                </span>
+                {inspections.length > 0 ? (
+                  <>
+                    <span className="flex items-center gap-1">
+                      <Thermometer className="w-3.5 h-3.5 text-amber-500" />
+                      Avg Moisture: {(inspections.reduce((acc, i) => acc + Number(i.moisturePercentage || 0), 0) / inspections.length).toFixed(1)}%
+                    </span>
+                    <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      {Math.round((inspections.filter((i) => Number(i.moisturePercentage || 0) <= 12).length / inspections.length) * 100)}% Safe
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex items-center gap-1">
+                      <Thermometer className="w-3.5 h-3.5 text-amber-500" /> Storage Limit: ≤ 12.0%
+                    </span>
+                    <span className="text-slate-500 font-medium flex items-center gap-1">
+                      <ShieldCheck className="w-3.5 h-3.5" /> FSSAI Compliant
+                    </span>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
