@@ -68,16 +68,16 @@ export default function ProcurementOfficerDashboard() {
   }, []);
 
   // Compute Metrics
-  const totalLotsCount = lots.length > 0 ? lots.length : 10;
+  const totalLotsCount = lots.length;
   const totalProcuredQtyKg = lots.reduce(
     (acc, l) => acc + (l.actualQuantityKg || l.estimatedQuantityKg || 0),
     0
-  ) || 12850;
+  );
 
   const totalAgreementsValue = agreements.reduce(
     (acc, a) => acc + (a.totalValue || a.netPayable || 0),
     0
-  ) || 316327;
+  );
 
   const pendingProcessorRequests = purchaseRequests.filter(
     (r) => r.status === "REQUESTED" || r.status === "UNDER_NEGOTIATION"
@@ -166,7 +166,7 @@ export default function ProcurementOfficerDashboard() {
         <StatCard
           title="Farmer MSP Contracts"
           value={`₹${totalAgreementsValue.toLocaleString("en-IN")}`}
-          trendText={`${agreements.length || 10} Digital Contracts`}
+          trendText={`${agreements.length} Digital Contracts`}
           trendColor="emerald"
           icon={FileCheck}
           iconBgClass="bg-blue-100/80"
@@ -312,47 +312,53 @@ export default function ProcurementOfficerDashboard() {
 
             <CardContent className="p-0">
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {lots.slice(0, 4).map((lot) => {
-                  const qty = lot.actualQuantityKg || lot.estimatedQuantityKg || 500;
-                  const price = lot.offeredPricePerKg || 38.50;
+                {lots.length > 0 ? (
+                  lots.slice(0, 4).map((lot) => {
+                    const qty = lot.actualQuantityKg || lot.estimatedQuantityKg || 0;
+                    const price = lot.offeredPricePerKg || 0;
 
-                  return (
-                    <div
-                      key={lot.id}
-                      className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors"
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-bold text-emerald-800 dark:text-emerald-400">
-                            {lot.lotNumber || "LOT-2026-004"}
-                          </span>
-                          <span className="text-slate-400">•</span>
-                          <span className="font-bold text-xs text-slate-900 dark:text-white">
-                            {lot.farmerName || "Registered Farmer"}
-                          </span>
-                          <Badge variant="outline" className="text-[10px] font-semibold border-slate-300">
-                            {lot.status || "SETTLED"}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">
-                          {lot.milletType || "Pearl Millet"} — {qty.toLocaleString()} kg @ ₹{price.toFixed(2)}/kg
-                        </p>
-                        <p className="text-[11px] text-slate-400">
-                          Farm: {lot.farmName || "Village Cluster Farm"} • Inspector: {lot.assignedInspectorName || "Raju Parmar"}
-                        </p>
-                      </div>
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => navigate(`/procurement/lots/${lot.id}`)}
-                        className="text-xs font-bold h-8 border-slate-200 hover:bg-slate-100 self-end sm:self-center"
+                    return (
+                      <div
+                        key={lot.id}
+                        className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors"
                       >
-                        Lot Details
-                      </Button>
-                    </div>
-                  );
-                })}
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs font-bold text-emerald-800 dark:text-emerald-400">
+                              {lot.lotNumber || `LOT-${lot.id?.slice(0, 6).toUpperCase()}`}
+                            </span>
+                            <span className="text-slate-400">•</span>
+                            <span className="font-bold text-xs text-slate-900 dark:text-white">
+                              {lot.farmerName || "Farmer"}
+                            </span>
+                            <Badge variant="outline" className="text-[10px] font-semibold border-slate-300">
+                              {lot.status || "PENDING"}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-slate-600 dark:text-slate-400">
+                            {lot.milletType || "Millet"} — {qty.toLocaleString()} kg {price > 0 ? `@ ₹${price.toFixed(2)}/kg` : ""}
+                          </p>
+                          <p className="text-[11px] text-slate-400">
+                            Farm: {lot.farmName || "Designated Farm"} {lot.assignedInspectorName ? `• Inspector: ${lot.assignedInspectorName}` : ""}
+                          </p>
+                        </div>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/procurement/lots/${lot.id}`)}
+                          className="text-xs font-bold h-8 border-slate-200 hover:bg-slate-100 self-end sm:self-center cursor-pointer"
+                        >
+                          Lot Details
+                        </Button>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="py-8 text-center text-xs text-slate-500">
+                    No procurement lots recorded.
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
