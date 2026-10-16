@@ -40,6 +40,9 @@ jobs:
       - name: Build Android Release APK
         working-directory: frontend/mobile
         run: |
+          if [ ! -f .env ]; then
+            cp .env.example .env 2>/dev/null || touch .env
+          fi
           flutter pub get
           flutter build apk --release
 
