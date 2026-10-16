@@ -418,13 +418,28 @@ function CreateShipment() {
 
         if (Array.isArray(driverList) && driverList.length > 0) {
           setDrivers(driverList);
-          setSelectedDriverId(driverList[0].id);
-          setInboundDriver(driverList[0].name || "");
-          setInboundDriverPhone(driverList[0].phone || "");
-          setInboundVehicle(driverList[0].vehicleNumber || "");
-          setOutboundDriver(driverList[0].name || "");
-          setOutboundDriverPhone(driverList[0].phone || "");
-          setOutboundVehicle(driverList[0].vehicleNumber || "");
+          const firstAvailable = driverList.find(
+            (d) =>
+              (d.status || "").toUpperCase() === "AVAILABLE" ||
+              (d.status || "").toUpperCase() === "ACTIVE"
+          );
+          if (firstAvailable) {
+            setSelectedDriverId(firstAvailable.id);
+            setInboundDriver(firstAvailable.name || "");
+            setInboundDriverPhone(firstAvailable.phone || "");
+            setInboundVehicle(firstAvailable.vehicleNumber || "");
+            setOutboundDriver(firstAvailable.name || "");
+            setOutboundDriverPhone(firstAvailable.phone || "");
+            setOutboundVehicle(firstAvailable.vehicleNumber || "");
+          } else {
+            setSelectedDriverId("");
+            setInboundDriver("");
+            setInboundDriverPhone("");
+            setInboundVehicle("");
+            setOutboundDriver("");
+            setOutboundDriverPhone("");
+            setOutboundVehicle("");
+          }
         }
 
         const shippedIds = new Set();
@@ -1244,16 +1259,31 @@ function CreateShipment() {
                     <SelectValue placeholder="Choose Driver from List..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {drivers.map((drv) => (
-                      <SelectItem key={drv.id} value={drv.id}>
-                        <div className="flex items-center justify-between gap-4 font-medium text-xs">
-                          <span className="font-bold text-slate-900">{drv.name} ({drv.phone})</span>
-                          <span className="text-emerald-700 font-mono text-[11px]">
-                            {drv.vehicleNumber ? `Vehicle: ${drv.vehicleNumber}` : "No Vehicle"}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
+                    {drivers.map((drv) => {
+                      const isAvail = (drv.status || "").toUpperCase() === "AVAILABLE" || (drv.status || "").toUpperCase() === "ACTIVE";
+                      const isInTransit = (drv.status || "").toUpperCase() === "IN_TRANSIT" || (drv.status || "").toUpperCase() === "ON_JOURNEY";
+                      const isInactive = (drv.status || "").toUpperCase() === "INACTIVE" || (drv.status || "").toUpperCase() === "OFF_DUTY";
+                      const isDisabled = !isAvail;
+
+                      return (
+                        <SelectItem key={drv.id} value={drv.id} disabled={isDisabled}>
+                          <div className="flex items-center justify-between gap-4 font-medium text-xs">
+                            <span className={`font-bold ${isDisabled ? "text-slate-400 line-through" : "text-slate-900"}`}>
+                              {drv.name} ({drv.phone})
+                            </span>
+                            <span className="font-mono text-[11px]">
+                              {isAvail ? (
+                                <span className="text-emerald-700 font-bold">Active • {drv.vehicleNumber || "Ready"}</span>
+                              ) : isInTransit ? (
+                                <span className="text-amber-700 font-semibold bg-amber-50 px-1 py-0.5 rounded">In Transit (Unavailable)</span>
+                              ) : (
+                                <span className="text-red-600 font-semibold bg-red-50 px-1 py-0.5 rounded">Inactive (Off-Duty)</span>
+                              )}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
 

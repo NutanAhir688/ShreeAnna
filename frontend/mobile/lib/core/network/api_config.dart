@@ -51,6 +51,8 @@ class ApiConfig {
 
   static String driverJourney(String phone) => '$baseUrl/api/dispatches/driver-journey?phone=$phone';
   static String verifyPickup(String dispatchId) => '$baseUrl/api/dispatches/$dispatchId/verify-pickup';
+  static String confirmDelivery(String dispatchId) => '$baseUrl/api/dispatches/$dispatchId/confirm-delivery';
+  static String abortRide(String dispatchId) => '$baseUrl/api/dispatches/$dispatchId/abort-ride';
   static const String driverList = '$baseUrl/api/dispatches/drivers';
   static String dispatchByLot(String lotId) =>
     '$baseUrl/api/dispatches/by-lot/${Uri.encodeComponent(lotId)}';

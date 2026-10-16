@@ -68,11 +68,24 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
       final phoneToQuery = selected?.phone ?? widget.initialDriverPhone ?? '9876543210';
       final dispatches = await _driverApi.getDriverJourneys(phoneToQuery);
 
+      DriverDispatchModel? active;
+      if (dispatches.isNotEmpty) {
+        try {
+          active = dispatches.firstWhere(
+            (d) => d.status.toUpperCase() == 'IN_TRANSIT' ||
+                   d.status.toUpperCase() == 'VEHICLE_ASSIGNED' ||
+                   d.status.toUpperCase() == 'SCHEDULED',
+          );
+        } catch (_) {
+          active = dispatches.first;
+        }
+      }
+
       if (mounted) {
         setState(() {
           _drivers = driversList;
           _selectedDriver = selected;
-          _activeDispatch = dispatches.isNotEmpty ? dispatches.first : null;
+          _activeDispatch = active;
           _isLoading = false;
         });
       }
@@ -223,9 +236,21 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
 
     try {
       final dispatches = await _driverApi.getDriverJourneys(driver.phone);
+      DriverDispatchModel? active;
+      if (dispatches.isNotEmpty) {
+        try {
+          active = dispatches.firstWhere(
+            (d) => d.status.toUpperCase() == 'IN_TRANSIT' ||
+                   d.status.toUpperCase() == 'VEHICLE_ASSIGNED' ||
+                   d.status.toUpperCase() == 'SCHEDULED',
+          );
+        } catch (_) {
+          active = dispatches.first;
+        }
+      }
       if (mounted) {
         setState(() {
-          _activeDispatch = dispatches.isNotEmpty ? dispatches.first : null;
+          _activeDispatch = active;
           _isLoading = false;
         });
       }
@@ -396,6 +421,304 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
                               'VERIFY PICKUP & START TRANSIT',
                               style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                             ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showCompleteRideModal() {
+    if (_activeDispatch == null) return;
+    final notesController = TextEditingController(text: 'Delivered in good condition');
+    final weightController = TextEditingController(text: _activeDispatch!.totalQuantityKg.toString());
+    bool isSubmitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                top: 20,
+                left: 20,
+                right: 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(Icons.check_circle, color: Color(0xFF2E7D32), size: 24),
+                          SizedBox(width: 8),
+                          Text(
+                            'Complete Delivery Ride',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF202420),
+                            ),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Confirm arrival and handover of Shipment #${_activeDispatch?.dispatchCode ?? ''} at ${_activeDispatch?.destinationAddress ?? 'destination warehouse'}.',
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF596159)),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: weightController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'Delivered Weight (kg)',
+                      prefixIcon: const Icon(Icons.scale_outlined, color: Color(0xFF2E7D32)),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: notesController,
+                    decoration: InputDecoration(
+                      labelText: 'Delivery Remarks / Handover Notes',
+                      prefixIcon: const Icon(Icons.notes_outlined, color: Color(0xFF2E7D32)),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: isSubmitting
+                          ? null
+                          : () async {
+                              setModalState(() => isSubmitting = true);
+                              final nav = Navigator.of(ctx);
+                              final messenger = ScaffoldMessenger.of(this.context);
+                              try {
+                                final receivedKg = double.tryParse(weightController.text);
+                                final notes = notesController.text.trim();
+                                await _driverApi.confirmDelivery(
+                                  _activeDispatch!.id,
+                                  notes: notes.isNotEmpty ? notes : null,
+                                  receivedKg: receivedKg,
+                                );
+                                if (_isTracking) {
+                                  await _stopTracking();
+                                }
+                                nav.pop();
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    backgroundColor: Color(0xFF2E7D32),
+                                    content: Text('Ride completed! Delivery successfully confirmed.'),
+                                  ),
+                                );
+                                await _loadDriverData();
+                              } catch (e) {
+                                setModalState(() => isSubmitting = false);
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    backgroundColor: Colors.red,
+                                    content: Text('Failed to complete ride: $e'),
+                                  ),
+                                );
+                              }
+                            },
+                      icon: isSubmitting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Icon(Icons.check, color: Colors.white),
+                      label: Text(
+                        isSubmitting ? 'COMPLETING...' : 'CONFIRM & COMPLETE RIDE',
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2E7D32),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showAbortRideModal() {
+    if (_activeDispatch == null) return;
+    String selectedReason = 'Vehicle Breakdown / Mechanical Issue';
+    final customReasonController = TextEditingController();
+    bool isSubmitting = false;
+
+    final reasons = [
+      'Vehicle Breakdown / Mechanical Issue',
+      'Road Blockage / Severe Weather',
+      'Driver Emergency / Health Issue',
+      'Shipment Damage / Quality Issue',
+      'Other',
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                top: 20,
+                left: 20,
+                right: 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(Icons.warning_amber_rounded, color: Color(0xFFC62828), size: 24),
+                          SizedBox(width: 8),
+                          Text(
+                            'Abort Ride',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFC62828),
+                            ),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Are you sure you want to abort this transit for Shipment #${_activeDispatch?.dispatchCode ?? ''}? This will notify logistics and release your vehicle.',
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF596159)),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Select Cancellation Reason:',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedReason,
+                    items: reasons.map((r) => DropdownMenuItem(value: r, child: Text(r, style: const TextStyle(fontSize: 13)))).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setModalState(() => selectedReason = val);
+                      }
+                    },
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    ),
+                  ),
+                  if (selectedReason == 'Other') ...[
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: customReasonController,
+                      decoration: InputDecoration(
+                        labelText: 'Specify Reason',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: isSubmitting
+                          ? null
+                          : () async {
+                              setModalState(() => isSubmitting = true);
+                              final nav = Navigator.of(ctx);
+                              final messenger = ScaffoldMessenger.of(this.context);
+                              try {
+                                final reason = selectedReason == 'Other'
+                                    ? customReasonController.text.trim()
+                                    : selectedReason;
+                                await _driverApi.abortRide(
+                                  _activeDispatch!.id,
+                                  reason: reason.isNotEmpty ? reason : 'Aborted by driver',
+                                );
+                                if (_isTracking) {
+                                  await _stopTracking();
+                                }
+                                nav.pop();
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    backgroundColor: Color(0xFFC62828),
+                                    content: Text('Transit ride aborted. Logistics coordinator notified.'),
+                                  ),
+                                );
+                                await _loadDriverData();
+                              } catch (e) {
+                                setModalState(() => isSubmitting = false);
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    backgroundColor: Colors.red,
+                                    content: Text('Failed to abort ride: $e'),
+                                  ),
+                                );
+                              }
+                            },
+                      icon: isSubmitting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Icon(Icons.cancel, color: Colors.white),
+                      label: Text(
+                        isSubmitting ? 'ABORTING...' : 'CONFIRM ABORT RIDE',
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFC62828),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
                     ),
                   ),
                 ],
@@ -651,7 +974,26 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
   Widget _buildJourneyDetailsCard() {
     final d = _activeDispatch;
     final statusUpper = (d?.status ?? '').toUpperCase();
-    final isInTransit = statusUpper == 'IN_TRANSIT' || statusUpper == 'DELIVERED';
+    final isDelivered = statusUpper == 'DELIVERED' || statusUpper == 'COMPLETED';
+    final isInTransit = statusUpper == 'IN_TRANSIT';
+
+    String badgeText;
+    Color badgeBg;
+    Color badgeTextColor;
+
+    if (isDelivered) {
+      badgeText = 'DELIVERED';
+      badgeBg = const Color(0xFFD1FAE5);
+      badgeTextColor = const Color(0xFF065F46);
+    } else if (isInTransit) {
+      badgeText = 'IN TRANSIT';
+      badgeBg = const Color(0xFFDCEBFA);
+      badgeTextColor = const Color(0xFF1265C0);
+    } else {
+      badgeText = 'PENDING PICKUP';
+      badgeBg = const Color(0xFFFFE9D0);
+      badgeTextColor = const Color(0xFFE97900);
+    }
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -673,15 +1015,15 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: isInTransit ? const Color(0xFFDCEBFA) : const Color(0xFFFFE9D0),
+                  color: badgeBg,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  isInTransit ? 'IN TRANSIT' : 'PENDING PICKUP',
+                  badgeText,
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: isInTransit ? const Color(0xFF1265C0) : const Color(0xFFE97900),
+                    color: badgeTextColor,
                   ),
                 ),
               ),
@@ -722,7 +1064,89 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
 
   Widget _buildActionCard() {
     final statusUpper = (_activeDispatch?.status ?? '').toUpperCase();
-    final isInTransit = statusUpper == 'IN_TRANSIT' || statusUpper == 'DELIVERED';
+    final isDelivered = statusUpper == 'DELIVERED' || statusUpper == 'COMPLETED';
+    final isInTransit = statusUpper == 'IN_TRANSIT';
+
+    if (isDelivered) {
+      return Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0FDF4),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFF86EFAC), width: 1.5),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: const [
+                Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 28),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Delivery Completed Successfully! 🎉',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF14532D)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Shipment #${_activeDispatch?.dispatchCode ?? ''} was safely delivered to ${_activeDispatch?.destinationAddress ?? 'destination warehouse'}.',
+              style: const TextStyle(fontSize: 12, color: Color(0xFF15803D)),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFBBF7D0)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.scale, color: Color(0xFF16A34A), size: 22),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Delivered Quantity: ${_activeDispatch?.finalReceivedQuantityKg ?? _activeDispatch?.totalQuantityKg ?? 0} kg',
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF166534)),
+                        ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          'Trip closed • Vehicle released and ready for next assignment',
+                          style: TextStyle(fontSize: 11, color: Color(0xFF4B5563)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: OutlinedButton.icon(
+                onPressed: _openGoogleMapsForJourney,
+                icon: const Icon(Icons.map_outlined, color: Color(0xFF16A34A), size: 18),
+                label: const Text(
+                  'VIEW ROUTE / DESTINATION ON MAP',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF16A34A)),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFF86EFAC), width: 1.5),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     if (isInTransit) {
       return Container(
@@ -801,6 +1225,52 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 12),
+            const Divider(color: Color(0xFFBBDEFB)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: _showCompleteRideModal,
+                      icon: const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+                      label: const Text(
+                        'COMPLETE RIDE',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2E7D32),
+                        foregroundColor: Colors.white,
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: _showAbortRideModal,
+                      icon: const Icon(Icons.cancel_outlined, color: Colors.white, size: 20),
+                      label: const Text(
+                        'ABORT RIDE',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFC62828),
+                        foregroundColor: Colors.white,
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       );
@@ -875,6 +1345,30 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
             style: OutlinedButton.styleFrom(
               side: BorderSide(
                 color: _isTracking ? ShreeAnnaTheme.primaryGreen : const Color(0xFFCBD5E1),
+                width: 1.5,
+              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          height: 44,
+          child: OutlinedButton.icon(
+            onPressed: _showAbortRideModal,
+            icon: const Icon(Icons.cancel_outlined, color: Color(0xFFC62828), size: 18),
+            label: const Text(
+              'ABORT TRIP / CANCEL DISPATCH',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFFC62828),
+              ),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(
+                color: Color(0xFFEF5350),
                 width: 1.5,
               ),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -1133,16 +1627,18 @@ class _DispatchMapCardState extends State<_DispatchMapCard> {
 
     if (!mounted) return;
 
-    if (toLatLng == null) {
-      setState(() {
-        _loading = false;
-        _error = 'Could not find location on map';
-      });
-      return;
+    // Ensure all points remain strictly in Gujarat
+    if (fromLatLng != null && fromLatLng.latitude < 18.0) {
+      fromLatLng = const LatLng(22.5645, 72.9289); // Anand, Gujarat
+    }
+    if (toLatLng != null && toLatLng.latitude < 18.0) {
+      toLatLng = const LatLng(22.9754, 72.6322); // Ahmedabad, Gujarat
     }
 
+    toLatLng ??= const LatLng(22.9754, 72.6322); // Destination: Ahmedabad, Gujarat
+
     final targetPoint = toLatLng;
-    final startPoint = fromLatLng ?? LatLng(targetPoint.latitude - 0.05, targetPoint.longitude - 0.05);
+    final startPoint = fromLatLng ?? const LatLng(22.5645, 72.9289); // Origin: Anand, Gujarat
 
     setState(() {
       _from = startPoint;
@@ -1161,13 +1657,28 @@ class _DispatchMapCardState extends State<_DispatchMapCard> {
   @override
   Widget build(BuildContext context) {
     final statusUpper = widget.dispatch.status.toUpperCase();
-    final isInTransit = statusUpper == 'IN_TRANSIT' || statusUpper == 'DELIVERED';
-    final targetLocation = isInTransit
+    final isDelivered = statusUpper == 'DELIVERED' || statusUpper == 'COMPLETED';
+    final isInTransit = statusUpper == 'IN_TRANSIT';
+    final targetLocation = (isInTransit || isDelivered)
         ? widget.dispatch.destinationAddress
         : widget.dispatch.sourceAddress;
 
-    final headerColor = isInTransit ? const Color(0xFF0284C7) : const Color(0xFF059669);
-    final lineColor = isInTransit ? const Color(0xFF38BDF8) : const Color(0xFF34D399);
+    final headerColor = isDelivered
+        ? const Color(0xFF10B981)
+        : (isInTransit ? const Color(0xFF0284C7) : const Color(0xFF059669));
+    final lineColor = isDelivered
+        ? const Color(0xFF34D399)
+        : (isInTransit ? const Color(0xFF38BDF8) : const Color(0xFF34D399));
+
+    final mapHeaderTitle = isDelivered
+        ? 'DELIVERY COMPLETED'
+        : (isInTransit ? 'WAREHOUSE ROUTE' : 'PICKUP LOCATION MAP');
+    final mapBadgeText = isDelivered
+        ? 'DELIVERED'
+        : (isInTransit ? 'IN TRANSIT' : 'TRANSIT TO PICKUP');
+    final mapHeaderIcon = isDelivered
+        ? Icons.check_circle_outline
+        : (isInTransit ? Icons.warehouse_outlined : Icons.navigation_outlined);
 
     return Container(
       width: double.infinity,
@@ -1195,14 +1706,14 @@ class _DispatchMapCardState extends State<_DispatchMapCard> {
                   child: Row(
                     children: [
                       Icon(
-                        isInTransit ? Icons.warehouse_outlined : Icons.navigation_outlined,
+                        mapHeaderIcon,
                         color: lineColor,
                         size: 16,
                       ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          isInTransit ? 'WAREHOUSE ROUTE' : 'PICKUP LOCATION MAP',
+                          mapHeaderTitle,
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
@@ -1247,7 +1758,7 @@ class _DispatchMapCardState extends State<_DispatchMapCard> {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        isInTransit ? 'IN TRANSIT' : 'TRANSIT TO PICKUP',
+                        mapBadgeText,
                         style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ),
@@ -1389,14 +1900,14 @@ class _DispatchMapCardState extends State<_DispatchMapCard> {
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Icon(
-                                                isInTransit ? Icons.warehouse : Icons.agriculture,
+                                                (isDelivered || isInTransit) ? Icons.warehouse : Icons.agriculture,
                                                 color: Colors.white,
                                                 size: 14,
                                               ),
                                               const SizedBox(width: 4),
                                               Flexible(
                                                 child: Text(
-                                                  isInTransit ? 'Warehouse' : 'Farmer Farm',
+                                                  isDelivered ? 'Warehouse (Delivered)' : (isInTransit ? 'Warehouse' : 'Farmer Farm'),
                                                   style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                                                   overflow: TextOverflow.ellipsis,
                                                 ),
@@ -1468,7 +1979,7 @@ class _DispatchMapCardState extends State<_DispatchMapCard> {
             child: Row(
               children: [
                 Icon(
-                  isInTransit ? Icons.warehouse_outlined : Icons.location_on_outlined,
+                  (isDelivered || isInTransit) ? Icons.warehouse_outlined : Icons.location_on_outlined,
                   color: lineColor,
                   size: 14,
                 ),
@@ -1478,7 +1989,7 @@ class _DispatchMapCardState extends State<_DispatchMapCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isInTransit ? 'WAREHOUSE DESTINATION' : 'FARMER PICKUP LOCATION',
+                        isDelivered ? 'DELIVERED WAREHOUSE DESTINATION' : (isInTransit ? 'WAREHOUSE DESTINATION' : 'FARMER PICKUP LOCATION'),
                         style: const TextStyle(fontSize: 9, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 2),

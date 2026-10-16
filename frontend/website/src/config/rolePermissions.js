@@ -102,6 +102,7 @@ export const ROLE_CONFIGS = {
           { to: "/farm-verification", icon: FileCheck, label: "Verified Farms" },
           { to: "/procurement-lots", icon: Package, label: "Procurement Lots" },
           { to: "/agreements", icon: FileText, label: "Agreements" },
+          { to: "/purchase-requests", icon: ShoppingCart, label: "Processor Requests" },
         ],
       },
       {
@@ -287,6 +288,46 @@ export const ROLE_CONFIGS = {
         title: "REFERENCE",
         items: [
           { to: "/farmers", icon: Users, label: "Farmers" },
+        ],
+      },
+    ],
+  },
+
+  Processor: {
+    roleName: "Processor (SHG / Value-Added)",
+    portalTitle: "Procurement Hub",
+    badgeColor: "bg-emerald-100 text-emerald-900 border-emerald-400",
+    sections: [
+      {
+        title: null,
+        items: [
+          { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+          { to: "/available-lots", icon: Warehouse, label: "Available Lots" },
+          { to: "/purchase-requests", icon: ShoppingCart, label: "Purchase Requests" },
+          { to: "/agreements", icon: FileText, label: "Agreements" },
+          { to: "/dispatches", icon: Truck, label: "My Shipments" },
+        ],
+      },
+      {
+        title: "VALUE ADDITION & MARKETPLACE",
+        items: [
+          { to: "/marketplace/new", icon: Factory, label: "Create Product" },
+          { to: "/marketplace", icon: ShoppingCart, label: "Marketplace" },
+          { to: "/warehouses", icon: Building2, label: "Inventory" },
+          { to: "/reports", icon: BarChart3, label: "Reporting" },
+        ],
+      },
+    ],
+  },
+  Driver: {
+    roleName: "Delivery Driver",
+    portalTitle: "Driver Logistics Portal",
+    badgeColor: "bg-blue-100 text-blue-800 border-blue-300",
+    sections: [
+      {
+        title: null,
+        items: [
+          { to: "/dispatches", icon: Truck, label: "Assigned Deliveries" },
         ],
       },
     ],

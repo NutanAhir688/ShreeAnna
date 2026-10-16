@@ -63,6 +63,7 @@ public class AppDbContext : DbContext
     public DbSet<DriverLocationLog> DriverLocationLogs => Set<DriverLocationLog>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<Settlement> Settlements => Set<Settlement>();
+    public DbSet<PurchaseRequest> PurchaseRequests => Set<PurchaseRequest>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {

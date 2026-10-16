@@ -27,4 +27,6 @@ public class UpdateFarmerRequest
 
     [Required]
     public DateTime DateOfBirth { get; set; }
+
+    public string? Status { get; set; }
 }

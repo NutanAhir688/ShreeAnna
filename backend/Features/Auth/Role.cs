@@ -10,4 +10,5 @@ public static class Roles
     public const string Accountant = "Accountant";
     public const string Farmer = "Farmer";
     public const string Driver = "Driver";
+    public const string Processor = "Processor";
 }

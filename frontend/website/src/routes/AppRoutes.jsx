@@ -14,6 +14,9 @@ import FarmVerification from "../features/farmers/pages/FarmVerification";
 import FarmVerificationList from "../features/farmers/pages/FarmVerificationList";
 import EditFarmer from "../features/farmers/pages/EditFarmer";
 import ProcurementLotDetails from "../features/procurement/pages/ProcurementLotDetails";
+import PurchaseRequests from "../features/procurement/pages/PurchaseRequests";
+import PurchasePayment from "../features/procurement/pages/PurchasePayment";
+import AvailableLots from "../features/procurement/pages/AvailableLots";
 import QualityInspection from "../features/quality/pages/QualityInspection";
 import QualityManagement from "../features/quality/pages/QualityManagement";
 import Certification from "../features/certification/pages/Certification";
@@ -78,6 +81,11 @@ function AppRoutes() {
           <Route path="/agreements/new" element={<CreateAgreement />} />
           <Route path="/agreements/new/:lotId" element={<CreateAgreement />} />
           <Route path="/procurement-lots/:id/agreement" element={<CreateAgreement />} />
+
+          <Route path="/purchase-requests" element={<PurchaseRequests />} />
+          <Route path="/purchase-payment" element={<PurchasePayment />} />
+          <Route path="/purchase-payment/:agreementId" element={<PurchasePayment />} />
+          <Route path="/available-lots" element={<AvailableLots />} />
 
           <Route path="/quality" element={<QualityManagement />} />
           <Route path="/quality/assigned" element={<QualityManagement defaultTab="assigned" />} />

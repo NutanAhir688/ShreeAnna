@@ -51,7 +51,9 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
-import { agreementsApi, lotsApi } from "@/services/api";
+import { agreementsApi, lotsApi, purchaseRequestsApi } from "@/services/api";
+import { useAuth } from "@/context/AuthContext";
+import { CreditCard } from "lucide-react";
 
 // Default MSP rates per Kg (INR)
 const MSP_RATES = {
@@ -65,8 +67,11 @@ const MSP_RATES = {
 
 function Agreements() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isProcessor = user?.role === "Processor";
 
   const [lots, setLots] = useState([]);
+  const [processorAgreements, setProcessorAgreements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -87,13 +92,21 @@ function Agreements() {
   const [formOtherAdjustments, setFormOtherAdjustments] = useState(0);
   const [formRemarks, setFormRemarks] = useState("");
 
-  // Load live lots from backend
+  // Load live lots / agreements from backend
   const loadAgreements = async () => {
     setLoading(true);
     setError("");
     try {
-      const data = await agreementsApi.getAll();
-      setLots(Array.isArray(data) ? data : []);
+      if (isProcessor) {
+        const data = await purchaseRequestsApi.getAll();
+        const relevant = (Array.isArray(data) ? data : []).filter(
+          (r) => r.agreementId || ["AGREEMENT_PROPOSED", "ACCEPTED", "PAID", "DELIVERED"].includes(r.status)
+        );
+        setProcessorAgreements(relevant);
+      } else {
+        const data = await agreementsApi.getAll();
+        setLots(Array.isArray(data) ? data : []);
+      }
     } catch (err) {
       setError(err.message || "Failed to load agreements from server.");
     } finally {
@@ -103,7 +116,7 @@ function Agreements() {
 
   useEffect(() => {
     loadAgreements();
-  }, []);
+  }, [isProcessor]);
 
   // Compute Agreements list from lots
   const agreements = useMemo(() => {
@@ -186,19 +199,47 @@ function Agreements() {
     });
   }, [agreements, search, statusFilter]);
 
+  // Filtered Processor Agreements
+  const filteredProcessorAgreements = useMemo(() => {
+    return processorAgreements.filter((agr) => {
+      const q = search.toLowerCase();
+      const code = (agr.agreementId || agr.requestCode || "").toLowerCase();
+      const lot = (agr.lotId || "").toLowerCase();
+      const millet = (agr.milletType || "").toLowerCase();
+      const matchSearch = code.includes(q) || lot.includes(q) || millet.includes(q);
+
+      let matchStatus = true;
+      if (statusFilter === "ACCEPTED") {
+        matchStatus = ["ACCEPTED", "PAID", "DELIVERED"].includes(agr.status);
+      } else if (statusFilter === "PENDING") {
+        matchStatus = agr.status === "AGREEMENT_PROPOSED";
+      } else if (statusFilter === "REJECTED") {
+        matchStatus = agr.status === "REJECTED";
+      }
+
+      return matchSearch && matchStatus;
+    });
+  }, [processorAgreements, search, statusFilter]);
+
   // Stats
-  const totalCount = agreements.length;
-  const acceptedCount = agreements.filter(
-    (a) =>
-      a.status.toUpperCase().includes("ACCEPTED") ||
-      a.status.toUpperCase().includes("CERTIFIED")
-  ).length;
-  const pendingCount = agreements.filter(
-    (a) =>
-      !a.status.toUpperCase().includes("ACCEPTED") &&
-      !a.status.toUpperCase().includes("REJECTED")
-  ).length;
-  const totalValSum = agreements.reduce((acc, a) => acc + a.totalValue, 0);
+  const totalCount = isProcessor ? processorAgreements.length : agreements.length;
+  const acceptedCount = isProcessor
+    ? processorAgreements.filter((a) => ["ACCEPTED", "PAID", "DELIVERED"].includes(a.status)).length
+    : agreements.filter(
+        (a) =>
+          a.status.toUpperCase().includes("ACCEPTED") ||
+          a.status.toUpperCase().includes("CERTIFIED")
+      ).length;
+  const pendingCount = isProcessor
+    ? processorAgreements.filter((a) => a.status === "AGREEMENT_PROPOSED").length
+    : agreements.filter(
+        (a) =>
+          !a.status.toUpperCase().includes("ACCEPTED") &&
+          !a.status.toUpperCase().includes("REJECTED")
+      ).length;
+  const totalValSum = isProcessor
+    ? processorAgreements.reduce((acc, a) => acc + (a.totalValue || a.indicativeValue || 0), 0)
+    : agreements.reduce((acc, a) => acc + a.totalValue, 0);
 
   // Open formulation modal for a lot
   const openFormulationForLot = (agr) => {
@@ -269,17 +310,21 @@ function Agreements() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Procurement Agreements
+            {isProcessor ? "Processor Purchase Agreements" : "Procurement Agreements"}
           </h1>
           <p className="text-sm text-slate-500">
-            Digital purchase contracts between ShreeAnna FPO and registered farmers.
+            {isProcessor
+              ? "Digital procurement contracts between ShreeAnna FPO and your processing unit."
+              : "Digital purchase contracts between ShreeAnna FPO and registered farmers."}
           </p>
         </div>
 
-        <Button onClick={() => navigate("/agreements/new")}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Procurement Agreement
-        </Button>
+        {!isProcessor && (
+          <Button onClick={() => navigate("/agreements/new")}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create Procurement Agreement
+          </Button>
+        )}
       </div>
 
       {/* Stats Overview */}
@@ -320,7 +365,7 @@ function Agreements() {
           <CardContent className="flex items-center justify-between p-5">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Pending Signature
+                {isProcessor ? "Pending Payment / Action" : "Pending Signature"}
               </p>
               <p className="mt-1 text-2xl font-bold text-slate-900">
                 {pendingCount}
@@ -356,7 +401,7 @@ function Agreements() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by Agreement Code, Farmer, Farm, or Millet Type..."
+            placeholder={isProcessor ? "Search by Agreement Code, Request Code, Lot ID, or Millet..." : "Search by Agreement Code, Farmer, Farm, or Millet Type..."}
             className="pl-9"
           />
         </div>
@@ -390,7 +435,7 @@ function Agreements() {
       {loading && (
         <div className="flex items-center justify-center h-48 gap-3">
           <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
-          <p className="text-sm text-slate-500">Loading procurement agreements...</p>
+          <p className="text-sm text-slate-500">Loading agreements...</p>
         </div>
       )}
 
@@ -404,136 +449,280 @@ function Agreements() {
 
       {/* Table */}
       {!loading && !error && (
-        <div className="overflow-hidden rounded-lg border border-slate-200/80 bg-white shadow-xs">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-slate-50/60">
-                <TableHead className="pl-6">Agreement Code</TableHead>
-                <TableHead>Farmer</TableHead>
-                <TableHead>Farm & Location</TableHead>
-                <TableHead>Millet Produce</TableHead>
-                <TableHead>MSP Rate</TableHead>
-                <TableHead>Total Value</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="pr-6 text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {filteredAgreements.length > 0 ? (
-                filteredAgreements.map((agr) => {
-                  const isAccepted =
-                    agr.status.toUpperCase().includes("ACCEPTED") ||
-                    agr.status.toUpperCase().includes("CERTIFIED");
-                  const isRejected = agr.status.toUpperCase().includes("REJECTED");
-
-                  return (
-                    <TableRow key={agr.id} className="hover:bg-slate-50/80">
-                      <TableCell className="pl-6">
-                        <div>
-                          <p className="font-bold text-slate-900">{agr.agreementCode}</p>
-                          <p className="text-xs text-slate-400">Date: {agr.date}</p>
-                        </div>
-                      </TableCell>
-
-                      <TableCell>
-                        <div>
-                          <p className="font-medium text-slate-800">{agr.farmerName}</p>
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="text-slate-700 text-sm">
-                        {agr.farmName}
-                      </TableCell>
-
-                      <TableCell>
-                        <div>
-                          <p className="font-medium text-slate-800">{agr.milletType}</p>
-                          <p className="text-xs text-slate-500">{agr.quantityKg} kg</p>
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="font-semibold text-slate-800">
-                        ₹{agr.mspRate.toFixed(2)}/kg
-                      </TableCell>
-
-                      <TableCell className="font-bold text-slate-900">
-                        ₹{agr.totalValue.toLocaleString("en-IN")}
-                      </TableCell>
-
-                      <TableCell>
-                        {isAccepted ? (
-                          <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300">
-                            <CheckCircle2 className="mr-1 h-3 w-3" />
-                            Active / Accepted
-                          </Badge>
-                        ) : isRejected ? (
-                          <Badge variant="destructive">
-                            <XCircle className="mr-1 h-3 w-3" />
-                            Rejected
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800">
-                            <Clock className="mr-1 h-3 w-3" />
-                            Pending Signature
-                          </Badge>
-                        )}
-                      </TableCell>
-
-                      <TableCell className="pr-6 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {agr.isGenerated ? (
-                            <>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => navigate(`/agreements/new/${agr.id}`)}
-                                className="border-slate-300 hover:bg-slate-50 text-slate-700"
-                              >
-                                <Edit className="mr-1.5 h-3.5 w-3.5 text-amber-600" />
-                                Edit
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setSelectedAgreement(agr)}
-                                className="border-slate-300 hover:bg-slate-50 text-slate-700 font-medium"
-                              >
-                                <FileText className="mr-1.5 h-3.5 w-3.5 text-blue-600" />
-                                View Document
-                              </Button>
-                            </>
-                          ) : (
-                            <Button
-                              size="sm"
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
-                              onClick={() => navigate(`/agreements/new/${agr.id}`)}
-                            >
-                              <Plus className="mr-1.5 h-3.5 w-3.5" />
-                              Create Agreement
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={8} className="h-36 text-center text-slate-500">
-                    <div className="flex flex-col items-center justify-center gap-1">
-                      <FileCheck className="h-8 w-8 text-slate-400 mb-1" />
-                      <p className="font-semibold text-slate-800">No procurement agreements found</p>
-                      <p className="text-xs text-slate-500">
-                        Try clearing your search or creating a new agreement.
-                      </p>
-                    </div>
-                  </TableCell>
+        isProcessor ? (
+          /* PROCESSOR AGREEMENTS TABLE */
+          <div className="overflow-hidden rounded-lg border border-slate-200/80 bg-white shadow-xs">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50/60">
+                  <TableHead className="pl-6">Agreement Code</TableHead>
+                  <TableHead>Lot ID</TableHead>
+                  <TableHead>Millet Produce</TableHead>
+                  <TableHead>Agreed Quantity</TableHead>
+                  <TableHead>Selling Price</TableHead>
+                  <TableHead>Total Value</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="pr-6 text-right">Actions</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+
+              <TableBody>
+                {filteredProcessorAgreements.length > 0 ? (
+                  filteredProcessorAgreements.map((agr) => {
+                    const isProposed = agr.status === "AGREEMENT_PROPOSED";
+                    const isPaid = agr.status === "PAID";
+                    const isDelivered = agr.status === "DELIVERED";
+                    const isAccepted = agr.status === "ACCEPTED";
+
+                    return (
+                      <TableRow key={agr.id || agr.agreementId} className="hover:bg-slate-50/80">
+                        <TableCell className="pl-6">
+                          <div>
+                            <p className="font-mono font-bold text-emerald-800">
+                              {agr.agreementId || agr.requestCode}
+                            </p>
+                            <p className="text-[11px] text-slate-400">Req: {agr.requestCode}</p>
+                          </div>
+                        </TableCell>
+
+                        <TableCell className="font-mono text-xs font-semibold text-slate-700">
+                          {agr.lotId}
+                        </TableCell>
+
+                        <TableCell>
+                          <p className="font-medium text-slate-900">{agr.milletType}</p>
+                          <p className="text-[11px] text-slate-500">{agr.fpoName || "Mandya FPO"}</p>
+                        </TableCell>
+
+                        <TableCell className="font-semibold text-slate-800">
+                          {(agr.agreedQuantityKg || agr.requestedQuantityKg)?.toLocaleString()} kg
+                        </TableCell>
+
+                        <TableCell className="font-semibold text-slate-800">
+                          ₹{(agr.sellingPricePerKg || agr.indicativePricePerKg)?.toFixed(2)}/kg
+                        </TableCell>
+
+                        <TableCell className="font-bold text-slate-900">
+                          ₹{(agr.totalValue || agr.indicativeValue)?.toLocaleString("en-IN")}
+                        </TableCell>
+
+                        <TableCell>
+                          {isDelivered ? (
+                            <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 font-bold text-[10px]">
+                              <CheckCircle2 className="mr-1 h-3 w-3" />
+                              DELIVERED
+                            </Badge>
+                          ) : isPaid ? (
+                            <Badge className="bg-purple-100 text-purple-800 border-purple-300 font-bold text-[10px]">
+                              <CheckCircle2 className="mr-1 h-3 w-3" />
+                              PAID • DISPATCH
+                            </Badge>
+                          ) : isAccepted ? (
+                            <Badge className="bg-blue-100 text-blue-800 border-blue-300 font-bold text-[10px]">
+                              <CheckCircle2 className="mr-1 h-3 w-3" />
+                              ACCEPTED
+                            </Badge>
+                          ) : isProposed ? (
+                            <Badge className="border-emerald-300 bg-emerald-50 text-emerald-800 font-bold text-[10px]">
+                              <Clock className="mr-1 h-3 w-3" />
+                              AGREEMENT PROPOSED
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px]">
+                              {agr.status?.replace(/_/g, " ")}
+                            </Badge>
+                          )}
+                        </TableCell>
+
+                        <TableCell className="pr-6 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {isProposed ? (
+                              <Button
+                                size="sm"
+                                className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs h-8 cursor-pointer shadow-xs"
+                                onClick={() => navigate(`/purchase-payment/${agr.agreementId || agr.id}`)}
+                              >
+                                <CreditCard className="mr-1.5 h-3.5 w-3.5" />
+                                Review &amp; Agree / Pay
+                              </Button>
+                            ) : (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setSelectedAgreement(agr)}
+                                  className="border-slate-300 hover:bg-slate-50 text-slate-700 font-medium text-xs h-8 cursor-pointer"
+                                >
+                                  <FileText className="mr-1.5 h-3.5 w-3.5 text-blue-600" />
+                                  View Agreement
+                                </Button>
+                                {agr.shipmentId && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => navigate(`/logistics/${agr.shipmentId}`)}
+                                    className="border-emerald-300 hover:bg-emerald-50 text-emerald-800 font-medium text-xs h-8 cursor-pointer"
+                                  >
+                                    <Truck className="mr-1.5 h-3.5 w-3.5 text-emerald-600" />
+                                    Track Delivery
+                                  </Button>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={8} className="h-36 text-center text-slate-500">
+                      <div className="flex flex-col items-center justify-center gap-1">
+                        <FileCheck className="h-8 w-8 text-slate-400 mb-1" />
+                        <p className="font-semibold text-slate-800">No purchase agreements found</p>
+                        <p className="text-xs text-slate-500">
+                          When FPO proposes an agreement for your purchase request, it will appear here.
+                        </p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          /* FARMER PROCUREMENT AGREEMENTS TABLE (Procurement Officer) */
+          <div className="overflow-hidden rounded-lg border border-slate-200/80 bg-white shadow-xs">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50/60">
+                  <TableHead className="pl-6">Agreement Code</TableHead>
+                  <TableHead>Farmer</TableHead>
+                  <TableHead>Farm & Location</TableHead>
+                  <TableHead>Millet Produce</TableHead>
+                  <TableHead>MSP Rate</TableHead>
+                  <TableHead>Total Value</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="pr-6 text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+
+              <TableBody>
+                {filteredAgreements.length > 0 ? (
+                  filteredAgreements.map((agr) => {
+                    const isAccepted =
+                      agr.status.toUpperCase().includes("ACCEPTED") ||
+                      agr.status.toUpperCase().includes("CERTIFIED");
+                    const isRejected = agr.status.toUpperCase().includes("REJECTED");
+
+                    return (
+                      <TableRow key={agr.id} className="hover:bg-slate-50/80">
+                        <TableCell className="pl-6">
+                          <div>
+                            <p className="font-bold text-slate-900">{agr.agreementCode}</p>
+                            <p className="text-xs text-slate-400">Date: {agr.date}</p>
+                          </div>
+                        </TableCell>
+
+                        <TableCell>
+                          <div>
+                            <p className="font-medium text-slate-800">{agr.farmerName}</p>
+                          </div>
+                        </TableCell>
+
+                        <TableCell className="text-slate-700 text-sm">
+                          {agr.farmName}
+                        </TableCell>
+
+                        <TableCell>
+                          <div>
+                            <p className="font-medium text-slate-800">{agr.milletType}</p>
+                            <p className="text-xs text-slate-500">{agr.quantityKg} kg</p>
+                          </div>
+                        </TableCell>
+
+                        <TableCell className="font-semibold text-slate-800">
+                          ₹{agr.mspRate.toFixed(2)}/kg
+                        </TableCell>
+
+                        <TableCell className="font-bold text-slate-900">
+                          ₹{agr.totalValue.toLocaleString("en-IN")}
+                        </TableCell>
+
+                        <TableCell>
+                          {isAccepted ? (
+                            <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300">
+                              <CheckCircle2 className="mr-1 h-3 w-3" />
+                              Active / Accepted
+                            </Badge>
+                          ) : isRejected ? (
+                            <Badge variant="destructive">
+                              <XCircle className="mr-1 h-3 w-3" />
+                              Rejected
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800">
+                              <Clock className="mr-1 h-3 w-3" />
+                              Pending Signature
+                            </Badge>
+                          )}
+                        </TableCell>
+
+                        <TableCell className="pr-6 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {agr.isGenerated ? (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => navigate(`/agreements/new/${agr.id}`)}
+                                  className="border-slate-300 hover:bg-slate-50 text-slate-700"
+                                >
+                                  <Edit className="mr-1.5 h-3.5 w-3.5 text-amber-600" />
+                                  Edit
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setSelectedAgreement(agr)}
+                                  className="border-slate-300 hover:bg-slate-50 text-slate-700 font-medium"
+                                >
+                                  <FileText className="mr-1.5 h-3.5 w-3.5 text-blue-600" />
+                                  View Document
+                                </Button>
+                              </>
+                            ) : (
+                              <Button
+                                size="sm"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+                                onClick={() => navigate(`/agreements/new/${agr.id}`)}
+                              >
+                                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                                Create Agreement
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={8} className="h-36 text-center text-slate-500">
+                      <div className="flex flex-col items-center justify-center gap-1">
+                        <FileCheck className="h-8 w-8 text-slate-400 mb-1" />
+                        <p className="font-semibold text-slate-800">No procurement agreements found</p>
+                        <p className="text-xs text-slate-500">
+                          Try clearing your search or creating a new agreement.
+                        </p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )
       )}
 
       {/* AGREEMENT DOCUMENT PREVIEW MODAL */}
@@ -548,10 +737,14 @@ function Agreements() {
                   </div>
                   <div>
                     <DialogTitle className="text-xl font-bold text-slate-900">
-                      Procurement Agreement Contract
+                      {selectedAgreement.agreementId
+                        ? "Processor Millet Purchase Agreement"
+                        : "Procurement Agreement Contract"}
                     </DialogTitle>
                     <DialogDescription className="text-xs text-slate-500">
-                      Official legal agreement under ShreeAnna FPO Procurement Framework
+                      {selectedAgreement.agreementId
+                        ? "Official raw millet sales contract between ShreeAnna FPO and Buyer"
+                        : "Official legal agreement under ShreeAnna FPO Procurement Framework"}
                     </DialogDescription>
                   </div>
                 </div>
@@ -562,14 +755,22 @@ function Agreements() {
             <div className="my-4 space-y-4 rounded-lg bg-slate-50 p-5 border border-slate-200 text-slate-800 text-sm">
               <div className="flex justify-between items-center border-b pb-3">
                 <div>
-                  <p className="text-xs text-slate-400 uppercase font-semibold">Contract Code</p>
+                  <p className="text-xs text-slate-400 uppercase font-semibold">
+                    {selectedAgreement.agreementId ? "Agreement Code" : "Contract Code"}
+                  </p>
                   <p className="font-mono font-bold text-base text-emerald-800">
-                    {selectedAgreement.agreementCode}
+                    {selectedAgreement.agreementId || selectedAgreement.agreementCode}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-slate-400 uppercase font-semibold">Date Created</p>
-                  <p className="font-semibold">{selectedAgreement.date}</p>
+                  <p className="text-xs text-slate-400 uppercase font-semibold">
+                    {selectedAgreement.agreementId ? "Valid Until" : "Date Created"}
+                  </p>
+                  <p className="font-semibold">
+                    {selectedAgreement.agreementId
+                      ? (selectedAgreement.agreementValidUntil ? new Date(selectedAgreement.agreementValidUntil).toLocaleDateString("en-GB") : "27 Aug 2026")
+                      : selectedAgreement.date}
+                  </p>
                 </div>
               </div>
 
@@ -684,28 +885,46 @@ function Agreements() {
               </Button>
 
               <div className="flex gap-2">
-                {!selectedAgreement.status.toUpperCase().includes("REJECTED") && (
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    disabled={actionLoading}
-                    onClick={() => handleReject(selectedAgreement.id)}
-                  >
-                    {actionLoading && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-                    Reject Agreement
-                  </Button>
-                )}
+                {selectedAgreement.agreementId ? (
+                  selectedAgreement.status === "AGREEMENT_PROPOSED" ? (
+                    <Button
+                      size="sm"
+                      className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs"
+                      onClick={() => {
+                        setSelectedAgreement(null);
+                        navigate(`/purchase-payment/${selectedAgreement.agreementId}`);
+                      }}
+                    >
+                      <CreditCard className="mr-1.5 h-3.5 w-3.5" />
+                      Review &amp; Complete Payment
+                    </Button>
+                  ) : null
+                ) : (
+                  <>
+                    {!selectedAgreement.status.toUpperCase().includes("REJECTED") && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        disabled={actionLoading}
+                        onClick={() => handleReject(selectedAgreement.id)}
+                      >
+                        {actionLoading && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+                        Reject Agreement
+                      </Button>
+                    )}
 
-                {!selectedAgreement.status.toUpperCase().includes("ACCEPTED") && (
-                  <Button
-                    size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
-                    disabled={actionLoading}
-                    onClick={() => handleAccept(selectedAgreement.id)}
-                  >
-                    {actionLoading && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-                    Accept & Sign Agreement
-                  </Button>
+                    {!selectedAgreement.status.toUpperCase().includes("ACCEPTED") && (
+                      <Button
+                        size="sm"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                        disabled={actionLoading}
+                        onClick={() => handleAccept(selectedAgreement.id)}
+                      >
+                        {actionLoading && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+                        Accept & Sign Agreement
+                      </Button>
+                    )}
+                  </>
                 )}
 
                 <Button variant="secondary" size="sm" onClick={() => setSelectedAgreement(null)}>

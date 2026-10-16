@@ -45,4 +45,43 @@ class DriverApi {
       throw Exception(decoded['message'] ?? 'Invalid pickup code. Please check with farmer.');
     }
   }
+
+  Future<DriverDispatchModel> confirmDelivery(String dispatchId, {String? notes, double? receivedKg}) async {
+    final response = await _apiClient.post(
+      ApiConfig.confirmDelivery(dispatchId),
+      body: {
+        'deliveredQuantityKg': receivedKg,
+        'notes': notes,
+      },
+    );
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      return DriverDispatchModel.fromJson(decoded);
+    } else {
+      Map<String, dynamic> decoded = {};
+      try {
+        decoded = jsonDecode(response.body);
+      } catch (_) {}
+      throw Exception(decoded['message'] ?? 'Failed to confirm delivery.');
+    }
+  }
+
+  Future<DriverDispatchModel> abortRide(String dispatchId, {String? reason}) async {
+    final response = await _apiClient.post(
+      ApiConfig.abortRide(dispatchId),
+      body: {
+        'reason': reason ?? 'Aborted by driver in mobile app',
+      },
+    );
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      return DriverDispatchModel.fromJson(decoded);
+    } else {
+      Map<String, dynamic> decoded = {};
+      try {
+        decoded = jsonDecode(response.body);
+      } catch (_) {}
+      throw Exception(decoded['message'] ?? 'Failed to abort ride.');
+    }
+  }
 }

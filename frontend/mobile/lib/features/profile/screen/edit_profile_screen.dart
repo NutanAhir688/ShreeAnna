@@ -29,10 +29,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _villageController;
 
   bool _isSaving = false;
+  String _status = 'Active';
+
+  @override
+  void reassemble() {
+    super.reassemble();
+    _status = (widget.farmer.status.trim().toLowerCase() == 'inactive') ? 'Inactive' : 'Active';
+  }
 
   @override
   void initState() {
     super.initState();
+    _status = (widget.farmer.status.trim().toLowerCase() == 'inactive') ? 'Inactive' : 'Active';
     _fullNameController = TextEditingController(text: widget.farmer.fullName);
     _phoneController = TextEditingController(text: widget.farmer.phone);
     _emailController = TextEditingController(text: widget.farmer.email);
@@ -71,6 +79,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         taluka: _talukaController.text.trim(),
         village: _villageController.text.trim(),
         dateOfBirth: widget.farmer.dateOfBirth,
+        status: _status,
       );
 
       if (!mounted) return;
@@ -158,13 +167,58 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            widget.farmer.farmerCode,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: ShreeAnnaTheme.primaryGreen,
-                            ),
+                          Row(
+                            children: [
+                              Text(
+                                widget.farmer.farmerCode,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: ShreeAnnaTheme.primaryGreen,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: _status == 'Active'
+                                      ? const Color(0xFFE8F5E9)
+                                      : const Color(0xFFFEE2E2),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: _status == 'Active'
+                                        ? const Color(0xFFA5D6A7)
+                                        : const Color(0xFFFCA5A5),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 6,
+                                      height: 6,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: _status == 'Active'
+                                            ? ShreeAnnaTheme.primaryGreen
+                                            : const Color(0xFFDC2626),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _status,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: _status == 'Active'
+                                            ? ShreeAnnaTheme.primaryGreen
+                                            : const Color(0xFFDC2626),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 2),
                           const Text(
@@ -173,6 +227,73 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           ),
                         ],
                       ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Section: Account Status
+              const Text(
+                'Account Status',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF202420),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFD5DFD0)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Choose whether your farmer account is active or inactive',
+                      style: TextStyle(fontSize: 11, color: Color(0xFF687068)),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatusButton(
+                            title: 'Active',
+                            subtitle: 'Available & active',
+                            icon: Icons.check_circle_rounded,
+                            isSelected: _status == 'Active',
+                            selectedColor: ShreeAnnaTheme.primaryGreen,
+                            selectedBgColor: const Color(0xFFE8F5E9),
+                            onTap: () {
+                              setState(() {
+                                _status = 'Active';
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildStatusButton(
+                            title: 'Inactive',
+                            subtitle: 'Paused / inactive',
+                            icon: Icons.pause_circle_filled_rounded,
+                            isSelected: _status == 'Inactive',
+                            selectedColor: const Color(0xFFDC2626),
+                            selectedBgColor: const Color(0xFFFEE2E2),
+                            onTap: () {
+                              setState(() {
+                                _status = 'Inactive';
+                              });
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -406,6 +527,71 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(6),
           borderSide: const BorderSide(color: ShreeAnnaTheme.primaryGreen, width: 1.5),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusButton({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required bool isSelected,
+    required Color selectedColor,
+    required Color selectedBgColor,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? selectedBgColor : const Color(0xFFF9FAF7),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isSelected ? selectedColor : const Color(0xFFD5DFD0),
+              width: isSelected ? 1.8 : 1.0,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                isSelected ? icon : Icons.radio_button_unchecked,
+                size: 20,
+                color: isSelected ? selectedColor : const Color(0xFF8C968C),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: isSelected ? selectedColor : const Color(0xFF202420),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: isSelected
+                            ? selectedColor.withValues(alpha: 0.85)
+                            : const Color(0xFF7A817A),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

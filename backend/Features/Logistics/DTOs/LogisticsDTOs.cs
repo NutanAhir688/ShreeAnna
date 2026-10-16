@@ -131,3 +131,15 @@ public record DriverResponse(
 public record VerifyPickupRequest(
     string VerificationCode
 );
+
+public record AssignDriverRequest(
+    Guid? DriverId,
+    string? DriverName,
+    string? DriverPhone,
+    string? VehicleNumber,
+    decimal? VehicleCapacityKg
+);
+
+public record AbortRideRequest(
+    string? Reason
+);

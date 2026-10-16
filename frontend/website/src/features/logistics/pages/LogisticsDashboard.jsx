@@ -40,6 +40,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import { logisticsApi, lotsApi } from "@/services/api";
 
@@ -60,6 +67,8 @@ function LogisticsDashboard() {
 
   // Assign Driver Modal State
   const [assigningShipment, setAssigningShipment] = useState(null);
+  const [driversList, setDriversList] = useState([]);
+  const [selectedDriverId, setSelectedDriverId] = useState("");
   const [driverName, setDriverName] = useState("");
   const [driverPhone, setDriverPhone] = useState("");
   const [vehicleNo, setVehicleNo] = useState("");
@@ -69,7 +78,11 @@ function LogisticsDashboard() {
     setLoading(true);
     setError("");
     try {
-      const data = await logisticsApi.getAll().catch(() => []);
+      const [data, drivers] = await Promise.all([
+        logisticsApi.getAll().catch(() => []),
+        logisticsApi.getDrivers().catch(() => []),
+      ]);
+      setDriversList(Array.isArray(drivers) ? drivers : []);
       if (Array.isArray(data) && data.length > 0) {
         const mapped = data.map((d) => ({
           id: d.id,
@@ -177,13 +190,17 @@ function LogisticsDashboard() {
     if (!assigningShipment) return;
     setSubmittingDriver(true);
     try {
-      await logisticsApi
-        .updateStatus(assigningShipment.id, "VEHICLE_ASSIGNED")
-        .catch(() => {});
+      await logisticsApi.assignDriver(assigningShipment.id, {
+        driverId: selectedDriverId || undefined,
+        driverName,
+        driverPhone,
+        vehicleNumber: vehicleNo,
+      });
       setAssigningShipment(null);
       setDriverName("");
       setDriverPhone("");
       setVehicleNo("");
+      setSelectedDriverId("");
       fetchLogisticsData();
     } catch (err) {
       alert(err.message || "Failed to assign driver.");
@@ -707,6 +724,52 @@ function LogisticsDashboard() {
             </DialogHeader>
 
             <form onSubmit={handleAssignDriverSubmit} className="space-y-4 py-3 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Select Registered Active Driver</label>
+                <Select
+                  value={selectedDriverId}
+                  onValueChange={(val) => {
+                    setSelectedDriverId(val);
+                    const found = driversList.find((d) => d.id === val);
+                    if (found) {
+                      setDriverName(found.name || "");
+                      setDriverPhone(found.phone || "");
+                      setVehicleNo(found.vehicleNumber || "");
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-9 text-xs bg-slate-50 border-slate-300 font-bold text-slate-900">
+                    <SelectValue placeholder="Choose an active, available driver..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {driversList.map((drv) => {
+                      const isAvail = (drv.status || "").toUpperCase() === "AVAILABLE" || (drv.status || "").toUpperCase() === "ACTIVE";
+                      const isInTransit = (drv.status || "").toUpperCase() === "IN_TRANSIT" || (drv.status || "").toUpperCase() === "ON_JOURNEY";
+                      const isDisabled = !isAvail;
+
+                      return (
+                        <SelectItem key={drv.id} value={drv.id} disabled={isDisabled}>
+                          <div className="flex items-center justify-between gap-3 text-xs">
+                            <span className={`font-semibold ${isDisabled ? "text-slate-400 line-through" : "text-slate-900"}`}>
+                              {drv.name} ({drv.phone})
+                            </span>
+                            <span className="font-mono text-[10px]">
+                              {isAvail ? (
+                                <span className="text-emerald-700 font-bold">Active • {drv.vehicleNumber || "Available"}</span>
+                              ) : isInTransit ? (
+                                <span className="text-amber-700 font-bold bg-amber-50 px-1 py-0.5 rounded">In Transit (Busy)</span>
+                              ) : (
+                                <span className="text-red-600 font-bold bg-red-50 px-1 py-0.5 rounded">Inactive (Off-Duty)</span>
+                              )}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Vehicle Registration Number</label>
                 <Input
