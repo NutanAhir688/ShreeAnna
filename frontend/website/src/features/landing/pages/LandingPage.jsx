@@ -23,7 +23,14 @@ import {
   Users,
   ExternalLink,
   ChevronRight,
+  Smartphone,
+  Download,
+  ArrowDownToLine,
+  MapPin,
+  WifiOff,
+  Radio,
 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -150,8 +157,16 @@ export default function LandingPage() {
     }
   };
 
+  const [apkDownloadUrl, setApkDownloadUrl] = useState("/downloads/shreeanna-mobile.apk");
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setApkDownloadUrl(`${window.location.origin}/downloads/shreeanna-mobile.apk`);
+    }
+  }, []);
+
   const navItems = [
     { name: "Pillars", link: "#pillars", icon: <Layers className="w-4 h-4" /> },
+    { name: "Android App", link: "#mobile-app", icon: <Smartphone className="w-4 h-4 text-emerald-400" /> },
     { name: "Millet Grains", link: "#varieties", icon: <Wheat className="w-4 h-4" /> },
     { name: "QR Verification", link: "#verify", icon: <QrCode className="w-4 h-4" /> },
     { name: "Role Portals", link: "#roles", icon: <Users className="w-4 h-4" /> },
@@ -164,6 +179,15 @@ export default function LandingPage() {
         navItems={navItems}
         rightElement={
           <div className="flex items-center gap-2">
+            <a
+              href="/downloads/shreeanna-mobile.apk"
+              download="shreeanna-mobile.apk"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition-all hover:scale-105"
+              title="Download Android APK (v1.0.0)"
+            >
+              <ArrowDownToLine className="w-3.5 h-3.5 text-emerald-400" />
+              <span>APK v1.0</span>
+            </a>
             <Button
               size="sm"
               variant="ghost"
@@ -207,7 +231,7 @@ export default function LandingPage() {
           </p>
 
           {/* Action CTAs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
             <ButtonWithMovingBorder
               onClick={() => navigate("/login")}
               containerClassName="h-12 w-52"
@@ -218,13 +242,31 @@ export default function LandingPage() {
               </span>
             </ButtonWithMovingBorder>
 
+            <a
+              href="/downloads/shreeanna-mobile.apk"
+              download="shreeanna-mobile.apk"
+              className="group"
+            >
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-12 px-5 rounded-2xl bg-emerald-950/60 hover:bg-emerald-900/70 text-emerald-300 border-emerald-500/40 text-xs font-bold backdrop-blur-md cursor-pointer transition-all duration-300 shadow-lg shadow-emerald-950/50 group-hover:border-emerald-400"
+              >
+                <Smartphone className="w-4 h-4 mr-2 text-emerald-400 group-hover:scale-110 transition-transform" />
+                <span>Download Android APK</span>
+                <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-[10px] ml-2">
+                  62 MB • v1.0.0
+                </Badge>
+              </Button>
+            </a>
+
             <a href="#verify">
               <Button
                 variant="outline"
                 size="lg"
                 className="h-12 px-6 rounded-2xl bg-slate-900/80 hover:bg-slate-800 text-slate-200 border-slate-700 text-xs font-semibold backdrop-blur-md cursor-pointer"
               >
-                <QrCode className="w-4 h-4 mr-2 text-emerald-400" />
+                <QrCode className="w-4 h-4 mr-2 text-amber-400" />
                 Verify Harvest Certificate
               </Button>
             </a>
@@ -362,6 +404,252 @@ export default function LandingPage() {
             }
           />
         </BentoGrid>
+      </section>
+
+      {/* Mobile App Showcase & APK Download Section */}
+      <section id="mobile-app" className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-emerald-500/10 via-amber-500/5 to-transparent rounded-full blur-3xl pointer-events-none" />
+
+        <div className="text-center max-w-3xl mx-auto mb-16 space-y-3 relative z-10">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-semibold backdrop-blur-md">
+            <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Official Mobile Client • Android Release v1.0.0</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          </div>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white">
+            ShreeAnna In-Field Android Companion
+          </h2>
+          <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
+            Engineered for rural agricultural connectivity. Capture GPS farm plot polygons, register harvest lots with instant moisture testing, scan weighbridge QR codes, and authenticate driver waybills with offline-first SQLite sync.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center relative z-10">
+          {/* Left Column: Interactive Mobile Phone Mockup */}
+          <div className="lg:col-span-5 flex justify-center">
+            <div className="relative">
+              {/* Floating feature pills around mockup */}
+              <div className="absolute -top-4 -right-4 z-20 hidden sm:flex items-center gap-2 p-2.5 rounded-xl bg-slate-900/90 border border-emerald-500/40 text-emerald-300 text-xs font-semibold backdrop-blur-md shadow-xl">
+                <WifiOff className="w-4 h-4 text-emerald-400" />
+                <span>100% Offline Batch Sync</span>
+              </div>
+
+              <div className="absolute -bottom-4 -left-4 z-20 hidden sm:flex items-center gap-2 p-2.5 rounded-xl bg-slate-900/90 border border-amber-500/40 text-amber-300 text-xs font-semibold backdrop-blur-md shadow-xl">
+                <MapPin className="w-4 h-4 text-amber-400" />
+                <span>±1m GPS Field Polygon</span>
+              </div>
+
+              {/* Realistic Phone Device Frame */}
+              <div className="w-[300px] sm:w-[320px] rounded-[48px] p-3.5 bg-gradient-to-b from-slate-700 via-slate-800 to-slate-900 border-4 border-slate-700 shadow-[0_0_60px_rgba(16,185,129,0.15)] relative">
+                {/* Dynamic Island / Speaker */}
+                <div className="absolute top-5 left-1/2 -translate-x-1/2 w-28 h-4 bg-slate-950 rounded-full z-30 flex items-center justify-end px-3">
+                  <div className="w-2 h-2 rounded-full bg-slate-800" />
+                </div>
+
+                {/* Inner Screen */}
+                <div className="w-full rounded-[38px] bg-slate-950 border border-slate-800 overflow-hidden text-slate-100 p-4 pt-7 space-y-4 text-left select-none">
+                  {/* Status Bar */}
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 px-1">
+                    <span>9:41 AM</span>
+                    <div className="flex items-center gap-1.5">
+                      <Radio className="w-3 h-3 text-emerald-400" />
+                      <span>5G</span>
+                      <span>100%</span>
+                    </div>
+                  </div>
+
+                  {/* App Header */}
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                        <Wheat className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-white leading-tight">ShreeAnna Kisan</p>
+                        <p className="text-[10px] text-emerald-400 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                          Live Connected
+                        </p>
+                      </div>
+                    </div>
+                    <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[9px]">
+                      Agent Mode
+                    </Badge>
+                  </div>
+
+                  {/* Active Farmer Card inside Phone */}
+                  <div className="p-3 rounded-2xl bg-gradient-to-br from-slate-900 to-emerald-950/40 border border-emerald-500/30 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-slate-400 font-medium">Active Collective</span>
+                      <Badge className="bg-emerald-500/20 text-emerald-300 text-[8px] py-0">
+                        DBT Verified
+                      </Badge>
+                    </div>
+                    <p className="text-xs font-bold text-white">Ramesh Bhai Patel</p>
+                    <p className="text-[10px] text-slate-300 font-mono">Aadhaar: XXXX-XXXX-4819</p>
+                    <div className="pt-1 flex items-center justify-between text-[10px] border-t border-slate-800">
+                      <span className="text-slate-400">Plot 02: Finger Millet</span>
+                      <span className="text-emerald-400 font-bold">1.8 Hectares</span>
+                    </div>
+                  </div>
+
+                  {/* Mobile Quick Action Buttons (2x2 Grid) */}
+                  <div className="grid grid-cols-2 gap-2 text-left">
+                    <div className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-emerald-500/40 transition-colors">
+                      <MapPin className="w-4 h-4 text-emerald-400 mb-1" />
+                      <p className="text-[11px] font-bold text-white">Plot Survey</p>
+                      <p className="text-[9px] text-slate-400">GPS Polygon</p>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-amber-500/40 transition-colors">
+                      <Wheat className="w-4 h-4 text-amber-400 mb-1" />
+                      <p className="text-[11px] font-bold text-white">Harvest Lot</p>
+                      <p className="text-[9px] text-slate-400">Moisture & QC</p>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-teal-500/40 transition-colors">
+                      <QrCode className="w-4 h-4 text-teal-400 mb-1" />
+                      <p className="text-[11px] font-bold text-white">Weighbridge</p>
+                      <p className="text-[9px] text-slate-400">Scan Inbound</p>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-purple-500/40 transition-colors">
+                      <Truck className="w-4 h-4 text-purple-400 mb-1" />
+                      <p className="text-[11px] font-bold text-white">Waybill OTP</p>
+                      <p className="text-[9px] text-slate-400">Driver Handoff</p>
+                    </div>
+                  </div>
+
+                  {/* Live Sync Ledger Pill in Phone */}
+                  <div className="p-2 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between text-[10px]">
+                    <span className="text-slate-400 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Sync Ledger</span>
+                    </span>
+                    <span className="font-mono text-emerald-300 font-bold">0 Pending (Synced)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Download & Sideload Center */}
+          <div className="lg:col-span-7 space-y-6">
+            {/* Download Card */}
+            <div className="p-6 sm:p-8 rounded-3xl bg-slate-900/90 border border-emerald-500/30 shadow-2xl relative overflow-hidden backdrop-blur-xl">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xl sm:text-2xl font-bold text-white">
+                      Download ShreeAnna Android App
+                    </h3>
+                    <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-xs">
+                      APK v1.0.0
+                    </Badge>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-300 mt-1">
+                    Universal Android Package (.apk) built for smartphones and rugged field tablets.
+                  </p>
+                </div>
+              </div>
+
+              {/* Specs Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 py-5 text-xs">
+                <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
+                  <span className="text-slate-400 block text-[11px]">Package</span>
+                  <strong className="text-white font-mono text-[11px] truncate block">shreeanna-mobile.apk</strong>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
+                  <span className="text-slate-400 block text-[11px]">File Size</span>
+                  <strong className="text-emerald-400 font-bold">62.0 MB</strong>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
+                  <span className="text-slate-400 block text-[11px]">Min Android</span>
+                  <strong className="text-white font-bold">Android 8.0+ (Oreo)</strong>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
+                  <span className="text-slate-400 block text-[11px]">Architecture</span>
+                  <strong className="text-teal-400 font-bold">arm64-v8a / x86_64</strong>
+                </div>
+              </div>
+
+              {/* Action Buttons & QR Code */}
+              <div className="flex flex-col sm:flex-row items-center gap-6 pt-2">
+                <div className="flex-1 space-y-3 w-full">
+                  <a
+                    href="/downloads/shreeanna-mobile.apk"
+                    download="shreeanna-mobile.apk"
+                    className="block w-full"
+                  >
+                    <Button
+                      size="lg"
+                      className="w-full h-13 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-extrabold text-sm shadow-xl shadow-emerald-500/20 cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      <Download className="w-5 h-5 text-slate-950" />
+                      <span>Download Android APK (Direct)</span>
+                    </Button>
+                  </a>
+
+                  <a
+                    href="https://github.com/mukund58/ShreeAnna/releases"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full"
+                  >
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="w-full h-11 rounded-2xl bg-slate-950/80 hover:bg-slate-800 text-slate-200 border-slate-700 text-xs font-semibold cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      <ExternalLink className="w-4 h-4 text-slate-400" />
+                      <span>GitHub Releases Mirror (v1.0.0)</span>
+                    </Button>
+                  </a>
+                </div>
+
+                {/* Scan-to-Download QR Code */}
+                <div className="shrink-0 p-3.5 rounded-2xl bg-slate-950 border border-emerald-500/40 text-center space-y-2 shadow-lg">
+                  <div className="p-2 bg-slate-900 rounded-xl inline-block">
+                    <QRCodeSVG
+                      value={apkDownloadUrl}
+                      size={110}
+                      bgColor="#0f172a"
+                      fgColor="#34d399"
+                      level="M"
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-400 max-w-[120px] mx-auto leading-tight">
+                    Scan with Android Camera to Download
+                  </p>
+                </div>
+              </div>
+
+              {/* Quick Installation Steps */}
+              <div className="mt-6 pt-5 border-t border-slate-800/80">
+                <p className="text-xs font-semibold text-slate-300 mb-3 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  Quick Installation Guide (3 Easy Steps)
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-[11px] text-slate-400">
+                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80">
+                    <span className="font-bold text-emerald-400 block mb-1">1. Download</span>
+                    Tap the Download APK button above or scan the QR code to save <span className="text-slate-200">shreeanna-mobile.apk</span>.
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80">
+                    <span className="font-bold text-amber-400 block mb-1">2. Sideload</span>
+                    Tap the file in your notification tray. If prompted, toggle "Allow from this source" to authorize installation.
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80">
+                    <span className="font-bold text-teal-400 block mb-1">3. Connect</span>
+                    Open the app, enter your phone or Aadhaar OTP, and start surveying plots and scanning lots with offline sync.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Millet Varieties Showcase using Aceternity HoverEffect */}
