@@ -108,7 +108,7 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: ShreeAnnaTheme.primaryGreen,
-          content: Text('OTP sent to +91 $phone (Via SendOTP SMS & Backend)'),
+          content: Text('OTP sent to +91 $phone'),
         ),
       );
     } catch (e) {
