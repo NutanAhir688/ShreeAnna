@@ -5,7 +5,6 @@ import '../../../app/theme.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../core/services/send_otp_service.dart';
 import 'driver_login_screen.dart';
-import 'otp_example_screen.dart';
 import 'otp_screen.dart';
 import '../services/farmer_auth_api.dart';
 
@@ -136,21 +135,6 @@ class _LoginScreenState extends State<LoginScreen> {
             color: ShreeAnnaTheme.primaryGreen,
           ),
         ),
-
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.shield_outlined, color: ShreeAnnaTheme.primaryGreen),
-            tooltip: 'SendOTP SDK Playground',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => OTPExample(initialPhone: _mobileController.text.trim()),
-                ),
-              );
-            },
-          ),
-        ],
       ),
 
       // ----------------------------------------------------------
@@ -421,46 +405,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    // SendOTP SDK Feature Pill
-                    InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => OTPExample(initialPhone: _mobileController.text.trim()),
-                          ),
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF0FDF4),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: ShreeAnnaTheme.primaryGreen.withValues(alpha: 0.25)),
-                        ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.verified_user_outlined, size: 14, color: ShreeAnnaTheme.primaryGreen),
-                            SizedBox(width: 6),
-                            Text(
-                              'Powered by SendOTP SDK • Test Playground',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: ShreeAnnaTheme.primaryGreen,
-                              ),
-                            ),
-                            SizedBox(width: 4),
-                            Icon(Icons.arrow_forward_ios, size: 10, color: ShreeAnnaTheme.primaryGreen),
-                          ],
-                        ),
                       ),
                     ),
                   ],
