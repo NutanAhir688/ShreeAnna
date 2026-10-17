@@ -9,4 +9,6 @@ public interface IFarmerAuthService
     Task<LoginResponse?> VerifyOtpAsync(
         string phone,
         string otp);
+
+    Task<LoginResponse?> DirectLoginAsync(string phone);
 }

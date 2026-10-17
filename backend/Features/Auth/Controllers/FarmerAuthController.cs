@@ -68,4 +68,20 @@ public class FarmerAuthController : ControllerBase
 
         return Ok(response);
     }
+
+    [HttpPost("direct-login")]
+    [AllowAnonymous]
+    public async Task<ActionResult<LoginResponse>> DirectLogin([FromBody] SendOtpRequest request)
+    {
+        var response = await _farmerAuthService.DirectLoginAsync(request.Phone);
+        if (response is null)
+        {
+            return NotFound(new
+            {
+                message = "No active farmer account found with this mobile number."
+            });
+        }
+
+        return Ok(response);
+    }
 }

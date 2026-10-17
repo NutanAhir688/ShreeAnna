@@ -10,6 +10,7 @@ import 'features/auth/screen/welcome_screen.dart';
 import 'features/driver/screens/driver_journey_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/services/push_notification_service.dart';
+import 'core/services/send_otp_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +20,9 @@ Future<void> main() async {
   } catch (e) {
     debugPrint('Note: .env file not loaded: $e');
   }
+
+  // Initialize MSG91 SendOTP Flutter SDK
+  SendOtpService.initialize();
 
   await PushNotificationService().initialize();
 

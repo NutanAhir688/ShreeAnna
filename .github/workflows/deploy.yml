@@ -39,9 +39,22 @@ jobs:
 
       - name: Build Android Release APK
         working-directory: frontend/mobile
+        env:
+          SENDOTP_WIDGET_ID: ${{ secrets.SENDOTP_WIDGET_ID }}
+          SENDOTP_AUTH_TOKEN: ${{ secrets.SENDOTP_AUTH_TOKEN }}
+          CARTO_API_KEY: ${{ secrets.CARTO_API_KEY }}
         run: |
           if [ ! -f .env ]; then
             cp .env.example .env 2>/dev/null || touch .env
+          fi
+          if [ -n "$SENDOTP_WIDGET_ID" ]; then
+            sed -i "s|^SENDOTP_WIDGET_ID=.*|SENDOTP_WIDGET_ID=$SENDOTP_WIDGET_ID|" .env || echo "SENDOTP_WIDGET_ID=$SENDOTP_WIDGET_ID" >> .env
+          fi
+          if [ -n "$SENDOTP_AUTH_TOKEN" ]; then
+            sed -i "s|^SENDOTP_AUTH_TOKEN=.*|SENDOTP_AUTH_TOKEN=$SENDOTP_AUTH_TOKEN|" .env || echo "SENDOTP_AUTH_TOKEN=$SENDOTP_AUTH_TOKEN" >> .env
+          fi
+          if [ -n "$CARTO_API_KEY" ]; then
+            sed -i "s|^CARTO_API_KEY=.*|CARTO_API_KEY=$CARTO_API_KEY|" .env || echo "CARTO_API_KEY=$CARTO_API_KEY" >> .env
           fi
           flutter pub get
           flutter build apk --release

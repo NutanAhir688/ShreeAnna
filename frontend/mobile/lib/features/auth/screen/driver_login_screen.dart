@@ -5,6 +5,7 @@ import '../../../core/storage/token_storage.dart';
 import '../../driver/models/driver_dispatch_model.dart';
 import '../../driver/screens/driver_journey_screen.dart';
 import '../../driver/services/driver_api.dart';
+import '../../../core/services/send_otp_service.dart';
 import '../services/driver_auth_api.dart';
 import 'login_screen.dart';
 
@@ -24,6 +25,7 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
   final DriverAuthApi _driverAuthApi = DriverAuthApi();
   final DriverApi _driverApi = DriverApi();
 
+  String? _driverReqId;
   bool _isLoading = false;
   bool _otpSent = false;
   List<RegisteredDriver> _availableDrivers = [];
@@ -77,7 +79,27 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await _driverAuthApi.sendOtp(phone);
+      // 1. Send live SMS via SendOTP SDK
+      try {
+        final sendOtpRes = await SendOtpService.sendOtp(phone);
+        if (sendOtpRes.isSuccess && sendOtpRes.reqId != null) {
+          _driverReqId = sendOtpRes.reqId;
+          debugPrint('[DriverLoginScreen] SendOTP SMS dispatched: $_driverReqId');
+        }
+      } catch (sdkError) {
+        debugPrint('[DriverLoginScreen] SendOTP SDK error: $sdkError');
+      }
+
+      // 2. Also register with backend
+      try {
+        await _driverAuthApi.sendOtp(phone);
+      } catch (backendError) {
+        debugPrint('[DriverLoginScreen] Backend sendOtp note: $backendError');
+        if (_driverReqId == null) {
+          rethrow;
+        }
+      }
+
       if (!mounted) return;
       setState(() {
         _otpSent = true;
@@ -86,7 +108,7 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: ShreeAnnaTheme.primaryGreen,
-          content: Text('OTP sent to +91 $phone (Use 123456 or received code)'),
+          content: Text('OTP sent to +91 $phone (Via SendOTP SMS & Backend)'),
         ),
       );
     } catch (e) {
@@ -111,7 +133,30 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
 
     setState(() => _isLoading = true);
     try {
-      final response = await _driverAuthApi.verifyOtp(phone, otp);
+      Map<String, dynamic>? response;
+
+      // 1. Verify via SendOTP SDK if reqId is present
+      bool sendOtpVerified = false;
+      if (_driverReqId != null && _driverReqId!.isNotEmpty) {
+        try {
+          final sdkVerifyRes = await SendOtpService.verifyOtp(
+            reqId: _driverReqId!,
+            otp: otp,
+          );
+          sendOtpVerified = sdkVerifyRes.isSuccess;
+        } catch (_) {}
+      }
+
+      // 2. If SendOTP verified, exchange via directLogin
+      if (sendOtpVerified) {
+        try {
+          response = await _driverAuthApi.directLogin(phone);
+        } catch (_) {}
+      }
+
+      // 3. Fallback or standard verification with backend
+      response ??= await _driverAuthApi.verifyOtp(phone, otp);
+
       await _onLoginSuccess(response, phone);
     } catch (e) {
       if (!mounted) return;

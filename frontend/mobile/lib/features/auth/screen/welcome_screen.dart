@@ -5,6 +5,7 @@ import '../../../app/theme.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import 'driver_login_screen.dart';
 import 'login_screen.dart';
+import 'otp_example_screen.dart';
 import 'registration_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
@@ -164,6 +165,67 @@ class WelcomeScreen extends StatelessWidget {
                         ),
                       ),
                       const Icon(Icons.arrow_forward_ios, size: 16, color: Color(0xFF0F766E)),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // Option 3: SendOTP SDK Demo / Test
+              InkWell(
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const OTPExample()),
+                  );
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: ShreeAnnaTheme.primaryGreen.withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.shield_outlined,
+                          color: ShreeAnnaTheme.primaryGreen,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text(
+                              'SendOTP Verification SDK',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1E293B),
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Live MSG91 SendOTP, Retry Channels & Verify Testing',
+                              style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios, size: 14, color: Color(0xFF94A3B8)),
                     ],
                   ),
                 ),

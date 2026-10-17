@@ -5,14 +5,20 @@ import 'package:flutter/services.dart';
 
 import '../../home/screens/home_screen.dart';
 import '../../../app/theme.dart';
+import '../../../core/services/send_otp_service.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../services/farmer_auth_api.dart';
 import '../../../core/storage/token_storage.dart';
 
 class OtpScreen extends StatefulWidget {
   final String mobileNumber;
+  final String? reqId;
 
-  const OtpScreen({super.key, required this.mobileNumber});
+  const OtpScreen({
+    super.key,
+    required this.mobileNumber,
+    this.reqId,
+  });
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -27,6 +33,7 @@ class _OtpScreenState extends State<OtpScreen> {
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
   final FarmerAuthApi _farmerAuthApi = FarmerAuthApi();
 
+  String? _currentReqId;
   bool _isVerifying = false;
 
   Timer? _timer;
@@ -36,6 +43,7 @@ class _OtpScreenState extends State<OtpScreen> {
   @override
   void initState() {
     super.initState();
+    _currentReqId = widget.reqId;
     _startTimer();
   }
 
@@ -157,7 +165,34 @@ class _OtpScreenState extends State<OtpScreen> {
     });
 
     try {
-      final response = await _farmerAuthApi.verifyOtp(
+      Map<String, dynamic>? response;
+
+      // 1. If we have a SendOTP reqId, attempt verification via SendOTP SDK
+      bool sendOtpVerified = false;
+      if (_currentReqId != null && _currentReqId!.isNotEmpty) {
+        try {
+          final sdkVerifyRes = await SendOtpService.verifyOtp(
+            reqId: _currentReqId!,
+            otp: _otp,
+          );
+          sendOtpVerified = sdkVerifyRes.isSuccess;
+          debugPrint('[OtpScreen] SendOTP verify result: $sendOtpVerified (${sdkVerifyRes.message})');
+        } catch (sdkError) {
+          debugPrint('[OtpScreen] SendOTP verify error: $sdkError');
+        }
+      }
+
+      // 2. If verified via SendOTP SDK, obtain login token via directLogin
+      if (sendOtpVerified) {
+        try {
+          response = await _farmerAuthApi.directLogin(widget.mobileNumber);
+        } catch (directError) {
+          debugPrint('[OtpScreen] directLogin error: $directError');
+        }
+      }
+
+      // 3. Fallback or standard verification with backend
+      response ??= await _farmerAuthApi.verifyOtp(
         widget.mobileNumber,
         _otp,
       );
@@ -209,7 +244,7 @@ class _OtpScreenState extends State<OtpScreen> {
     }
   }
 
-  void _resendOtp() {
+  Future<void> _resendOtp() async {
     if (_secondsRemaining != 0) {
       return;
     }
@@ -222,6 +257,32 @@ class _OtpScreenState extends State<OtpScreen> {
 
     _startTimer();
 
+    // 1. Retry with SendOTP SDK
+    if (_currentReqId != null && _currentReqId!.isNotEmpty) {
+      try {
+        final retryResult = await SendOtpService.retryOtp(
+          reqId: _currentReqId!,
+          retryChannel: SendOtpService.channelSms,
+        );
+        debugPrint('[OtpScreen] SendOTP retry success: ${retryResult.isSuccess}');
+      } catch (e) {
+        debugPrint('[OtpScreen] SendOTP retry error: $e');
+      }
+    } else {
+      try {
+        final sendResult = await SendOtpService.sendOtp(widget.mobileNumber);
+        if (sendResult.isSuccess && sendResult.reqId != null) {
+          _currentReqId = sendResult.reqId;
+        }
+      } catch (_) {}
+    }
+
+    // 2. Also trigger backend
+    try {
+      await _farmerAuthApi.sendOtp(widget.mobileNumber);
+    } catch (_) {}
+
+    if (!mounted) return;
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(l10n.otpSentAgain)));
   }

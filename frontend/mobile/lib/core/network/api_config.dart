@@ -10,6 +10,8 @@ class ApiConfig {
 
   static const String verifyFarmerOtp = '$baseUrl/api/auth/farmer/verify-otp';
 
+  static const String directFarmerLogin = '$baseUrl/api/auth/farmer/direct-login';
+
   static const String sendDriverOtp = '$baseUrl/api/auth/driver/send-otp';
 
   static const String verifyDriverOtp = '$baseUrl/api/auth/driver/verify-otp';
@@ -75,5 +77,21 @@ class ApiConfig {
       if (key != null && key.trim().isNotEmpty) return key.trim();
     } catch (_) {}
     return const String.fromEnvironment('CARTO_API_KEY', defaultValue: '');
+  }
+
+  static String get sendOtpWidgetId {
+    try {
+      final id = dotenv.env['SENDOTP_WIDGET_ID'];
+      if (id != null && id.trim().isNotEmpty) return id.trim();
+    } catch (_) {}
+    return const String.fromEnvironment('SENDOTP_WIDGET_ID', defaultValue: '');
+  }
+
+  static String get sendOtpAuthToken {
+    try {
+      final token = dotenv.env['SENDOTP_AUTH_TOKEN'];
+      if (token != null && token.trim().isNotEmpty) return token.trim();
+    } catch (_) {}
+    return const String.fromEnvironment('SENDOTP_AUTH_TOKEN', defaultValue: '');
   }
 }
