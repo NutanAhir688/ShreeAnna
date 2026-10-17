@@ -43,4 +43,22 @@ class FarmerAuthApi {
 
     throw Exception('Something went wrong. Please try again.');
   }
+
+  Future<Map<String, dynamic>> directLogin(String phone) async {
+    final response = await http.post(
+      Uri.parse(ApiConfig.directFarmerLogin),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'phone': phone}),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+
+    if (response.statusCode == 404) {
+      throw Exception('No active farmer account found with this mobile number.');
+    }
+
+    throw Exception('Failed to authenticate farmer. Please try again.');
+  }
 }

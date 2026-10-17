@@ -84,6 +84,26 @@ public class FarmerAuthService : IFarmerAuthService
         return GenerateToken(farmer);
     }
 
+    public async Task<LoginResponse?> DirectLoginAsync(string phone)
+    {
+        phone = NormalizePhone(phone);
+
+        var farmer = await _context.Farmers
+            .FirstOrDefaultAsync(x => x.Phone == phone);
+
+        if (farmer is null)
+        {
+            return null;
+        }
+
+        if (farmer.Status != "Active")
+        {
+            return null;
+        }
+
+        return GenerateToken(farmer);
+    }
+
     private LoginResponse GenerateToken(Farmer farmer)
     {
         var expiresAt = DateTime.UtcNow
