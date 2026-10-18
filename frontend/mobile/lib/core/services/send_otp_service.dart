@@ -360,6 +360,10 @@ class SendOtpResult {
 
     final type = res['type']?.toString();
     final bool invisibleVerified = res['invisibleVerified'] == true;
+    final code = res['code']?.toString() ?? res['statusCode']?.toString();
+    final rawMessage =
+        res['message']?.toString() ?? res['msg']?.toString() ?? '';
+
     final bool isSuccess = type == 'success' ||
         res['status'] == 'success' ||
         res['statusCode'] == 200 ||
@@ -379,12 +383,13 @@ class SendOtpResult {
 
     String msg;
     if (invisibleVerified) {
-      msg = 'Seamless carrier verification successful (ReqId: ${extractedReqId ?? ""})';
-    } else if (res['message'] is String) {
-      msg = res['message'] as String;
+      msg = 'Seamless carrier verification successful! SIM identity confirmed.';
+    } else if (code == '408' || rawMessage.toLowerCase().contains('ipblocked')) {
+      msg = 'Security rate limit: IP temporarily throttled by MSG91. Please wait 5-10 minutes or switch networks.';
+    } else if (isSuccess) {
+      msg = 'OTP sent successfully via SMS (ReqId: ${extractedReqId ?? ""})';
     } else {
-      msg = res['msg']?.toString() ??
-          (isSuccess ? 'OTP sent successfully.' : 'Failed to send OTP');
+      msg = rawMessage.isNotEmpty ? rawMessage : 'Failed to send OTP';
     }
 
     return SendOtpResult(
@@ -408,20 +413,36 @@ class SendOtpResult {
     }
 
     final type = res['type']?.toString();
-    final message =
+    final rawMessage =
         res['message']?.toString() ?? res['msg']?.toString() ?? '';
-    final isSuccess = type == 'success' ||
+    final code = res['code']?.toString() ?? res['statusCode']?.toString();
+
+    // In MSG91 widget API, on successful verification, message contains the JWT access-token (starts with "ey")
+    final bool isJwt = rawMessage.startsWith('ey') && rawMessage.contains('.');
+    final bool isSuccess = type == 'success' ||
         res['status'] == 'success' ||
-        message.toLowerCase().contains('success') ||
-        message.toLowerCase().contains('verified');
+        isJwt ||
+        rawMessage.toLowerCase().contains('verified');
+
+    String formattedMessage;
+    if (isSuccess) {
+      formattedMessage = 'OTP verified successfully!';
+    } else if (code == '705' || rawMessage.toLowerCase().contains('invalid otp')) {
+      formattedMessage = 'Invalid OTP entered. Please verify the 6-digit code received via SMS/WhatsApp.';
+    } else if (code == '704' || rawMessage.toLowerCase().contains('limit exceeded')) {
+      formattedMessage = 'Verification attempts limit exceeded (max 3). Please tap Retry OTP to get a new code.';
+    } else if (code == '408' || rawMessage.toLowerCase().contains('ipblocked')) {
+      formattedMessage = 'Security rate limit: IP temporarily throttled by MSG91. Please wait a few minutes or switch networks.';
+    } else {
+      formattedMessage = rawMessage.isNotEmpty ? rawMessage : 'OTP verification failed';
+    }
 
     return SendOtpResult(
       isSuccess: isSuccess,
       reqId: reqId,
-      message: message.isNotEmpty
-          ? message
-          : (isSuccess ? 'OTP verified successfully' : 'OTP verification failed'),
+      message: formattedMessage,
       type: type,
+      accessToken: isJwt ? rawMessage : res['access-token']?.toString(),
       rawResponse: res,
     );
   }

@@ -88,13 +88,40 @@ class _OTPExampleState extends State<OTPExample> {
           if (reqId != null) {
             _reqIdController.text = reqId!;
           }
-          _statusMessage = result.invisibleVerified
-              ? 'Seamless Carrier Verification Successful! (ReqID: ${reqId ?? "captured"})'
-              : 'OTP Sent Successfully! (ReqID: ${reqId ?? "captured"})';
+          if (result.invisibleVerified) {
+            _statusMessage = 'VERIFIED INVISIBLY! Cellular network confirmed SIM identity. No OTP entry needed.';
+            _otpController.text = 'CARRIER_VERIFIED';
+          } else {
+            _statusMessage = 'OTP Sent Successfully! (ReqID: ${reqId ?? "captured"})';
+          }
         } else {
           _statusMessage = 'Send OTP Failed: ${result.message}';
         }
       });
+
+      if (result.isSuccess && result.invisibleVerified && mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.check_circle, color: ShreeAnnaTheme.primaryGreen),
+                SizedBox(width: 8),
+                Text('Carrier Verified!'),
+              ],
+            ),
+            content: Text(
+              'Your mobile identifier ($identifier) was verified seamlessly via your mobile carrier network (Jio / Airtel).\n\nNo SMS OTP is needed because your cellular token confirmed SIM ownership.\n\nReqId: ${result.reqId}',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
     } catch (e) {
       setState(() {
         _statusMessage = 'Exception: $e';
