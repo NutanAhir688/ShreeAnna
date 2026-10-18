@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:sendotp_flutter_sdk/sendotp_flutter_sdk.dart';
 import '../../../app/theme.dart';
 import '../../../core/services/send_otp_service.dart';
 
@@ -77,20 +76,21 @@ class _OTPExampleState extends State<OTPExample> {
     });
 
     try {
-      final data = {'identifier': identifier};
-      final response = await OTPWidget.sendOTP(data);
-      debugPrint('[OTPExample] sendOTP response: $response');
-
-      final result = SendOtpResult.fromResponse(response, identifier: identifier);
+      final result = await SendOtpService.sendOtp(identifier);
+      debugPrint('[OTPExample] sendOTP result: isSuccess=${result.isSuccess}, reqId=${result.reqId}');
 
       setState(() {
-        _lastResponseJson = const JsonEncoder.withIndent('  ').convert(response);
+        _lastResponseJson = result.rawResponse != null
+            ? const JsonEncoder.withIndent('  ').convert(result.rawResponse)
+            : '{"message": "${result.message}"}';
         if (result.isSuccess) {
           reqId = result.reqId;
           if (reqId != null) {
             _reqIdController.text = reqId!;
           }
-          _statusMessage = 'OTP Sent Successfully! (ReqID: ${reqId ?? "captured"})';
+          _statusMessage = result.invisibleVerified
+              ? 'Seamless Carrier Verification Successful! (ReqID: ${reqId ?? "captured"})'
+              : 'OTP Sent Successfully! (ReqID: ${reqId ?? "captured"})';
         } else {
           _statusMessage = 'Send OTP Failed: ${result.message}';
         }
@@ -127,17 +127,16 @@ class _OTPExampleState extends State<OTPExample> {
     });
 
     try {
-      final data = {
-        'reqId': activeReqId,
-        'retryChannel': _selectedRetryChannel,
-      };
-      final response = await OTPWidget.retryOTP(data);
-      debugPrint('[OTPExample] retryOTP response: $response');
-
-      final result = SendOtpResult.fromResponse(response, reqId: activeReqId);
+      final result = await SendOtpService.retryOtp(
+        reqId: activeReqId,
+        retryChannel: _selectedRetryChannel,
+      );
+      debugPrint('[OTPExample] retryOTP result: isSuccess=${result.isSuccess}');
 
       setState(() {
-        _lastResponseJson = const JsonEncoder.withIndent('  ').convert(response);
+        _lastResponseJson = result.rawResponse != null
+            ? const JsonEncoder.withIndent('  ').convert(result.rawResponse)
+            : '{"message": "${result.message}"}';
         _statusMessage = result.isSuccess
             ? 'Retry OTP initiated via selected channel!'
             : 'Retry Failed: ${result.message}';
@@ -181,17 +180,16 @@ class _OTPExampleState extends State<OTPExample> {
     });
 
     try {
-      final data = {
-        'reqId': activeReqId,
-        'otp': otp,
-      };
-      final response = await OTPWidget.verifyOTP(data);
-      debugPrint('[OTPExample] verifyOTP response: $response');
-
-      final result = SendOtpResult.fromVerifyResponse(response, reqId: activeReqId);
+      final result = await SendOtpService.verifyOtp(
+        reqId: activeReqId,
+        otp: otp,
+      );
+      debugPrint('[OTPExample] verifyOTP result: isSuccess=${result.isSuccess}');
 
       setState(() {
-        _lastResponseJson = const JsonEncoder.withIndent('  ').convert(response);
+        _lastResponseJson = result.rawResponse != null
+            ? const JsonEncoder.withIndent('  ').convert(result.rawResponse)
+            : '{"message": "${result.message}"}';
         _statusMessage = result.isSuccess
             ? 'VERIFICATION SUCCESSFUL! OTP confirmed.'
             : 'Verification Failed: ${result.message}';
@@ -244,10 +242,14 @@ class _OTPExampleState extends State<OTPExample> {
       _statusMessage = 'Fetching widget configuration process...';
     });
     try {
-      final response = await OTPWidget.getWidgetProcess();
+      final response = await SendOtpService.getWidgetProcess();
       setState(() {
-        _lastResponseJson = const JsonEncoder.withIndent('  ').convert(response);
-        _statusMessage = 'Widget process fetched successfully.';
+        _lastResponseJson = response != null
+            ? const JsonEncoder.withIndent('  ').convert(response)
+            : '{"message": "No process data returned"}';
+        _statusMessage = response != null
+            ? 'Widget process fetched successfully.'
+            : 'Failed to fetch widget process.';
       });
     } catch (e) {
       setState(() {
