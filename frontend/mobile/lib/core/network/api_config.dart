@@ -1,24 +1,33 @@
+import 'dart:io';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiConfig {
-  static const String baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'https://shreeanna.delightfulfield-3bc26253.centralindia.azurecontainerapps.io',
-  );
+  static String get baseUrl {
+    try {
+      final envUrl = dotenv.env['API_BASE_URL'];
+      if (envUrl != null && envUrl.trim().isNotEmpty) {
+        return envUrl.trim().replaceAll(RegExp(r'/+$'), '');
+      }
+    } catch (_) {}
+    return const String.fromEnvironment(
+      'API_BASE_URL',
+      defaultValue: 'https://shreeanna.delightfulfield-3bc26253.centralindia.azurecontainerapps.io',
+    );
+  }
 
-  static const String sendFarmerOtp = '$baseUrl/api/auth/farmer/send-otp';
+  static String get sendFarmerOtp => '$baseUrl/api/auth/farmer/send-otp';
 
-  static const String verifyFarmerOtp = '$baseUrl/api/auth/farmer/verify-otp';
+  static String get verifyFarmerOtp => '$baseUrl/api/auth/farmer/verify-otp';
 
-  static const String directFarmerLogin = '$baseUrl/api/auth/farmer/direct-login';
+  static String get directFarmerLogin => '$baseUrl/api/auth/farmer/direct-login';
 
-  static const String sendDriverOtp = '$baseUrl/api/auth/driver/send-otp';
+  static String get sendDriverOtp => '$baseUrl/api/auth/driver/send-otp';
 
-  static const String verifyDriverOtp = '$baseUrl/api/auth/driver/verify-otp';
+  static String get verifyDriverOtp => '$baseUrl/api/auth/driver/verify-otp';
 
-  static const String directDriverLogin = '$baseUrl/api/auth/driver/direct-login';
+  static String get directDriverLogin => '$baseUrl/api/auth/driver/direct-login';
 
-  static const String farmerMe = '$baseUrl/api/farmers/me';
+  static String get farmerMe => '$baseUrl/api/farmers/me';
 
   static String farmerFarms(String farmerId) =>
       '$baseUrl/api/farmers/$farmerId/farms';
@@ -31,11 +40,11 @@ class ApiConfig {
   static String archiveFarm(String farmId) =>
       '$baseUrl/api/farms/$farmId/archive';
 
-  static String registerFarmer = '$baseUrl/api/farmers/register';
+  static String get registerFarmer => '$baseUrl/api/farmers/register';
 
-  static String registerFarm = '$baseUrl/api/farms/register';
+  static String get registerFarm => '$baseUrl/api/farms/register';
 
-  static const String farmerLotsMe = '$baseUrl/api/farmers/me/lots';
+  static String get farmerLotsMe => '$baseUrl/api/farmers/me/lots';
   static String farmerLots(String farmerId) => '$baseUrl/api/farmers/$farmerId/lots';
   static String lotById(String lotId) => '$baseUrl/api/lots/$lotId';
   static String lotTimeline(String lotId) => '$baseUrl/api/lots/$lotId/timeline';
@@ -48,28 +57,55 @@ class ApiConfig {
   static String qualityCertificate(String lotId) =>
       '$baseUrl/api/quality/certificates/lot/$lotId';
 
-  static const String uploadImage = '$baseUrl/api/upload';
+  static String get uploadImage => '$baseUrl/api/upload';
 
   /// Returns a signed SAS write URL for a given file extension.
   /// Usage: GET [uploadSasUrl]?ext=jpg
-  static const String uploadSasUrl = '$baseUrl/api/upload/sas';
+  static String get uploadSasUrl => '$baseUrl/api/upload/sas';
 
   static String driverJourney(String phone) => '$baseUrl/api/dispatches/driver-journey?phone=$phone';
   static String verifyPickup(String dispatchId) => '$baseUrl/api/dispatches/$dispatchId/verify-pickup';
   static String confirmDelivery(String dispatchId) => '$baseUrl/api/dispatches/$dispatchId/confirm-delivery';
   static String abortRide(String dispatchId) => '$baseUrl/api/dispatches/$dispatchId/abort-ride';
-  static const String driverList = '$baseUrl/api/dispatches/drivers';
+  static String get driverList => '$baseUrl/api/dispatches/drivers';
   static String dispatchByLot(String lotId) =>
     '$baseUrl/api/dispatches/by-lot/${Uri.encodeComponent(lotId)}';
 
-  static const String notifications = '$baseUrl/api/notifications';
-  static const String notificationsReadAll = '$baseUrl/api/notifications/read-all';
+  static String get notifications => '$baseUrl/api/notifications';
+  static String get notificationsReadAll => '$baseUrl/api/notifications/read-all';
   static String notificationRead(String id) => '$baseUrl/api/notifications/$id/read';
 
   static const String azureBlobBaseUrl =
       'https://shreeannafarmimages.blob.core.windows.net/farm-images';
 
   static String azureSasToken = '';
+
+  /// Resolves an image URL so it can be loaded reliably on physical devices
+  /// and emulators, handling local fallback URLs, relative paths, and emulator aliases.
+  static String resolveImageUrl(String? url) {
+    if (url == null || url.trim().isEmpty) return '';
+    final trimmed = url.trim();
+
+    // If relative path
+    if (trimmed.startsWith('/')) {
+      return '$baseUrl$trimmed';
+    }
+
+    // If Azure blob was returned when storage was local disk fallback
+    if (trimmed.contains('shreeannafarmimages.blob.core.windows.net/uploads/')) {
+      final relativePath = trimmed.substring(trimmed.indexOf('/uploads/'));
+      return '$baseUrl$relativePath';
+    }
+
+    // Android emulator localhost handling
+    if (Platform.isAndroid && (trimmed.contains('://localhost') || trimmed.contains('://127.0.0.1'))) {
+      if (baseUrl.contains('10.0.2.2')) {
+        return trimmed.replaceAll('localhost', '10.0.2.2').replaceAll('127.0.0.1', '10.0.2.2');
+      }
+    }
+
+    return trimmed;
+  }
 
   static String get cartoApiKey {
     try {

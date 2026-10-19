@@ -220,66 +220,125 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
   }
 
   Future<void> _askLocationAndCapture() async {
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Location services are turned off. GPS tag may be approximate.',
+              ),
+            ),
+          );
+        }
+      } else {
+        var permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
+        }
+
+        if (permission != LocationPermission.denied &&
+            permission != LocationPermission.deniedForever) {
+          try {
+            final pos = await Geolocator.getCurrentPosition(
+              desiredAccuracy: LocationAccuracy.medium,
+              timeLimit: const Duration(seconds: 8),
+            );
+            if (mounted) {
+              setState(() {
+                _position = pos;
+              });
+            }
+          } catch (_) {
+            final lastPos = await Geolocator.getLastKnownPosition();
+            if (lastPos != null && mounted) {
+              setState(() {
+                _position = lastPos;
+              });
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Location lookup note: $e');
     }
 
-    if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Location permission is required')),
-      );
-      return;
-    }
-
-    final pos = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-    );
-
-    setState(() {
-      _position = pos;
-    });
-
-    await _takePhoto();
+    if (!mounted) return;
+    await _showPhotoSourceSheet();
   }
 
-  Future<void> _takePhoto() async {
+  Future<void> _showPhotoSourceSheet() async {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: ShreeAnnaTheme.primaryGreen),
+                title: const Text('Take photo with Camera'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickPhoto(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: ShreeAnnaTheme.primaryGreen),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickPhoto(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickPhoto(ImageSource source) async {
     try {
-      var status = await Permission.camera.status;
-      if (status.isDenied) {
-        status = await Permission.camera.request();
-      }
+      if (source == ImageSource.camera) {
+        var status = await Permission.camera.status;
+        if (status.isDenied) {
+          status = await Permission.camera.request();
+        }
 
-      if (status.isPermanentlyDenied) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-              'Camera permission is permanently denied. Please allow it in settings.',
+        if (status.isPermanentlyDenied) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                'Camera permission is permanently denied. Please allow it in settings.',
+              ),
+              action: SnackBarAction(
+                label: 'Settings',
+                onPressed: () => openAppSettings(),
+              ),
             ),
-            action: SnackBarAction(
-              label: 'Settings',
-              onPressed: () => openAppSettings(),
-            ),
-          ),
-        );
-        return;
-      }
+          );
+          return;
+        }
 
-      if (!status.isGranted) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Camera permission is required to capture farm photo.'),
-          ),
-        );
-        return;
+        if (!status.isGranted) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Camera permission is required to capture farm photo.'),
+            ),
+          );
+          return;
+        }
       }
 
       final picker = ImagePicker();
       final picked = await picker.pickImage(
-        source: ImageSource.camera,
+        source: source,
         imageQuality: 80,
       );
       if (picked == null) return;
@@ -287,19 +346,19 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
       setState(() {
         _photo = File(picked.path);
       });
-    } on PlatformException catch (_) {
+    } on PlatformException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Camera permission is required or camera is unavailable',
+            'Could not access ${source == ImageSource.camera ? "camera" : "gallery"}: ${e.message ?? e.code}',
           ),
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Failed to open camera: $e')));
+          .showSnackBar(SnackBar(content: Text('Failed to pick photo: $e')));
     }
   }
 
@@ -371,7 +430,18 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
       String imageUrl = '';
 
       if (_photo != null) {
-        imageUrl = await _farmApi.uploadImage(_photo!);
+        try {
+          imageUrl = await _farmApi.uploadImage(_photo!);
+        } catch (uploadError) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Farm photo upload failed: $uploadError'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+          return;
+        }
       }
 
       final cropsJson = _cropEntries.map((e) => e.toJson()).toList();
@@ -745,22 +815,63 @@ class _AddFarmScreenState extends State<AddFarmScreen> {
               const SizedBox(height: 12),
               ElevatedButton.icon(
                 onPressed: _askLocationAndCapture,
-                icon: const Icon(Icons.location_on),
-                label: const Text('Enable location and take farm photo'),
+                icon: Icon(_photo == null ? Icons.add_a_photo : Icons.photo_camera),
+                label: Text(_photo == null ? 'Capture / Select Farm Photo' : 'Change Farm Photo'),
               ),
               const SizedBox(height: 8),
               if (_position != null)
-                Text(
-                  'Location: ${_position!.latitude.toStringAsFixed(6)}, ${_position!.longitude.toStringAsFixed(6)}',
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: ShreeAnnaTheme.primaryGreen.withAlpha(20),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.location_on, size: 16, color: ShreeAnnaTheme.primaryGreen),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          'Location: ${_position!.latitude.toStringAsFixed(6)}, ${_position!.longitude.toStringAsFixed(6)}',
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              const SizedBox(height: 8),
-              if (_photo != null)
-                Image.file(
-                  _photo!,
-                  width: double.infinity,
-                  height: 220,
-                  fit: BoxFit.cover,
+              if (_photo != null) ...[
+                const SizedBox(height: 10),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Stack(
+                    children: [
+                      Image.file(
+                        _photo!,
+                        width: double.infinity,
+                        height: 220,
+                        fit: BoxFit.cover,
+                      ),
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: CircleAvatar(
+                          backgroundColor: Colors.black54,
+                          radius: 18,
+                          child: IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white, size: 18),
+                            onPressed: () {
+                              setState(() {
+                                _photo = null;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+              ],
               const SizedBox(height: 20),
               Row(
                 children: [

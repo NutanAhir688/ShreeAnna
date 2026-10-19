@@ -45,6 +45,7 @@ dependencies:
   permission_handler: ^11.3.1
   shared_preferences: ^2.5.5
   path: ^1.9.0
+  http_parser: ^4.1.2
   pdf: ^3.11.1
   qr_flutter: ^4.1.0
   flutter_map: ^8.3.2

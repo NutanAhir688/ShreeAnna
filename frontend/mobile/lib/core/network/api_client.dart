@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import '../storage/token_storage.dart';
 import '../../features/auth/screen/welcome_screen.dart';
@@ -38,6 +39,7 @@ class ApiClient {
     String url,
     File file, {
     String fieldName = 'file',
+    MediaType? contentType,
   }) async {
     final token = await _tokenStorage.getAccessToken();
     return _sendWithFallback((targetUrl) async {
@@ -45,8 +47,13 @@ class ApiClient {
       if (token != null && token.isNotEmpty) {
         request.headers['Authorization'] = 'Bearer $token';
       }
-      request.files
-          .add(await http.MultipartFile.fromPath(fieldName, file.path));
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          fieldName,
+          file.path,
+          contentType: contentType,
+        ),
+      );
       final streamedResponse = await request.send();
       return http.Response.fromStream(streamedResponse);
     }, url);

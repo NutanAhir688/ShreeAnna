@@ -200,7 +200,17 @@ app.UseCors(myAllowSpecificOrigins); // Apply the named policy globally
 
 
 // 3. SECURITY & STATIC FILES MIDDLEWARE
+var uploadsDir = Path.Combine(app.Environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), "uploads");
+if (!Directory.Exists(uploadsDir))
+{
+    Directory.CreateDirectory(uploadsDir);
+}
 app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsDir),
+    RequestPath = "/uploads"
+});
 app.UseAuthentication();
 app.UseAuthorization();
 

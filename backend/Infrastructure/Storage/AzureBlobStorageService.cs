@@ -24,15 +24,18 @@ public class AzureBlobStorageService : IBlobStorageService
     private readonly AzureStorageOptions _options;
     private readonly IWebHostEnvironment _environment;
     private readonly ILogger<AzureBlobStorageService> _logger;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public AzureBlobStorageService(
         IOptions<AzureStorageOptions> options,
         IWebHostEnvironment environment,
-        ILogger<AzureBlobStorageService> logger)
+        ILogger<AzureBlobStorageService> logger,
+        IHttpContextAccessor httpContextAccessor)
     {
         _options = options.Value;
         _environment = environment;
         _logger = logger;
+        _httpContextAccessor = httpContextAccessor;
     }
     private static readonly HashSet<string> AllowedExtensions =
     [
@@ -223,9 +226,19 @@ public class AzureBlobStorageService : IBlobStorageService
             await file.CopyToAsync(stream);
         }
 
-        // var publicUrl = _options.CdnBaseUrl.TrimEnd('/') + "/" + blobRelativePath;
-        var publicUrl =
-    $"{_options.CdnBaseUrl.TrimEnd('/')}/uploads/{blobRelativePath}";
+        var cleanPath = blobRelativePath.Replace('\\', '/').TrimStart('/');
+        string publicUrl;
+        var request = _httpContextAccessor?.HttpContext?.Request;
+        if (request != null)
+        {
+            var scheme = request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? request.Scheme;
+            var host = request.Headers["X-Forwarded-Host"].FirstOrDefault() ?? request.Host.Value;
+            publicUrl = $"{scheme}://{host}/uploads/{cleanPath}";
+        }
+        else
+        {
+            publicUrl = $"/uploads/{cleanPath}";
+        }
 
         _logger.LogInformation("Saved farm image locally at {Path} and exposed it as {Url}", localFilePath, publicUrl);
 

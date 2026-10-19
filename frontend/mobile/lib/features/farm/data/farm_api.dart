@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../core/network/api_client.dart';
@@ -12,43 +14,81 @@ class FarmApi {
   final ApiClient _apiClient = ApiClient();
 
   /// Uploads [imageFile] directly to Azure Blob Storage using a short-lived
-  /// SAS URL obtained from the backend.  Returns the permanent public URL.
+  /// SAS URL obtained from the backend. If Azure Blob Storage is unconfigured
+  /// (such as during local mobile testing/debug mode or when backend returns 503),
+  /// it automatically falls back to the backend's server-side multipart endpoint.
   Future<String> uploadImage(File imageFile) async {
-    // Step 1 – ask the backend to generate a SAS write URL
-    final ext = p.extension(imageFile.path).replaceFirst('.', ''); // e.g. "jpg"
-    final sasEndpoint =
-        '${ApiConfig.uploadSasUrl}?ext=${Uri.encodeComponent(ext.isEmpty ? 'jpg' : ext)}';
+    final rawExt = p.extension(imageFile.path).replaceFirst('.', '').toLowerCase();
+    final ext = rawExt.isEmpty ? 'jpg' : rawExt;
 
-    final sasResponse = await _apiClient.get(sasEndpoint);
+    // Step 1: Try Azure Blob Storage SAS direct upload
+    try {
+      final sasEndpoint =
+          '${ApiConfig.uploadSasUrl}?ext=${Uri.encodeComponent(ext)}';
+      final sasResponse = await _apiClient.get(sasEndpoint);
 
-    if (sasResponse.statusCode != 200) {
-      throw Exception(
-          'Failed to obtain upload SAS URL (${sasResponse.statusCode}): ${sasResponse.body}');
+      if (sasResponse.statusCode == 200) {
+        final sasJson = jsonDecode(sasResponse.body) as Map<String, dynamic>;
+        final sasUrl = sasJson['sasUrl'] as String?;
+        final permanentUrl = sasJson['permanentUrl'] as String?;
+
+        if (sasUrl != null && permanentUrl != null) {
+          final bytes = await imageFile.readAsBytes();
+          final mimeType = _mimeFromExt(ext);
+
+          final putResponse = await http.put(
+            Uri.parse(sasUrl),
+            headers: {
+              'x-ms-blob-type': 'BlockBlob',
+              'Content-Type': mimeType,
+            },
+            body: bytes,
+          );
+
+          if (putResponse.statusCode == 200 || putResponse.statusCode == 201) {
+            return ApiConfig.resolveImageUrl(permanentUrl);
+          }
+
+          debugPrint(
+            'Direct Azure Storage upload returned ${putResponse.statusCode}. Falling back to server multipart upload...',
+          );
+        }
+      } else {
+        debugPrint(
+          'SAS URL request failed with status ${sasResponse.statusCode} (${sasResponse.body}). Falling back to server multipart upload...',
+        );
+      }
+    } catch (e) {
+      debugPrint('SAS upload attempt failed ($e). Falling back to server multipart upload...');
     }
 
-    final sasJson = jsonDecode(sasResponse.body) as Map<String, dynamic>;
-    final sasUrl = sasJson['sasUrl'] as String;
-    final permanentUrl = sasJson['permanentUrl'] as String;
+    // Step 2: Fallback to server-side multipart upload (/api/upload)
+    return await _uploadMultipart(imageFile, ext);
+  }
 
-    // Step 2 – PUT the raw bytes directly to Azure Blob Storage
-    final bytes = await imageFile.readAsBytes();
+  Future<String> _uploadMultipart(File imageFile, String ext) async {
     final mimeType = _mimeFromExt(ext);
+    final parts = mimeType.split('/');
+    final mediaType = MediaType(parts[0], parts.length > 1 ? parts[1] : 'jpeg');
 
-    final putResponse = await http.put(
-      Uri.parse(sasUrl),
-      headers: {
-        'x-ms-blob-type': 'BlockBlob',
-        'Content-Type': mimeType,
-      },
-      body: bytes,
+    final response = await _apiClient.uploadFile(
+      ApiConfig.uploadImage,
+      imageFile,
+      fieldName: 'file',
+      contentType: mediaType,
     );
 
-    if (putResponse.statusCode != 201 && putResponse.statusCode != 200) {
-      throw Exception(
-          'Failed to upload image to Azure Storage (${putResponse.statusCode}): ${putResponse.body}');
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      final imageUrl = json['imageUrl'] as String?;
+      if (imageUrl != null && imageUrl.isNotEmpty) {
+        return ApiConfig.resolveImageUrl(imageUrl);
+      }
     }
 
-    return permanentUrl;
+    throw Exception(
+      'Failed to upload image (${response.statusCode}): ${response.body}',
+    );
   }
 
   String _mimeFromExt(String ext) {
