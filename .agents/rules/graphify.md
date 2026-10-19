@@ -21,6 +21,6 @@ Rules:
 - **End-to-End Integration:** When creating or modifying features, always build the complete pipeline end-to-end (Database Schema -> Backend Controller/API -> Frontend Service Layer -> shadcn/ui View Component). Never leave a feature half-implemented or hardcoded.
 
 ## Git & Branching Rules
-- **Pre-Change Pull & Branching:** Before making any code changes, ALWAYS pull the latest changes with rebase (`git pull --rebase origin main` or active base branch) and checkout a new dedicated feature branch (`git checkout -b <feature-or-fix-branch-name>`). Never make code changes directly on `main` or `master`.
+- **Pre-Change Branch Confirmation:** If already on a working branch, ALWAYS ask the user whether to create a new branch or continue on the current branch. If on `main` or `master`, pull latest changes (`git pull --rebase origin main`) and checkout a new dedicated task branch. Never make code changes directly on `main` or `master`.
 - **Commit Only, Do NOT Push:** When changes are completed, stage and commit them locally (`git commit`). Strictly DO NOT run `git push` to remote. Never push unless the user explicitly requests you to push.
 - **Dedicated Branch per Task:** All new features, refactors, and fixes must live on their own separate branch.
