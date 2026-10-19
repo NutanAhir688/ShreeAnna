@@ -17,7 +17,7 @@ terraform {
 }
 
 provider "azurerm" {
-  resource_provider_registrations = "all"
+  resource_provider_registrations = "none"
   features {}
 }
 
@@ -196,6 +196,11 @@ resource "azurerm_container_app" "backend" {
     }
   }
 
+  secret {
+    name  = "storage-connection-string"
+    value = azurerm_storage_account.farm_images.primary_connection_string
+  }
+
   template {
     min_replicas = 1
     max_replicas = 2
@@ -227,8 +232,13 @@ resource "azurerm_container_app" "backend" {
       }
 
       env {
+        name        = "AzureStorage__ConnectionString"
+        secret_name = "storage-connection-string"
+      }
+
+      env {
         name  = "AzureStorage__CdnBaseUrl"
-        value = azurerm_storage_account.farm_images.primary_blob_endpoint
+        value = "${azurerm_storage_account.farm_images.primary_blob_endpoint}${azurerm_storage_container.farm_images.name}"
       }
 
       dynamic "env" {
