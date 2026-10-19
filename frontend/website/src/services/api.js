@@ -3,7 +3,11 @@
 // All calls go through here so the base URL is one place.
 // ============================================================
 
-export const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5066";
+export const API_BASE =
+  import.meta.env.VITE_API_BASE_URL ||
+  (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1"
+    ? "https://shreeanna.delightfulfield-3bc26253.centralindia.azurecontainerapps.io"
+    : "http://localhost:5066");
 
 /**
  * In-Memory Token Storage
