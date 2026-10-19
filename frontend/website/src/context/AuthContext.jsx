@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { auth, setInMemoryToken, API_BASE as API_BASE_URL } from "@/services/api";
 
+const AuthContext = createContext(null);
+
 export { API_BASE_URL };
 
 export function AuthProvider({ children }) {
