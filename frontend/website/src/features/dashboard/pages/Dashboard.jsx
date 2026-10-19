@@ -49,21 +49,21 @@ function Dashboard() {
   }
 
   const [stats, setStats] = useState({
-    totalFarmers: "5",
-    activeFarmers: "4",
-    verifiedFarms: "3",
-    pendingFarms: "2",
+    totalFarmers: "0",
+    activeFarmers: "0",
+    verifiedFarms: "0",
+    pendingFarms: "0",
   });
 
   useEffect(() => {
     async function loadDashboardStats() {
       try {
         const [farmersData, farmsData] = await Promise.all([
-          farmersApi.getAll().catch(() => null),
-          farmsApi.getAll().catch(() => null),
+          farmersApi.getAll().catch(() => []),
+          farmsApi.getAll().catch(() => []),
         ]);
 
-        if (farmersData && farmersData.length > 0) {
+        if (Array.isArray(farmersData)) {
           const active = farmersData.filter((f) => f.status?.toLowerCase() === "active").length;
           setStats((prev) => ({
             ...prev,
@@ -72,7 +72,7 @@ function Dashboard() {
           }));
         }
 
-        if (farmsData && farmsData.length > 0) {
+        if (Array.isArray(farmsData)) {
           const verified = farmsData.filter((f) => f.status?.toLowerCase().includes("verified")).length;
           const pending = farmsData.filter((f) => f.status?.toLowerCase().includes("pending")).length;
           setStats((prev) => ({
@@ -82,7 +82,7 @@ function Dashboard() {
           }));
         }
       } catch (err) {
-        console.warn("Using fallback dashboard stats:", err.message);
+        console.warn("Failed to load dashboard stats:", err.message);
       }
     }
     loadDashboardStats();
