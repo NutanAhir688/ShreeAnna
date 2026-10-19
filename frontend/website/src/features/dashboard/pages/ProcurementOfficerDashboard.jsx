@@ -26,15 +26,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import StatCard from "../components/StatCard";
-import { purchaseRequestsApi, lotsApi, agreementsApi } from "@/services/api";
+import { purchaseRequestsApi, lotsApi, agreementsApi, inventoryApi } from "@/services/api";
 
-// Default MSP rates per Kg (INR)
+// Official MSP benchmark reference rates per Kg (INR) published by GOI
 const MSP_BENCHMARKS = [
-  { millet: "Finger Millet (Ragi)", msp: 42.90, fpoRate: 44.00, status: "Active" },
-  { millet: "Pearl Millet (Bajra)", msp: 26.25, fpoRate: 32.50, status: "Active" },
-  { millet: "Foxtail Millet", msp: 38.50, fpoRate: 40.50, status: "Active" },
-  { millet: "Little Millet", msp: 40.00, fpoRate: 42.00, status: "Active" },
-  { millet: "Proso Millet", msp: 48.00, fpoRate: 51.00, status: "Active" },
+  { millet: "Finger Millet (Ragi)", msp: 42.90, baseFpoRate: 44.00, key: "finger" },
+  { millet: "Pearl Millet (Bajra)", msp: 26.25, baseFpoRate: 32.50, key: "pearl" },
+  { millet: "Foxtail Millet", msp: 38.50, baseFpoRate: 40.50, key: "foxtail" },
+  { millet: "Little Millet", msp: 40.00, baseFpoRate: 42.00, key: "little" },
+  { millet: "Proso Millet", msp: 48.00, baseFpoRate: 51.00, key: "proso" },
 ];
 
 export default function ProcurementOfficerDashboard() {
@@ -43,21 +43,24 @@ export default function ProcurementOfficerDashboard() {
   const [purchaseRequests, setPurchaseRequests] = useState([]);
   const [lots, setLots] = useState([]);
   const [agreements, setAgreements] = useState([]);
+  const [inventoryBatches, setInventoryBatches] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       setLoading(true);
       try {
-        const [requestsData, lotsData, agreementsData] = await Promise.all([
+        const [requestsData, lotsData, agreementsData, batchesData] = await Promise.all([
           purchaseRequestsApi.getAll().catch(() => []),
           lotsApi.getAll().catch(() => []),
           agreementsApi.getAll().catch(() => []),
+          inventoryApi.getBatches().catch(() => []),
         ]);
 
         setPurchaseRequests(Array.isArray(requestsData) ? requestsData : []);
         setLots(Array.isArray(lotsData) ? lotsData : []);
         setAgreements(Array.isArray(agreementsData) ? agreementsData : []);
+        setInventoryBatches(Array.isArray(batchesData) ? batchesData : []);
       } catch (err) {
         console.error("Failed to load procurement officer dashboard data:", err);
       } finally {
@@ -70,14 +73,27 @@ export default function ProcurementOfficerDashboard() {
   // Compute Metrics
   const totalLotsCount = lots.length;
   const totalProcuredQtyKg = lots.reduce(
-    (acc, l) => acc + (l.actualQuantityKg || l.estimatedQuantityKg || 0),
+    (acc, l) => acc + (Number(l.actualQuantityKg) || Number(l.estimatedQuantityKg) || 0),
     0
   );
 
-  const totalAgreementsValue = agreements.reduce(
-    (acc, a) => acc + (a.totalValue || a.netPayable || 0),
-    0
+  // Digital contracts: lots that have formulated or accepted agreements
+  const digitalContracts = lots.filter(
+    (l) =>
+      l.status?.toUpperCase().includes("AGREEMENT") ||
+      Number(l.offeredPricePerKg) > 0 ||
+      Number(l.agreedQuantityKg) > 0 ||
+      ["PICKUP", "WAREHOUSE_RECEIVED", "PAYMENT", "COMPLETED"].includes(l.status?.toUpperCase())
   );
+
+  const totalAgreementsValue = digitalContracts.reduce((acc, a) => {
+    const qty = Number(a.agreedQuantityKg) || Number(a.actualQuantityKg) || Number(a.estimatedQuantityKg) || 0;
+    const price = Number(a.offeredPricePerKg) || 0;
+    const base = Number(a.totalValue) || Number(a.netPayable) || (qty * price);
+    const logistics = Number(a.logisticsCost) || 0;
+    const adjustments = Number(a.otherAdjustments) || 0;
+    return acc + base + logistics + adjustments;
+  }, 0);
 
   const pendingProcessorRequests = purchaseRequests.filter(
     (r) => r.status === "REQUESTED" || r.status === "UNDER_NEGOTIATION"
@@ -85,6 +101,37 @@ export default function ProcurementOfficerDashboard() {
   const proposedAgreementsCount = purchaseRequests.filter(
     (r) => r.status === "AGREEMENT_PROPOSED"
   ).length;
+
+  // Real Warehouse Stock calculation from live inventory batches
+  const inStockKg = inventoryBatches
+    .filter((b) => b.status === "IN_STOCK")
+    .reduce((acc, b) => acc + (Number(b.quantityInKg) || 0), 0);
+  const totalWarehouseStockKg = inventoryBatches.reduce(
+    (acc, b) => acc + (Number(b.quantityInKg) || 0),
+    0
+  );
+  const displayStockKg = inStockKg > 0 ? inStockKg : totalWarehouseStockKg;
+
+  // Dynamic MSP & Live FPO rates derived from real lots
+  const benchmarkRows = MSP_BENCHMARKS.map((m) => {
+    const matchingLots = lots.filter(
+      (l) =>
+        l.milletType &&
+        l.milletType.toLowerCase().includes(m.key) &&
+        Number(l.offeredPricePerKg) > 0
+    );
+    const hasRealData = matchingLots.length > 0;
+    const avgRealRate = hasRealData
+      ? matchingLots.reduce((acc, l) => acc + Number(l.offeredPricePerKg), 0) / matchingLots.length
+      : m.baseFpoRate;
+
+    return {
+      ...m,
+      fpoRate: avgRealRate,
+      hasRealData,
+      lotsCount: matchingLots.length,
+    };
+  });
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
@@ -166,8 +213,8 @@ export default function ProcurementOfficerDashboard() {
         <StatCard
           title="Farmer MSP Contracts"
           value={`₹${totalAgreementsValue.toLocaleString("en-IN")}`}
-          trendText={`${agreements.length} Digital Contracts`}
-          trendColor="emerald"
+          trendText={`${digitalContracts.length} Digital Contract${digitalContracts.length !== 1 ? "s" : ""}`}
+          trendColor={digitalContracts.length > 0 ? "emerald" : "slate"}
           icon={FileCheck}
           iconBgClass="bg-blue-100/80"
           iconColorClass="text-blue-700"
@@ -185,9 +232,13 @@ export default function ProcurementOfficerDashboard() {
 
         <StatCard
           title="Available Warehouse Stock"
-          value="4,550 kg"
-          trendText="Ready for Sale / Allocation"
-          trendColor="emerald"
+          value={`${displayStockKg.toLocaleString()} kg`}
+          trendText={
+            inventoryBatches.length > 0
+              ? `${inventoryBatches.length} Warehouse Batches`
+              : "Ready for Sale / Allocation"
+          }
+          trendColor={displayStockKg > 0 ? "emerald" : "slate"}
           icon={Warehouse}
           iconBgClass="bg-amber-100/80"
           iconColorClass="text-amber-700"
@@ -255,10 +306,10 @@ export default function ProcurementOfficerDashboard() {
                           </Badge>
                         </div>
                         <p className="text-xs font-medium text-slate-800 dark:text-slate-200">
-                          Buyer: <strong>{req.processorName || "Millet Shakti SHG"}</strong> — {req.milletType} ({req.requestedQuantityKg?.toLocaleString()} kg)
+                          Buyer: <strong>{req.processorName || req.fpoName || "Processor Client"}</strong> — {req.milletType} ({Number(req.requestedQuantityKg || 0).toLocaleString()} kg)
                         </p>
                         <p className="text-[11px] text-slate-500">
-                          Offered: ₹{req.indicativePricePerKg?.toFixed(2)}/kg • {isProposed ? `Agreement: ${req.agreementId} (₹${req.totalValue?.toLocaleString("en-IN")})` : "Pending Agreement Formulation"}
+                          Offered: ₹{Number(req.indicativePricePerKg || 0).toFixed(2)}/kg • {isProposed ? `Agreement: ${req.agreementId || "Proposed"} (₹${Number(req.totalValue || 0).toLocaleString("en-IN")})` : "Pending Agreement Formulation"}
                         </p>
                       </div>
 
@@ -377,7 +428,7 @@ export default function ProcurementOfficerDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-3 divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-              {MSP_BENCHMARKS.map((m) => (
+              {benchmarkRows.map((m) => (
                 <div key={m.millet} className="py-2.5 flex items-center justify-between">
                   <div>
                     <p className="font-bold text-slate-800 dark:text-slate-200">{m.millet}</p>
@@ -387,7 +438,9 @@ export default function ProcurementOfficerDashboard() {
                     <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
                       ₹{m.fpoRate.toFixed(2)} / kg
                     </span>
-                    <span className="block text-[10px] text-emerald-600 font-medium">MSP Guaranteed</span>
+                    <span className="block text-[10px] text-emerald-600 font-medium">
+                      {m.hasRealData ? `Live FPO (${m.lotsCount} Lot${m.lotsCount !== 1 ? "s" : ""})` : "MSP Guaranteed"}
+                    </span>
                   </div>
                 </div>
               ))}

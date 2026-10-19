@@ -1,17 +1,9 @@
 # Antigravity & Agent Coding Rules for ShreeAnna
 
 ## 1. Git & Branching Guardrails
-- **Pre-Change Rebase & Branching:** Before making any code changes or edits, ALWAYS pull the latest changes with rebase:
-  ```bash
-  git pull --rebase origin main
-  ```
-  Then immediately checkout to a new dedicated task branch:
-  ```bash
-  git checkout -b <type>/<task-name>
-  ```
-  **Never make code edits directly on `main` or `master`.**
+- **Pre-Change Branch Confirmation & Guardrails:** If currently on an active task or fix branch, ALWAYS ask the user first whether to create a new branch or continue working on the current branch. If starting from `main` or `master`, always pull latest changes with rebase (`git pull --rebase origin main`) and checkout to a dedicated branch. **Never make code edits directly on `main` or `master`.**
 - **Commit Only (Strictly No Push):** When changes are verified, stage and commit them locally (`git commit`). Strictly DO NOT run `git push` to remote. Pushing to remote is left to the user, or only when explicitly requested.
-- **Dedicated Branch per Task:** Keep all features, fixes, and experiments on their own branches.
+- **Dedicated Branch per Task:** Keep all features, fixes, and experiments organized on their own branches.
 
 ## 2. Development & Safety Constraints
 - **No Mock Data:** Strictly avoid creating mock or placeholder data arrays. Always implement real data integration patterns or model mapping.

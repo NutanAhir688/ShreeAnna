@@ -34,7 +34,7 @@ export const ROLE_CONFIGS = {
         title: "OPERATIONS",
         items: [
           { to: "/farmers", icon: Users, label: "Farmers" },
-          { to: "/farm-verification", icon: FileCheck, label: "Farm Verification", badgeCount: 2 },
+          { to: "/farm-verification", icon: FileCheck, label: "Farm Verification" },
           { to: "/procurement-lots", icon: Package, label: "Procurement Lots" },
           { to: "/agreements", icon: FileText, label: "Agreements" },
         ],
