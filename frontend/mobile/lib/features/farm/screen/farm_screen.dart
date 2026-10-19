@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../core/network/api_config.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../model/farm.dart';
 
@@ -54,7 +55,7 @@ class FarmScreen extends StatelessWidget {
               width: double.infinity,
               height: 210,
               child: Image.network(
-                farm.imageUrl,
+                ApiConfig.resolveImageUrl(farm.imageUrl),
                 fit: BoxFit.cover,
 
                 loadingBuilder: (context, child, loadingProgress) {
@@ -144,7 +145,7 @@ class FarmScreen extends StatelessWidget {
                 maxScale: 4.0,
                 child: Center(
                   child: Image.network(
-                    farm.imageUrl,
+                    ApiConfig.resolveImageUrl(farm.imageUrl),
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) {
                       return const Center(

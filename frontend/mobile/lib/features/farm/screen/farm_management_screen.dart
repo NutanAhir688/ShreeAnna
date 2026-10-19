@@ -430,7 +430,7 @@ class _FarmCard extends StatelessWidget {
             Positioned.fill(
               child: farm.imageUrl.isNotEmpty
                   ? Image.network(
-                      farm.imageUrl,
+                      ApiConfig.resolveImageUrl(farm.imageUrl),
                       fit: BoxFit.cover,
 
                       errorBuilder: (context, error, stackTrace) {
