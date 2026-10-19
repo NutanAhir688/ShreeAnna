@@ -1,13 +1,40 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { ROLE_CONFIGS, COMMON_SYSTEM_SECTION } from "@/config/rolePermissions";
+import { farmsApi } from "@/services/api";
 import { ChevronDown, Shield } from "lucide-react";
 
 function Sidebar() {
   const { user } = useAuth();
+  const location = useLocation();
   const userRole = user?.role || "FpoManager";
   const roleConfig = ROLE_CONFIGS[userRole] || ROLE_CONFIGS.FpoManager;
+  const [pendingFarmCount, setPendingFarmCount] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadPendingCount() {
+      try {
+        const farms = await farmsApi.getAll();
+        if (isMounted && Array.isArray(farms)) {
+          const count = farms.filter(
+            (f) => f.status === "Pending Verification" || f.status === "Pending"
+          ).length;
+          setPendingFarmCount(count);
+        }
+      } catch (_) {
+        // Silently handle authorization or network errors
+      }
+    }
+
+    if (user) {
+      loadPendingCount();
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [user, location.pathname]);
 
 
   const sectionsToRender = [
@@ -78,13 +105,18 @@ function Sidebar() {
                     );
                   }
 
+                  const dynamicBadge =
+                    item.to === "/farm-verification"
+                      ? (pendingFarmCount !== null ? (pendingFarmCount > 0 ? pendingFarmCount : null) : item.badgeCount)
+                      : item.badgeCount;
+
                   return (
                     <NavItem
                       key={`${item.to}-${item.label}-${itemIdx}`}
                       to={item.to}
                       icon={item.icon}
                       label={item.label}
-                      badgeCount={item.badgeCount}
+                      badgeCount={dynamicBadge}
                       end={item.end}
                     />
                   );
