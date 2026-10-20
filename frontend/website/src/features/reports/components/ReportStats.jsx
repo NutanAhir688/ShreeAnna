@@ -40,13 +40,20 @@ function StatCard({
   );
 }
 
-function ReportStats({ stats }) {
+function ReportStats({ stats = {} }) {
+  const totalProcurement = stats.totalProcurement ?? stats.totalProcurementKg ?? 0;
+  const procurementValue = stats.procurementValue ?? stats.totalProcurementAmount ?? 0;
+  const totalSales = stats.totalSales ?? stats.totalSalesKg ?? stats.totalProcurementKg ?? 0;
+  const salesValue = stats.salesValue ?? stats.totalSalesAmount ?? stats.totalDisbursedAmount ?? 0;
+  const farmerPayments = stats.farmerPayments ?? stats.totalDisbursedAmount ?? 0;
+  const fpoMargin = stats.fpoMargin ?? stats.totalFpoMargin ?? 0;
+
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <StatCard
         title="Total Procurement"
-        value={`${stats.totalProcurement.toLocaleString()} kg`}
-        description={`₹${stats.procurementValue.toLocaleString()} procurement value`}
+        value={`${Number(totalProcurement).toLocaleString()} kg`}
+        description={`₹${Number(procurementValue).toLocaleString("en-IN")} procurement value`}
         icon={Package}
         iconBgClass="bg-blue-100/80"
         iconColorClass="text-blue-600"
@@ -54,8 +61,8 @@ function ReportStats({ stats }) {
 
       <StatCard
         title="Total Sales"
-        value={`${stats.totalSales.toLocaleString()} kg`}
-        description={`₹${stats.salesValue.toLocaleString()} sales value`}
+        value={`${Number(totalSales).toLocaleString()} kg`}
+        description={`₹${Number(salesValue).toLocaleString("en-IN")} sales value`}
         icon={ShoppingCart}
         iconBgClass="bg-emerald-100/80"
         iconColorClass="text-emerald-600"
@@ -63,8 +70,8 @@ function ReportStats({ stats }) {
 
       <StatCard
         title="Farmer Payments"
-        value={`₹${stats.farmerPayments.toLocaleString()}`}
-        description="Payments made to farmers"
+        value={`₹${Number(farmerPayments).toLocaleString("en-IN")}`}
+        description="Disbursed to farmers via DBT"
         icon={IndianRupee}
         iconBgClass="bg-amber-100/80"
         iconColorClass="text-amber-600"
@@ -72,8 +79,8 @@ function ReportStats({ stats }) {
 
       <StatCard
         title="FPO Margin"
-        value={`₹${stats.fpoMargin.toLocaleString()}`}
-        description="Net operational margin"
+        value={`₹${Number(fpoMargin).toLocaleString("en-IN")}`}
+        description="5% statutory facilitation fee"
         icon={TrendingUp}
         iconBgClass="bg-purple-100/80"
         iconColorClass="text-purple-600"

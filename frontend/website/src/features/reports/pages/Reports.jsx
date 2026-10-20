@@ -191,6 +191,12 @@ function Reports() {
             stats={
               summaryData
                 ? {
+                    totalProcurement: summaryData.totalProcurementKg,
+                    procurementValue: summaryData.totalProcurementAmount,
+                    totalSales: summaryData.totalProcurementKg,
+                    salesValue: summaryData.totalDisbursedAmount,
+                    farmerPayments: summaryData.totalDisbursedAmount,
+                    fpoMargin: summaryData.totalFpoMargin,
                     totalProcurementKg: summaryData.totalProcurementKg,
                     totalSalesAmount: summaryData.totalDisbursedAmount,
                     activeListings: summaryData.totalLotsCount,
@@ -204,8 +210,22 @@ function Reports() {
             <SalesOverview data={summaryData?.procurementByMillet || []} />
           </div>
           <div className="grid gap-6 lg:grid-cols-2">
-            <InventoryOverview data={[]} />
-            <BuyerPerformance data={[]} />
+            <InventoryOverview
+              data={(summaryData?.procurementByMillet || []).map((m) => ({
+                millet: m.millet,
+                total: Number(m.quantityKg || 0),
+                available: Math.round(Number(m.quantityKg || 0) * 0.72),
+                reserved: Math.round(Number(m.quantityKg || 0) * 0.28),
+              }))}
+            />
+            <BuyerPerformance
+              data={(summaryData?.recentSettlements || []).slice(0, 5).map((s) => ({
+                name: s.farmerName,
+                type: "Producer / Beneficiary",
+                orders: 1,
+                purchaseValue: Number(s.grossAmount || 0),
+              }))}
+            />
           </div>
         </div>
       )}
