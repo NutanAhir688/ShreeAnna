@@ -195,7 +195,7 @@ function MarketplaceListingDetails() {
             Delete
           </Button>
 
-          {listing.availableQuantity > 0 && (
+          {(listing.availableQuantity ?? listing.quantityKg ?? 0) > 0 && (
             <Button>
               <ShoppingCart className="mr-2 h-4 w-4" />
               View Orders
@@ -228,7 +228,7 @@ function MarketplaceListingDetails() {
             <DialogDescription className="text-xs text-slate-500 pt-1 leading-relaxed">
               Are you sure you want to delete listing{" "}
               <strong className="text-slate-800 dark:text-slate-200">
-                "{listing.id} ({listing.millet})"
+                "{listing.title || listing.id} ({listing.millet || listing.milletType || "Millet"})"
               </strong>
               ? This action will permanently remove this listing from the marketplace.
               This operation requires explicit user consent.

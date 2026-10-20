@@ -237,12 +237,32 @@ export const logisticsApi = {
 // ─────────────────────────────────────────────────────────────
 // MARKETPLACE
 // ─────────────────────────────────────────────────────────────
+export const normalizeMarketplaceListing = (item) => {
+  if (!item || typeof item !== "object") return item;
+  const qty = item.availableQuantity ?? item.quantityKg ?? item.quantity ?? 0;
+  return {
+    ...item,
+    availableQuantity: qty,
+    quantity: qty,
+    quantityKg: qty,
+    millet: item.millet || item.milletType || "Multi-Millet",
+    milletType: item.milletType || item.millet || "Multi-Millet",
+    grade: item.grade || "Grade A",
+    unit: item.unit || "kg",
+    orders: Array.isArray(item.orders) ? item.orders : [],
+  };
+};
+
 export const marketplaceApi = {
-  getAll: (params) => {
+  getAll: async (params) => {
     const query = params ? `?${new URLSearchParams(params).toString()}` : "";
-    return request(`/api/marketplace${query}`);
+    const res = await request(`/api/marketplace${query}`);
+    return Array.isArray(res) ? res.map(normalizeMarketplaceListing) : [];
   },
-  getById: (id) => request(`/api/marketplace/${id}`),
+  getById: async (id) => {
+    const res = await request(`/api/marketplace/${id}`);
+    return res ? normalizeMarketplaceListing(res) : null;
+  },
   create: (data) => request("/api/marketplace", { method: "POST", body: data }),
   update: (id, data) => request(`/api/marketplace/${id}`, { method: "PUT", body: data }),
   updateStatus: (id, status) =>

@@ -10,23 +10,25 @@ import {
   CardContent,
 } from "@/components/ui/card";
 
-function MarketplaceStats({ listings }) {
-  const availableListings = listings.filter(
-    (item) => item.availableQuantity > 0
+function MarketplaceStats({ listings = [] }) {
+  const safeListings = Array.isArray(listings) ? listings : [];
+
+  const availableListings = safeListings.filter(
+    (item) => (item.availableQuantity ?? item.quantityKg ?? 0) > 0
   );
 
   const totalAvailable = availableListings.reduce(
-    (sum, item) => sum + item.availableQuantity,
+    (sum, item) => sum + (item.availableQuantity ?? item.quantityKg ?? 0),
     0
   );
 
   const totalValue = availableListings.reduce(
     (sum, item) =>
-      sum + item.availableQuantity * item.pricePerKg,
+      sum + (item.availableQuantity ?? item.quantityKg ?? 0) * (item.pricePerKg || 0),
     0
   );
 
-  const soldOut = listings.filter(
+  const soldOut = safeListings.filter(
     (item) => item.status === "Sold Out"
   ).length;
 

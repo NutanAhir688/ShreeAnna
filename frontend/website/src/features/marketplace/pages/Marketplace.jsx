@@ -34,14 +34,23 @@ function Marketplace() {
 
   const filteredListings = useMemo(() => {
     return marketplaceListings.filter((listing) => {
+      const milletVal = (listing.millet || listing.milletType || "").toLowerCase();
+      const titleVal = (listing.title || "").toLowerCase();
+      const brandVal = (listing.brand || "").toLowerCase();
+      const lotIdVal = (listing.lotId || "").toLowerCase();
+      const idVal = (listing.id || "").toLowerCase();
+      const query = search.trim().toLowerCase();
+
       const searchMatch =
-        search.trim() === "" ||
-        (listing.id && listing.id.toLowerCase().includes(search.toLowerCase())) ||
-        (listing.lotId && listing.lotId.toLowerCase().includes(search.toLowerCase())) ||
-        (listing.millet && listing.millet.toLowerCase().includes(search.toLowerCase()));
+        query === "" ||
+        idVal.includes(query) ||
+        lotIdVal.includes(query) ||
+        titleVal.includes(query) ||
+        brandVal.includes(query) ||
+        milletVal.includes(query);
 
       const statusMatch = status === "all" || listing.status === status;
-      const milletMatch = millet === "all" || listing.millet === millet;
+      const milletMatch = millet === "all" || milletVal.includes(millet.toLowerCase());
 
       return searchMatch && statusMatch && milletMatch;
     });

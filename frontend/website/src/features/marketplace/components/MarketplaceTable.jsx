@@ -156,36 +156,36 @@ function MarketplaceTable({
                     <TableCell className="pl-6">
                       <div>
                         <p className="font-medium text-slate-900">
-                          {listing.id}
+                          {listing.title || listing.id}
                         </p>
 
                         <p className="text-xs text-slate-500">
-                          {listing.lotId}
+                          {listing.lotId || listing.id}
                         </p>
                       </div>
                     </TableCell>
 
                     <TableCell>
-                      {listing.millet}
+                      {listing.millet || listing.milletType || "—"}
                     </TableCell>
 
                     <TableCell>
-                      {listing.grade}
+                      {listing.grade || "Grade A"}
                     </TableCell>
 
                     <TableCell>
-                      {listing.availableQuantity?.toLocaleString() || 0}{" "}
+                      {(listing.availableQuantity ?? listing.quantityKg ?? 0).toLocaleString()}{" "}
                       {listing.unit || "kg"}
                     </TableCell>
 
                     <TableCell>
-                      ₹{listing.pricePerKg}
+                      ₹{listing.pricePerKg || 0}
                     </TableCell>
 
                     <TableCell className="font-medium">
                       ₹
                       {(
-                        (listing.availableQuantity || 0) *
+                        (listing.availableQuantity ?? listing.quantityKg ?? 0) *
                         (listing.pricePerKg || 0)
                       ).toLocaleString("en-IN")}
                     </TableCell>
