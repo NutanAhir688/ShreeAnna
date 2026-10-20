@@ -35,9 +35,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { marketplaceApi, ordersApi, auth, getInMemoryToken } from "@/services/api";
+import { useAuth } from "@/context/AuthContext";
 
 export default function CustomerMarketplace() {
   const navigate = useNavigate();
+  const { user: authUser } = useAuth();
 
   // -------------------------------------------------------------
   // 1. STATE & DATA
@@ -53,11 +55,19 @@ export default function CustomerMarketplace() {
   const [wishlistCount, setWishlistCount] = useState(1);
   const [currentView, setCurrentView] = useState("marketplace"); // "marketplace" | "my-orders"
 
-  // User state
-  const [currentUser, setCurrentUser] = useState(() => {
+  // User state (integrates with global AuthContext, fallback to local storage)
+  const [localUser, setLocalUser] = useState(() => {
     const saved = localStorage.getItem("shreeanna_customer_user");
     return saved ? JSON.parse(saved) : null;
   });
+
+  const currentUser = authUser
+    ? {
+        name: authUser.memberName || authUser.email?.split("@")[0] || "Customer",
+        email: authUser.email,
+        role: authUser.role,
+      }
+    : localUser;
 
   // Cart state
   const [cart, setCart] = useState(() => {
@@ -105,12 +115,12 @@ export default function CustomerMarketplace() {
 
   // Sync user to local storage
   useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem("shreeanna_customer_user", JSON.stringify(currentUser));
+    if (localUser) {
+      localStorage.setItem("shreeanna_customer_user", JSON.stringify(localUser));
     } else {
       localStorage.removeItem("shreeanna_customer_user");
     }
-  }, [currentUser]);
+  }, [localUser]);
 
   // -------------------------------------------------------------
   // 2. LOAD PRODUCTS & DATA
@@ -272,11 +282,7 @@ export default function CustomerMarketplace() {
   };
 
   const handleBuyNow = (product) => {
-    // If user is not logged in, prompt Auth Modal
-    if (!currentUser) {
-      setAuthModalOpen(true);
-      return;
-    }
+    // Directly add to cart and open cart drawer (no login popup interception)
     handleAddToCart(product);
   };
 
@@ -337,8 +343,8 @@ export default function CustomerMarketplace() {
   };
 
   const handleQuickDemoLogin = () => {
-    setCurrentUser({
-      email: "buyer@shreeanna.com",
+    setLocalUser({
+      email: "customer@shreeanna.com",
       name: "Mukund Sharma",
       role: "Customer",
     });
@@ -347,18 +353,13 @@ export default function CustomerMarketplace() {
 
   const handleLogout = () => {
     auth.logout();
-    setCurrentUser(null);
+    setLocalUser(null);
   };
 
   // -------------------------------------------------------------
   // 6. ORDER CREATION & CHECKOUT
   // -------------------------------------------------------------
   const handleProceedToCheckout = () => {
-    if (!currentUser) {
-      setCartOpen(false);
-      setAuthModalOpen(true);
-      return;
-    }
     setCartOpen(false);
     setCheckoutModalOpen(true);
   };
