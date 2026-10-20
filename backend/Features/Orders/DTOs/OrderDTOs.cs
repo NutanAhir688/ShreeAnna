@@ -26,7 +26,7 @@ public record ConfirmDeliveryOtpRequest(
     string Otp
 );
 
-public record AssignDriverRequest(
+public record AssignOrderDriverRequest(
     Guid? DriverId
 );
 
