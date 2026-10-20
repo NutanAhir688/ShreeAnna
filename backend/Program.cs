@@ -18,6 +18,9 @@ using backend.Features.Notifications.Services;
 using backend.Features.Settlements.Services;
 using backend.Features.Reports.Services;
 using backend.Features.Marketplace.Services;
+using Akka.Actor;
+using backend.Features.Support.Actors;
+using backend.Features.Support.Services;
 
 // Enable legacy timestamp behavior for Npgsql to prevent ArgumentException with DateTimeKind.Unspecified
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
@@ -131,6 +134,13 @@ builder.Services.AddScoped<backend.Features.Procurement.Services.IPurchaseReques
 builder.Services.AddScoped<IMarketplaceService, MarketplaceService>();
 builder.Services.AddScoped<backend.Features.Orders.Services.IOrderService, backend.Features.Orders.Services.OrderService>();
 
+// Akka.NET Actor System configuration for fault-isolated chat support
+var actorSystem = ActorSystem.Create("ShreeAnnaSupportSystem");
+var chatManager = actorSystem.ActorOf(Props.Create(() => new ChatManagerActor()), "chatManager");
+builder.Services.AddSingleton(actorSystem);
+builder.Services.AddSingleton<IActorRef>(chatManager);
+builder.Services.AddSingleton<ISupportChatService, SupportChatService>();
+
 // --------------------------------------------------
 // Controllers & Swagger
 // --------------------------------------------------
@@ -227,5 +237,10 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+
+app.Lifetime.ApplicationStopping.Register(() =>
+{
+    actorSystem.Terminate().Wait();
+});
 
 app.Run();

@@ -420,5 +420,16 @@ export const purchaseRequestsApi = {
   confirmDelivery: (id, data) => request(`/api/purchase-requests/${id}/confirm-delivery`, { method: "POST", body: data }),
 };
 
+// ─────────────────────────────────────────────────────────────
+// AKKA.NET ACTOR CHAT SUPPORT & PROCUREMENT JOURNEY
+// ─────────────────────────────────────────────────────────────
+export const supportChatApi = {
+  connect: (data) => request("/api/support/chat/connect", { method: "POST", body: data }),
+  sendMessage: (data) => request("/api/support/chat/send", { method: "POST", body: data }),
+  getMessages: (sessionId) => request(`/api/support/chat/messages?sessionId=${encodeURIComponent(sessionId)}`),
+  resetSession: (sessionId) => request("/api/support/chat/reset", { method: "POST", body: { sessionId } }),
+  getJourneyStages: (role) => request(`/api/support/chat/journey-stages${role ? `?role=${encodeURIComponent(role)}` : ""}`),
+};
+
 
 

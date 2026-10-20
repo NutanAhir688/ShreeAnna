@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { ROLE_CONFIGS } from "@/config/rolePermissions";
+import { supportChatApi } from "@/services/api";
 import {
   HelpCircle,
   Phone,
@@ -15,45 +16,140 @@ import {
   Building2,
   FileQuestion,
   Headphones,
-  ExternalLink,
-  ShieldAlert,
+  RotateCcw,
+  Sparkles,
+  Cpu,
+  ShieldCheck,
+  Layers,
+  ArrowRight
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 
 export default function Support() {
   const { user } = useAuth();
-  const currentRole = user?.role || "FpoManager";
-  const roleMeta = ROLE_CONFIGS[currentRole] || ROLE_CONFIGS.FpoManager;
+  const currentRole = user?.role || "Farmer";
+  const roleMeta = ROLE_CONFIGS[currentRole] || ROLE_CONFIGS.Farmer || ROLE_CONFIGS.FpoManager;
 
-  // Support Ticket Form State
-  const [category, setCategory] = useState("Procurement & QC");
-  const [subject, setSubject] = useState("");
-  const [message, setMessage] = useState("");
-  const [phone, setPhone] = useState("+91 98765 43210");
-  const [submitting, setSubmitting] = useState(false);
-  const [ticketSuccess, setTicketSuccess] = useState(null);
+  // Akka.NET Actor Chat State
+  const [selectedRole, setSelectedRole] = useState(currentRole);
+  const [journeyStages, setJourneyStages] = useState([]);
+  const [selectedStage, setSelectedStage] = useState("");
+  const [messages, setMessages] = useState([]);
+  const [inputMessage, setInputMessage] = useState("");
+  const [loadingStages, setLoadingStages] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [sessionId] = useState(() => `sess_${Math.random().toString(36).substring(2, 11)}_${Date.now()}`);
+
+  const chatEndRef = useRef(null);
 
   // FAQ Accordion State
   const [openFaq, setOpenFaq] = useState(0);
 
-  const handleSubmitTicket = (e) => {
-    e.preventDefault();
-    if (!subject.trim() || !message.trim()) return;
-
-    setSubmitting(true);
-    setTimeout(() => {
-      const ticketId = `TKT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-      setTicketSuccess(ticketId);
-      setSubmitting(false);
-      setSubject("");
-      setMessage("");
-    }, 600);
+  // Auto-scroll chat to bottom
+  const scrollToBottom = () => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // Load journey stages when role changes
+  useEffect(() => {
+    let isMounted = true;
+    async function loadStagesAndConnect() {
+      setLoadingStages(true);
+      try {
+        const stages = await supportChatApi.getJourneyStages(selectedRole);
+        if (!isMounted) return;
+        setJourneyStages(stages || []);
+
+        const initialStage = stages?.[0]?.name || "Procurement Center Arrival";
+        setSelectedStage(initialStage);
+
+        // Connect session actor in Akka.NET
+        const initialMsgs = await supportChatApi.connect({
+          sessionId,
+          role: selectedRole,
+          userName: user?.fullName || `${selectedRole} Member`,
+          journeyStage: initialStage,
+        });
+
+        if (isMounted && Array.isArray(initialMsgs)) {
+          setMessages(initialMsgs);
+        }
+      } catch (err) {
+        console.error("Failed to initialize Akka.NET chat support session:", err);
+      } finally {
+        if (isMounted) setLoadingStages(false);
+      }
+    }
+
+    loadStagesAndConnect();
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedRole, sessionId, user?.fullName]);
+
+  // Handle stage change
+  const handleStageSelect = (stageName) => {
+    setSelectedStage(stageName);
+  };
+
+  // Handle send message to Akka.NET actor
+  const handleSendMessage = async (e, textToSend = null) => {
+    if (e) e.preventDefault();
+    const content = (textToSend || inputMessage).trim();
+    if (!content || sending) return;
+
+    setSending(true);
+    setInputMessage("");
+
+    try {
+      const deliveredMsgs = await supportChatApi.sendMessage({
+        sessionId,
+        sender: user?.fullName || `${selectedRole} Member`,
+        content,
+        journeyStage: selectedStage,
+        role: selectedRole,
+      });
+
+      if (Array.isArray(deliveredMsgs) && deliveredMsgs.length > 0) {
+        setMessages((prev) => {
+          // Avoid duplicate IDs
+          const existingIds = new Set(prev.map((m) => m.id));
+          const newUnique = deliveredMsgs.filter((m) => !existingIds.has(m.id));
+          return [...prev, ...newUnique];
+        });
+      }
+    } catch (err) {
+      console.error("Error communicating with Akka.NET actor:", err);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  // Reset Actor Session
+  const handleResetSession = async () => {
+    setResetting(true);
+    try {
+      const resetMsgs = await supportChatApi.resetSession(sessionId);
+      if (Array.isArray(resetMsgs)) {
+        setMessages(resetMsgs);
+      }
+    } catch (err) {
+      console.error("Error resetting actor session:", err);
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const activeStageObj = journeyStages.find((s) => s.name === selectedStage) || journeyStages[0];
 
   const nodalOfficers = [
     {
@@ -84,6 +180,10 @@ export default function Support() {
 
   const faqs = [
     {
+      q: "How does the Akka.NET Actor Model power this procurement chat support?",
+      a: "Each connected user is backed by a dedicated UserSessionActor running in memory on the backend. This gives every participant complete fault isolation (an error in one session never disrupts others) and an ephemeral queue that guarantees in-order message delivery without persistent database bottlenecks.",
+    },
+    {
       q: "How are farmer procurement payments disbursed via DBT?",
       a: "Farmer settlements are created immediately upon lot QC certification. Authorized accountants release funds directly to the farmer's registered bank account via Razorpay MockGateway / State Cooperative Bank DBT integration.",
     },
@@ -92,12 +192,8 @@ export default function Support() {
       a: "Upon physical cargo inspection at the warehouse or customer destination, the receiving party shares the 4-digit numeric OTP generated on their order screen. Once entered by the driver, the shipment automatically transitions to DELIVERED.",
     },
     {
-      q: "How can SHGs and processors list value-added millet products?",
-      a: "Processors can navigate to 'Create Product' under Value Addition & Marketplace, select their certified source lot, specify product title, price per kg, and upload packaging photos to publish directly to the live store.",
-    },
-    {
       q: "What standards are enforced for Grade A Millet Certification?",
-      a: "Quality Inspectors test incoming grains for moisture (<12%), foreign organic matter (<1%), and grain damage (<2%) before signing the digital certification manifest.",
+      a: "Quality Inspectors test incoming grains for moisture (≤12%), foreign organic matter (≤1%), and grain damage (≤2%) before signing the digital certification manifest.",
     },
   ];
 
@@ -109,23 +205,29 @@ export default function Support() {
           <div>
             <div className="flex items-center gap-2">
               <Badge className="bg-emerald-100 text-emerald-800 text-[10px] font-bold">
-                Gujarat Millet Mission • Helpdesk
+                Gujarat Millet Mission • 24×7 Helpdesk
               </Badge>
-              <span className="text-xs text-emerald-200">24×7 Nodal Network</span>
+              <span className="flex items-center gap-1.5 text-xs text-emerald-200">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-300"></span>
+                </span>
+                Akka.NET Actor Online
+              </span>
             </div>
             <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white mt-1.5 flex items-center gap-2">
               <Headphones className="w-6 h-6 text-[#86D49B]" />
-              <span>Official Support & Field Helpdesk</span>
+              <span>Procurement Journey Chat Support</span>
             </h1>
             <p className="text-xs sm:text-sm text-emerald-100/90 mt-1 max-w-2xl">
-              Dedicated technical, procurement, and settlement support for all value chain participants across Gujarat.
+              Real-time nodal assistance across each procurement milestone, powered by dedicated fault-isolated Akka.NET actors.
             </p>
           </div>
 
           <div className="flex sm:flex-col gap-2 self-start sm:self-auto sm:text-right">
             <span className="text-[11px] text-emerald-200/90">Current User Role:</span>
-            <Badge className={`${roleMeta.badgeColor} border text-xs font-bold px-2.5 py-0.5`}>
-              {roleMeta.roleName}
+            <Badge className={`${roleMeta.badgeColor || "bg-emerald-100 text-emerald-800"} border text-xs font-bold px-2.5 py-0.5`}>
+              {roleMeta.roleName || selectedRole}
             </Badge>
           </div>
         </div>
@@ -192,112 +294,199 @@ export default function Support() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-5">
-        {/* Left Column: Raise Ticket Form (3 cols) */}
+        {/* Left Column: Akka.NET Actor Chat Support Component (3 cols) */}
         <div className="md:col-span-3 space-y-6">
-          <Card className="border-[#E3ECE0] dark:border-slate-800 shadow-xs">
-            <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800/60">
-              <CardTitle className="text-base text-[#142017] dark:text-white flex items-center gap-2">
-                <Send className="w-4 h-4 text-[#1B4324] dark:text-emerald-400" />
-                <span>Raise an Operational Support Request</span>
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Submit an issue regarding lot inspection, driver allocation, or settlement payout
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-5">
-              {ticketSuccess ? (
-                <div className="p-6 rounded-2xl bg-[#EFF5EB] dark:bg-emerald-950/40 border border-[#D6E6D0] dark:border-emerald-800 text-center space-y-3 animate-in fade-in">
-                  <CheckCircle2 className="w-12 h-12 text-[#1B4324] dark:text-emerald-400 mx-auto" />
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                    Support Ticket Logged: {ticketSuccess}
-                  </h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 max-w-md mx-auto">
-                    Your request has been routed to the District Nodal Officer. A confirmation SMS with tracking details has been sent to your registered phone.
-                  </p>
+          <Card className="border-[#E3ECE0] dark:border-slate-800 shadow-sm flex flex-col overflow-hidden">
+            <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800/60 bg-[#F9FBF8] dark:bg-slate-900/40">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-base text-[#142017] dark:text-white flex items-center gap-2">
+                      <Cpu className="w-4 h-4 text-[#1B4324] dark:text-emerald-400" />
+                      <span>Live Procurement Chat Support</span>
+                    </CardTitle>
+                    <Badge variant="outline" className="text-[10px] bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-300">
+                      Akka.NET Actor
+                    </Badge>
+                  </div>
+                  <CardDescription className="text-xs mt-0.5">
+                    Lightweight in-memory process per user • Fault isolation • Ephemeral delivery queue
+                  </CardDescription>
+                </div>
+
+                <div className="flex items-center gap-2">
                   <Button
-                    onClick={() => setTicketSuccess(null)}
+                    variant="outline"
                     size="sm"
-                    className="bg-[#1B4324] hover:bg-[#14341C] text-white text-xs rounded-lg cursor-pointer"
+                    onClick={handleResetSession}
+                    disabled={resetting}
+                    title="Reset Akka Actor Queue"
+                    className="h-8 px-2.5 text-xs text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
                   >
-                    Submit Another Query
+                    <RotateCcw className={`w-3.5 h-3.5 mr-1 ${resetting ? "animate-spin" : ""}`} />
+                    Reset
                   </Button>
                 </div>
-              ) : (
-                <form onSubmit={handleSubmitTicket} className="space-y-4 text-xs">
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                        Issue Category
-                      </Label>
-                      <select
-                        value={category}
-                        onChange={(e) => setCategory(e.target.value)}
-                        className="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 outline-none focus:border-emerald-600"
-                      >
-                        <option value="Procurement & QC">Procurement & Lot QC Inspection</option>
-                        <option value="Logistics & Driver OTP">Logistics & Driver Delivery OTP</option>
-                        <option value="Farmer DBT Settlement">Farmer DBT & Settlement Payout</option>
-                        <option value="Warehouse Allocation">Warehouse Silo & Storage Allocation</option>
-                        <option value="Marketplace Product">Marketplace Product Listing</option>
-                        <option value="Account & Login">Account & Portal Access</option>
-                      </select>
-                    </div>
+              </div>
 
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                        Callback Contact Phone
-                      </Label>
-                      <Input
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="+91 98765 43210"
-                        className="text-xs"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      Subject / Lot / Order Reference
+              {/* Journey Stage Selector */}
+              <div className="mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-800/60 space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-[#1B4324] dark:text-emerald-400" />
+                    <Label className="text-[11px] font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">
+                      Procurement Journey Stage:
                     </Label>
-                    <Input
-                      value={subject}
-                      onChange={(e) => setSubject(e.target.value)}
-                      placeholder="e.g. Lot LOT-2026-004 moisture certificate query"
-                      required
-                      className="text-xs"
-                    />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      Detailed Description of Issue
-                    </Label>
-                    <Textarea
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      placeholder="Please explain what happened, including any error messages or reference codes..."
-                      rows={4}
-                      required
-                      className="text-xs"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between pt-2">
-                    <span className="text-[11px] text-slate-400">
-                      Logged from: <strong className="text-slate-600 dark:text-slate-300">{user?.email || "user@shreeanna.com"}</strong>
-                    </span>
-                    <Button
-                      type="submit"
-                      disabled={submitting}
-                      className="bg-[#1B4324] hover:bg-[#14341C] text-white text-xs cursor-pointer rounded-lg"
+                  {/* Role Switcher (Allows testing as Farmer, Processor, FPO, Driver, etc.) */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] text-slate-500">Role Context:</span>
+                    <select
+                      value={selectedRole}
+                      onChange={(e) => setSelectedRole(e.target.value)}
+                      className="text-xs rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1 outline-none text-slate-700 dark:text-slate-200 font-medium"
                     >
-                      <Send className="w-3.5 h-3.5 mr-1.5" />
-                      {submitting ? "Transmitting Ticket..." : "Submit Support Request"}
-                    </Button>
+                      <option value="Farmer">Farmer</option>
+                      <option value="Processor">Processor</option>
+                      <option value="FpoManager">FPO Manager</option>
+                      <option value="Driver">Driver / Logistics</option>
+                      <option value="QualityInspector">Quality Inspector</option>
+                      <option value="WarehouseManager">Warehouse Manager</option>
+                      <option value="Accountant">Accountant</option>
+                    </select>
                   </div>
-                </form>
+                </div>
+
+                {/* Stage Tabs */}
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {journeyStages.map((stage) => {
+                    const isSelected = stage.name === selectedStage;
+                    return (
+                      <button
+                        key={stage.id}
+                        type="button"
+                        onClick={() => handleStageSelect(stage.name)}
+                        className={`text-[11px] px-2.5 py-1 rounded-lg transition-all cursor-pointer font-medium flex items-center gap-1 border ${
+                          isSelected
+                            ? "bg-[#1B4324] text-white border-[#1B4324] shadow-xs"
+                            : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-emerald-300"
+                        }`}
+                      >
+                        <span>{stage.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {activeStageObj?.description && (
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 bg-emerald-50/50 dark:bg-emerald-950/20 px-2.5 py-1.5 rounded-md border border-emerald-100 dark:border-emerald-900/30">
+                    <span className="font-semibold text-emerald-800 dark:text-emerald-400">Current Milestone: </span>
+                    {activeStageObj.description}
+                  </p>
+                )}
+              </div>
+            </CardHeader>
+
+            {/* Chat Messages Display */}
+            <CardContent className="p-4 flex-1 flex flex-col justify-between space-y-4">
+              <div className="space-y-3 min-h-[300px] max-h-[420px] overflow-y-auto pr-1">
+                {messages.length === 0 ? (
+                  <div className="h-48 flex flex-col items-center justify-center text-center text-slate-400 text-xs">
+                    <Sparkles className="w-8 h-8 text-emerald-300 mb-2 animate-pulse" />
+                    <p>Connecting to Akka.NET UserSessionActor...</p>
+                  </div>
+                ) : (
+                  messages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={`flex flex-col ${msg.isAgent ? "items-start" : "items-end"}`}
+                    >
+                      <div className="flex items-center gap-1.5 mb-1 px-1">
+                        <span className="text-[10px] font-bold text-slate-500">
+                          {msg.sender}
+                        </span>
+                        {msg.isAgent && (
+                          <Badge variant="secondary" className="text-[9px] py-0 px-1 bg-emerald-100 text-emerald-800">
+                            Nodal Assistant
+                          </Badge>
+                        )}
+                        <span className="text-[9px] text-slate-400">
+                          {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}
+                        </span>
+                      </div>
+
+                      <div
+                        className={`rounded-2xl px-4 py-2.5 text-xs max-w-[85%] whitespace-pre-line leading-relaxed shadow-xs ${
+                          msg.isAgent
+                            ? "bg-[#F3F7F1] dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-[#E3ECE0] dark:border-slate-700 rounded-tl-sm"
+                            : "bg-[#1B4324] text-white rounded-tr-sm"
+                        }`}
+                      >
+                        {msg.content}
+                      </div>
+
+                      {msg.journeyStage && (
+                        <span className="text-[9px] text-slate-400 mt-0.5 px-1">
+                          Stage: {msg.journeyStage}
+                        </span>
+                      )}
+                    </div>
+                  ))
+                )}
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Suggested Prompts for Current Procurement Stage */}
+              {activeStageObj?.suggestedPrompts?.length > 0 && (
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-emerald-600" />
+                    Quick Procurement Queries for this Stage:
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {activeStageObj.suggestedPrompts.map((prompt, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        disabled={sending}
+                        onClick={() => handleSendMessage(null, prompt)}
+                        className="text-[11px] text-left px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-emerald-100 dark:hover:bg-emerald-950/60 hover:text-emerald-900 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
+
+              {/* Message Input Box */}
+              <form onSubmit={handleSendMessage} className="pt-2">
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    placeholder={`Ask support for ${selectedStage}...`}
+                    disabled={sending}
+                    className="text-xs bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-emerald-600 rounded-xl"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={sending || !inputMessage.trim()}
+                    className="bg-[#1B4324] hover:bg-[#14341C] text-white text-xs px-4 rounded-xl cursor-pointer shrink-0"
+                  >
+                    <Send className="w-3.5 h-3.5 mr-1" />
+                    {sending ? "Sending..." : "Send"}
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between mt-2 text-[10px] text-slate-400 px-1">
+                  <span className="flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                    Fault-isolated Actor: <strong className="text-slate-600 dark:text-slate-300">{sessionId.substring(0, 14)}...</strong>
+                  </span>
+                  <span>Logged in: {user?.email || "fpo@shreeanna.com"}</span>
+                </div>
+              </form>
             </CardContent>
           </Card>
 
