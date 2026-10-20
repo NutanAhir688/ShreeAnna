@@ -18,7 +18,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-function BuyerOrders({ orders }) {
+function BuyerOrders({ orders = [] }) {
+  const safeOrders = Array.isArray(orders) ? orders : [];
+
   const getStatusClass = (status) => {
     if (status === "Completed") {
       return "bg-emerald-100 text-emerald-700 hover:bg-emerald-100";
@@ -48,7 +50,7 @@ function BuyerOrders({ orders }) {
       </CardHeader>
 
       <CardContent className="p-0">
-        {orders.length === 0 ? (
+        {safeOrders.length === 0 ? (
           <div className="px-6 py-10 text-center">
             <ShoppingCart className="mx-auto h-8 w-8 text-slate-300" />
 
@@ -86,7 +88,7 @@ function BuyerOrders({ orders }) {
               </TableHeader>
 
               <TableBody>
-                {orders.map((order) => (
+                {safeOrders.map((order) => (
                   <TableRow key={order.id}>
                     <TableCell className="pl-6 font-medium">
                       {order.id}

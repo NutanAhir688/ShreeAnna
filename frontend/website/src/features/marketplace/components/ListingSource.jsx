@@ -38,11 +38,11 @@ function ListingSource({ listing }) {
             </div>
 
             <p className="font-medium text-slate-900">
-              {listing.farmerName}
+              {listing?.farmerName || listing?.brand || "Verified Producer"}
             </p>
 
             <p className="mt-1 text-sm text-slate-500">
-              {listing.farmerId}
+              {listing?.farmerId || "FARMER-IND"}
             </p>
           </div>
 
@@ -57,7 +57,7 @@ function ListingSource({ listing }) {
             </div>
 
             <p className="font-medium text-slate-900">
-              {listing.farmName}
+              {listing?.farmName || "Direct Farm / FPO Sourced"}
             </p>
 
             <p className="mt-1 flex items-center gap-1 text-sm text-emerald-600">
@@ -77,12 +77,12 @@ function ListingSource({ listing }) {
             </div>
 
             <p className="font-medium text-slate-900">
-              {listing.lotId}
+              {listing?.lotId || "LOT-ORIGIN"}
             </p>
 
             <p className="mt-1 text-sm text-slate-500">
-              {listing.quantity.toLocaleString()}{" "}
-              {listing.unit} procured
+              {(listing?.quantity ?? listing?.quantityKg ?? listing?.availableQuantity ?? 0).toLocaleString()}{" "}
+              {listing?.unit || "kg"} procured
             </p>
           </div>
         </div>

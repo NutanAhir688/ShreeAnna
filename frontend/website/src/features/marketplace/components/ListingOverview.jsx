@@ -27,25 +27,30 @@ function ListingOverview({ listing }) {
     return "bg-slate-100 text-slate-600 hover:bg-slate-100";
   };
 
+  const qty = listing?.availableQuantity ?? listing?.quantityKg ?? listing?.quantity ?? 0;
+  const unit = listing?.unit || "kg";
+  const price = listing?.pricePerKg ?? 0;
+  const milletName = listing?.millet || listing?.milletType || "—";
+
   const items = [
     {
       label: "Available Quantity",
-      value: `${listing.availableQuantity.toLocaleString()} ${listing.unit}`,
+      value: `${qty.toLocaleString()} ${unit}`,
       icon: Scale,
     },
     {
       label: "Price per kg",
-      value: `₹${listing.pricePerKg}`,
+      value: `₹${price}`,
       icon: IndianRupee,
     },
     {
       label: "Millet",
-      value: listing.millet,
+      value: milletName,
       icon: Wheat,
     },
     {
       label: "Source Lot",
-      value: listing.lotId,
+      value: listing?.lotId || "—",
       icon: Package,
     },
   ];
@@ -60,12 +65,12 @@ function ListingOverview({ listing }) {
             </p>
 
             <CardTitle className="mt-1 text-xl">
-              {listing.id}
+              {listing?.title || listing?.id}
             </CardTitle>
           </div>
 
-          <Badge className={getStatusClass(listing.status)}>
-            {listing.status}
+          <Badge className={getStatusClass(listing?.status)}>
+            {listing?.status || "Active"}
           </Badge>
         </div>
       </CardHeader>
