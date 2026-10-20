@@ -1,4 +1,6 @@
 using Akka.Actor;
+using Microsoft.EntityFrameworkCore;
+using backend.Data;
 using backend.Features.Support.Actors;
 using backend.Features.Support.DTOs;
 
@@ -7,10 +9,12 @@ namespace backend.Features.Support.Services;
 public class SupportChatService : ISupportChatService
 {
     private readonly IActorRef _chatManager;
+    private readonly IServiceScopeFactory _scopeFactory;
 
-    public SupportChatService(IActorRef chatManager)
+    public SupportChatService(IActorRef chatManager, IServiceScopeFactory scopeFactory)
     {
         _chatManager = chatManager;
+        _scopeFactory = scopeFactory;
     }
 
     public async Task<List<ChatMessageDto>> ConnectSessionAsync(ConnectSessionRequest request, CancellationToken ct = default)
@@ -25,7 +29,7 @@ public class SupportChatService : ISupportChatService
     public async Task<List<ChatMessageDto>> SendMessageAsync(SendMessageRequest request, CancellationToken ct = default)
     {
         var sessionId = string.IsNullOrWhiteSpace(request.SessionId) ? Guid.NewGuid().ToString("N") : request.SessionId;
-        var msg = new SendChatMessage(sessionId, request.Sender, request.Content, request.JourneyStage);
+        var msg = new SendChatMessage(sessionId, request.Sender, request.Content, request.JourneyStage, request.Role);
 
         var response = await _chatManager.Ask<MessagesDeliveredResponse>(msg, TimeSpan.FromSeconds(5), ct);
         return MapMessages(response.Messages);
@@ -38,11 +42,81 @@ public class SupportChatService : ISupportChatService
         return MapMessages(response.Messages);
     }
 
+    public async Task<List<ChatMessageDto>> GetSessionHistoryAsync(string sessionId, CancellationToken ct = default)
+    {
+        var msg = new GetSessionHistory(sessionId);
+        var response = await _chatManager.Ask<MessagesDeliveredResponse>(msg, TimeSpan.FromSeconds(5), ct);
+        return MapMessages(response.Messages);
+    }
+
     public async Task<List<ChatMessageDto>> ResetSessionAsync(string sessionId, CancellationToken ct = default)
     {
         var msg = new ResetUserSession(sessionId);
         var response = await _chatManager.Ask<MessagesDeliveredResponse>(msg, TimeSpan.FromSeconds(5), ct);
         return MapMessages(response.Messages);
+    }
+
+    public async Task<List<InspectorConversationDto>> GetInspectorConversationsAsync(string? inspectorName = null, CancellationToken ct = default)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var query = db.ProcurementLots
+            .Include(l => l.Farmer)
+            .Include(l => l.FarmCrop)
+            .AsNoTracking();
+
+        var lots = await query
+            .OrderByDescending(l => l.CreatedAt)
+            .Take(30)
+            .ToListAsync(ct);
+
+        var conversations = new List<InspectorConversationDto>();
+        foreach (var lot in lots)
+        {
+            var sessionId = $"lot_{lot.Id}";
+            string lastMessage = "Inspection in progress • Click to open 1-to-1 chat";
+            DateTime lastTime = lot.ScheduledInspectionDate ?? lot.CreatedAt;
+
+            try
+            {
+                var history = await _chatManager.Ask<MessagesDeliveredResponse>(new GetSessionHistory(sessionId), TimeSpan.FromMilliseconds(500), ct);
+                if (history?.Messages != null && history.Messages.Count > 0)
+                {
+                    var latest = history.Messages.Last();
+                    lastMessage = $"{latest.Sender}: {latest.Content}";
+                    lastTime = latest.Timestamp;
+                }
+            }
+            catch
+            {
+                // Non-blocking fallback
+            }
+
+            conversations.Add(new InspectorConversationDto
+            {
+                SessionId = sessionId,
+                LotId = lot.Id,
+                LotNumber = string.IsNullOrWhiteSpace(lot.LotNumber) ? $"LOT-{lot.Id.ToString().Substring(0, 6).ToUpperInvariant()}" : lot.LotNumber,
+                FarmerId = lot.FarmerId,
+                FarmerName = lot.Farmer != null ? lot.Farmer.FullName : "Farmer Member",
+                FarmerPhone = lot.Farmer != null && !string.IsNullOrWhiteSpace(lot.Farmer.Phone) ? lot.Farmer.Phone : "+91 9876543210",
+                Village = lot.Farmer != null && !string.IsNullOrWhiteSpace(lot.Farmer.Village) ? lot.Farmer.Village : "Limkheda Village",
+                Taluka = lot.Farmer != null && !string.IsNullOrWhiteSpace(lot.Farmer.Taluka) ? lot.Farmer.Taluka : "Limkheda",
+                District = lot.Farmer != null && !string.IsNullOrWhiteSpace(lot.Farmer.District) ? lot.Farmer.District : "Dahod",
+                CropName = lot.FarmCrop != null && !string.IsNullOrWhiteSpace(lot.FarmCrop.CropName) ? lot.FarmCrop.CropName : "Pearl Millet (Bajra)",
+                EstimatedQuantityKg = lot.EstimatedQuantityKg,
+                Status = lot.Status,
+                InspectionTrackingStatus = lot.InspectionTrackingStatus ?? "ASSIGNED",
+                ScheduledInspectionDate = lot.ScheduledInspectionDate,
+                AssignedInspectorName = lot.AssignedInspectorName ?? "Ananya Roy (Quality Inspector)",
+                LastMessage = lastMessage,
+                LastMessageTimestamp = lastTime,
+                UnreadCount = 0
+            });
+        }
+
+        return conversations;
     }
 
     public List<JourneyStageDto> GetJourneyStagesForRole(string role)
@@ -251,7 +325,6 @@ public class SupportChatService : ISupportChatService
                     }
                 }
             },
-            // Default: Farmer Procurement Journey
             _ => new List<JourneyStageDto>
             {
                 new()

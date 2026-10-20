@@ -427,8 +427,11 @@ export const supportChatApi = {
   connect: (data) => request("/api/support/chat/connect", { method: "POST", body: data }),
   sendMessage: (data) => request("/api/support/chat/send", { method: "POST", body: data }),
   getMessages: (sessionId) => request(`/api/support/chat/messages?sessionId=${encodeURIComponent(sessionId)}`),
+  getHistory: (sessionId) => request(`/api/support/chat/history?sessionId=${encodeURIComponent(sessionId)}`),
   resetSession: (sessionId) => request("/api/support/chat/reset", { method: "POST", body: { sessionId } }),
   getJourneyStages: (role) => request(`/api/support/chat/journey-stages${role ? `?role=${encodeURIComponent(role)}` : ""}`),
+  getInspectorConversations: (inspectorName) =>
+    request(`/api/support/chat/inspector/conversations${inspectorName ? `?inspectorName=${encodeURIComponent(inspectorName)}` : ""}`),
 };
 
 

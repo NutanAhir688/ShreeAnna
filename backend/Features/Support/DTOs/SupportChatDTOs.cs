@@ -41,3 +41,25 @@ public class JourneyStageDto
     public string Description { get; set; } = string.Empty;
     public List<string> SuggestedPrompts { get; set; } = new();
 }
+
+public class InspectorConversationDto
+{
+    public string SessionId { get; set; } = string.Empty;
+    public Guid LotId { get; set; }
+    public string LotNumber { get; set; } = string.Empty;
+    public Guid FarmerId { get; set; }
+    public string FarmerName { get; set; } = string.Empty;
+    public string FarmerPhone { get; set; } = string.Empty;
+    public string Village { get; set; } = string.Empty;
+    public string Taluka { get; set; } = string.Empty;
+    public string District { get; set; } = string.Empty;
+    public string CropName { get; set; } = string.Empty;
+    public decimal EstimatedQuantityKg { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public string InspectionTrackingStatus { get; set; } = string.Empty;
+    public DateTime? ScheduledInspectionDate { get; set; }
+    public string AssignedInspectorName { get; set; } = string.Empty;
+    public string LastMessage { get; set; } = string.Empty;
+    public DateTime LastMessageTimestamp { get; set; } = DateTime.UtcNow;
+    public int UnreadCount { get; set; } = 0;
+}

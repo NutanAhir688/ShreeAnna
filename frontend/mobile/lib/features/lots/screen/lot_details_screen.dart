@@ -12,6 +12,7 @@ import 'procurement_agreement_screen.dart';
 import 'quality_certificate_screen.dart';
 import 'quality_results_screen.dart';
 import 'warehouse_receipt_screen.dart';
+import 'inspector_chat_screen.dart';
 
 class LotDetailsScreen extends StatefulWidget {
   const LotDetailsScreen({
@@ -1828,10 +1829,29 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () {
-                    _showContactInspectorModal(
+                    final lotId = widget.lotId ?? _lot?.id ?? '2632-f';
+                    final lotNum = (_lot != null && _lot!.lotNumber.isNotEmpty)
+                        ? _lot!.lotNumber
+                        : widget.lotNumber;
+                    final millet = (_lot != null && _lot!.milletType.isNotEmpty)
+                        ? _lot!.milletType
+                        : widget.milletName;
+                    final qty = _lot?.estimatedQuantityKg ??
+                        (double.tryParse(widget.quantity) ?? 789.0);
+
+                    Navigator.push(
                       context,
-                      inspectorName,
-                      inspectorPhone,
+                      MaterialPageRoute(
+                        builder: (_) => InspectorChatScreen(
+                          lotId: lotId,
+                          lotNumber: lotNum,
+                          milletType: millet,
+                          quantityKg: qty,
+                          inspectorName: inspectorName,
+                          inspectorPhone: inspectorPhone,
+                          farmerName: _lot?.farmerName ?? 'Farmer Member',
+                        ),
+                      ),
                     );
                   },
                   icon: const Icon(Icons.chat, size: 16),
@@ -2556,7 +2576,32 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
               ],
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => _showChatDialog(context, name),
+                  onPressed: () {
+                    final lotId = widget.lotId ?? _lot?.id ?? '2632-f';
+                    final lotNum = (_lot != null && _lot!.lotNumber.isNotEmpty)
+                        ? _lot!.lotNumber
+                        : widget.lotNumber;
+                    final millet = (_lot != null && _lot!.milletType.isNotEmpty)
+                        ? _lot!.milletType
+                        : widget.milletName;
+                    final qty = _lot?.estimatedQuantityKg ??
+                        (double.tryParse(widget.quantity) ?? 789.0);
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => InspectorChatScreen(
+                          lotId: lotId,
+                          lotNumber: lotNum,
+                          milletType: millet,
+                          quantityKg: qty,
+                          inspectorName: name,
+                          inspectorPhone: phone,
+                          farmerName: _lot?.farmerName ?? 'Farmer Member',
+                        ),
+                      ),
+                    );
+                  },
                   icon: const Icon(Icons.chat, size: 14, color: Colors.white),
                   label: const Text(
                     'Chat Support',

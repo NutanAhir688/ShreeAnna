@@ -20,11 +20,23 @@ public class ChatManagerActor : ReceiveActor
 
         Receive<SendChatMessage>(msg =>
         {
-            var sessionActor = GetOrCreateSessionActor(msg.SessionId, "Farmer", "Farmer Member", msg.JourneyStage);
+            var sessionActor = GetOrCreateSessionActor(msg.SessionId, msg.Role, msg.Sender, msg.JourneyStage);
             sessionActor.Forward(msg);
         });
 
         Receive<ReceivePendingMessages>(msg =>
+        {
+            if (_sessions.TryGetValue(msg.SessionId, out var actor))
+            {
+                actor.Forward(msg);
+            }
+            else
+            {
+                Sender.Tell(new MessagesDeliveredResponse(new List<ChatMessage>()));
+            }
+        });
+
+        Receive<GetSessionHistory>(msg =>
         {
             if (_sessions.TryGetValue(msg.SessionId, out var actor))
             {

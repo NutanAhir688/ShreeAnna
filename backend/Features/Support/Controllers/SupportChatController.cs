@@ -72,6 +72,26 @@ public class SupportChatController : ControllerBase
         }
     }
 
+    [HttpGet("history")]
+    public async Task<ActionResult<List<ChatMessageDto>>> GetHistory([FromQuery] string sessionId, CancellationToken ct)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(sessionId))
+            {
+                return BadRequest(new { message = "Session ID is required" });
+            }
+
+            var messages = await _chatService.GetSessionHistoryAsync(sessionId, ct);
+            return Ok(messages);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving history for {SessionId}", sessionId);
+            return StatusCode(500, new { message = "Failed to read session history", error = ex.Message });
+        }
+    }
+
     [HttpPost("reset")]
     public async Task<ActionResult<List<ChatMessageDto>>> ResetSession([FromBody] ResetSessionRequest request, CancellationToken ct)
     {
@@ -92,5 +112,20 @@ public class SupportChatController : ControllerBase
     {
         var stages = _chatService.GetJourneyStagesForRole(role ?? "Farmer");
         return Ok(stages);
+    }
+
+    [HttpGet("inspector/conversations")]
+    public async Task<ActionResult<List<InspectorConversationDto>>> GetInspectorConversations([FromQuery] string? inspectorName, CancellationToken ct)
+    {
+        try
+        {
+            var conversations = await _chatService.GetInspectorConversationsAsync(inspectorName, ct);
+            return Ok(conversations);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading conversations for Quality Inspector");
+            return StatusCode(500, new { message = "Failed to load inspector conversations", error = ex.Message });
+        }
     }
 }

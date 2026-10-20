@@ -3,8 +3,9 @@ using Akka.Actor;
 namespace backend.Features.Support.Actors;
 
 /// <summary>
-/// Lightweight Akka.NET actor running per user connection.
+/// Lightweight Akka.NET actor running per user/lot connection.
 /// Provides complete fault isolation and an ephemeral in-memory message queue.
+/// Supports both automated procurement journey assistance and 1-on-1 direct Farmer <-> QualityInspector chat.
 /// </summary>
 public class UserSessionActor : ReceiveActor
 {
@@ -27,18 +28,21 @@ public class UserSessionActor : ReceiveActor
         // Seed initial welcoming message in ephemeral queue
         var welcomeMsg = new ChatMessage(
             Id: Guid.NewGuid().ToString(),
-            Sender: "ShreeAnna Nodal Assistant",
-            Content: GenerateWelcomeMessage(_role, _userName, _currentJourneyStage),
+            Sender: _sessionId.StartsWith("lot_") ? "Quality Inspector Desk" : "ShreeAnna Nodal Assistant",
+            Content: _sessionId.StartsWith("lot_")
+                ? $"Namaste {_userName}! This is your direct Quality Inspection chat for Lot {_sessionId.Replace("lot_", "").ToUpperInvariant()}. Ask any question regarding sample collection, moisture testing, or inspector arrival."
+                : GenerateWelcomeMessage(_role, _userName, _currentJourneyStage),
             JourneyStage: _currentJourneyStage,
             Timestamp: DateTime.UtcNow,
             IsAgent: true,
-            Role: "System"
+            Role: _sessionId.StartsWith("lot_") ? "QualityInspector" : "System"
         );
         _ephemeralQueue.Enqueue(welcomeMsg);
         _messageHistory.Add(welcomeMsg);
 
         Receive<SendChatMessage>(msg => HandleSendMessage(msg));
         Receive<ReceivePendingMessages>(_ => HandleReceivePending());
+        Receive<GetSessionHistory>(_ => Sender.Tell(new MessagesDeliveredResponse(_messageHistory.ToList())));
         Receive<ResetUserSession>(_ => HandleResetSession());
         Receive<ConnectSession>(conn =>
         {
@@ -57,24 +61,78 @@ public class UserSessionActor : ReceiveActor
             _currentJourneyStage = msg.JourneyStage;
         }
 
-        // 1. Store incoming user message
+        var senderRole = string.IsNullOrWhiteSpace(msg.Role) ? _role : msg.Role;
+        var senderName = string.IsNullOrWhiteSpace(msg.Sender) ? _userName : msg.Sender;
+
+        // If the Quality Inspector is sending a message directly to the farmer
+        if (senderRole.Equals("QualityInspector", StringComparison.OrdinalIgnoreCase))
+        {
+            var inspectorMsg = new ChatMessage(
+                Id: Guid.NewGuid().ToString(),
+                Sender: senderName,
+                Content: msg.Content,
+                JourneyStage: _currentJourneyStage,
+                Timestamp: DateTime.UtcNow,
+                IsAgent: true,
+                Role: "QualityInspector"
+            );
+            _ephemeralQueue.Enqueue(inspectorMsg);
+            _messageHistory.Add(inspectorMsg);
+
+            Sender.Tell(new MessagesDeliveredResponse(new List<ChatMessage> { inspectorMsg }));
+            return;
+        }
+
+        // Direct 1-on-1 lot inspection thread from farmer
+        if (_sessionId.StartsWith("lot_"))
+        {
+            var farmerMsg = new ChatMessage(
+                Id: Guid.NewGuid().ToString(),
+                Sender: senderName,
+                Content: msg.Content,
+                JourneyStage: _currentJourneyStage,
+                Timestamp: DateTime.UtcNow,
+                IsAgent: false,
+                Role: "Farmer"
+            );
+            _ephemeralQueue.Enqueue(farmerMsg);
+            _messageHistory.Add(farmerMsg);
+
+            // Nodal inspection assistance acknowledgment
+            var responseText = GenerateJourneySupportResponse(msg.Content, _currentJourneyStage, "QualityInspector");
+            var ackMsg = new ChatMessage(
+                Id: Guid.NewGuid().ToString(),
+                Sender: "Quality Assaying Desk",
+                Content: responseText,
+                JourneyStage: _currentJourneyStage,
+                Timestamp: DateTime.UtcNow.AddMilliseconds(200),
+                IsAgent: true,
+                Role: "QualityInspector"
+            );
+            _ephemeralQueue.Enqueue(ackMsg);
+            _messageHistory.Add(ackMsg);
+
+            Sender.Tell(new MessagesDeliveredResponse(new List<ChatMessage> { farmerMsg, ackMsg }));
+            return;
+        }
+
+        // Standard procurement journey actor interaction
         var userMsg = new ChatMessage(
             Id: Guid.NewGuid().ToString(),
-            Sender: _userName,
+            Sender: senderName,
             Content: msg.Content,
             JourneyStage: _currentJourneyStage,
             Timestamp: DateTime.UtcNow,
             IsAgent: false,
-            Role: _role
+            Role: senderRole
         );
         _messageHistory.Add(userMsg);
 
-        // 2. Generate journey-aware actor response
-        var responseText = GenerateJourneySupportResponse(msg.Content, _currentJourneyStage, _role);
+        var journeyResponse = GenerateJourneySupportResponse(msg.Content, _currentJourneyStage, senderRole);
         var agentMsg = new ChatMessage(
             Id: Guid.NewGuid().ToString(),
             Sender: "ShreeAnna Journey Specialist",
-            Content: responseText,
+            Content: journeyResponse,
             JourneyStage: _currentJourneyStage,
             Timestamp: DateTime.UtcNow.AddMilliseconds(200),
             IsAgent: true,
@@ -84,7 +142,6 @@ public class UserSessionActor : ReceiveActor
         _ephemeralQueue.Enqueue(agentMsg);
         _messageHistory.Add(agentMsg);
 
-        // Return current active exchange to caller
         Sender.Tell(new MessagesDeliveredResponse(new List<ChatMessage> { userMsg, agentMsg }));
     }
 
@@ -98,8 +155,7 @@ public class UserSessionActor : ReceiveActor
 
         if (messagesToDeliver.Count == 0 && _messageHistory.Count > 0)
         {
-            // Return recent messages if queue is already consumed
-            messagesToDeliver.AddRange(_messageHistory.TakeLast(10));
+            messagesToDeliver.AddRange(_messageHistory.TakeLast(15));
         }
 
         Sender.Tell(new MessagesDeliveredResponse(messagesToDeliver));
@@ -138,7 +194,7 @@ public class UserSessionActor : ReceiveActor
             return list;
         }
 
-        return _messageHistory.TakeLast(10).ToList();
+        return _messageHistory.TakeLast(15).ToList();
     }
 
     private static string GetDefaultJourneyStage(string role)
@@ -164,6 +220,7 @@ public class UserSessionActor : ReceiveActor
             "Processor" => $"Welcome {name}! ShreeAnna Value-Chain Support is online for your processing unit. Current stage: '{stage}'. We can assist with lot certificates, purchase requests, and store listings.",
             "FpoManager" => $"Hello {name}! FPO Nodal Support is active for '{stage}'. Ask about farmer onboarding verifications, lot grading approvals, or settlement release queues.",
             "Driver" => $"Driver Logistics Assistant online for {name}. Stage: '{stage}'. We can help verify delivery OTPs, report transit delays, or locate warehouse unloading bays.",
+            "QualityInspector" => $"Welcome Quality Inspector {name}! Online at '{stage}'. View your assigned farmer lots, verify digital calibration, or message farmers directly.",
             _ => $"Welcome {name} to ShreeAnna Mission Support. Current procurement stage: '{stage}'. How can we help you right now?"
         };
     }
@@ -197,11 +254,16 @@ public class UserSessionActor : ReceiveActor
             return "Our primary regional storage hubs are Anand (WH-GUJ-008, 10,000 MT) and Dahod (WH-GUJ-001, 5,000 MT). Both facilities provide aerated, moisture-controlled grain preservation. Ensure your lot has an allocated lot number tag before unloading.";
         }
 
+        if (lower.Contains("arrive") || lower.Contains("time") || lower.Contains("reach") || lower.Contains("visit") || lower.Contains("when"))
+        {
+            return "Your assigned Quality Inspector has scheduled your visit. Inspection is in progress (ETA within scheduled slot). Please ensure samples from bottom, middle, and top of bags are easily accessible.";
+        }
+
         if (lower.Contains("contact") || lower.Contains("phone") || lower.Contains("officer") || lower.Contains("nodal"))
         {
             return "You can reach the Dahod District Agricultural Officer (Dr. Arvind Rathod) at +91 94270 11234, or our state toll-free helpline at 1800-233-0255 (Mon-Sat, 8 AM - 8 PM).";
         }
 
-        return $"Regarding '{stage}' ({role}): Your request has been acknowledged by the Akka.NET journey actor. State guidelines require complete lot traceability from farm geo-tagging to final delivery. If you need urgent assistance, our toll-free support is 1800-233-0255.";
+        return $"Regarding '{stage}' ({role}): Your message has been logged with the assigned Quality Inspector and Nodal Desk. Please keep your grain bags dry and ready for digital probe testing.";
     }
 }
