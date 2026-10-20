@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Sprout,
@@ -61,13 +61,16 @@ export default function CustomerMarketplace() {
     return saved ? JSON.parse(saved) : null;
   });
 
-  const currentUser = authUser
-    ? {
+  const currentUser = useMemo(() => {
+    if (authUser) {
+      return {
         name: authUser.memberName || authUser.email?.split("@")[0] || "Customer",
         email: authUser.email,
         role: authUser.role,
-      }
-    : localUser;
+      };
+    }
+    return localUser;
+  }, [authUser, localUser]);
 
   // Cart state
   const [cart, setCart] = useState(() => {
@@ -195,11 +198,12 @@ export default function CustomerMarketplace() {
     loadProducts();
   }, []);
 
-  const loadCustomerOrders = async () => {
+  const customerEmail = currentUser?.email || "mukund@example.com";
+
+  const loadCustomerOrders = useCallback(async () => {
     setOrdersLoading(true);
     try {
-      const email = currentUser?.email || "mukund@example.com";
-      const data = await ordersApi.getAll(email);
+      const data = await ordersApi.getAll(customerEmail);
       if (Array.isArray(data)) {
         setCustomerOrders(data);
       }
@@ -208,13 +212,13 @@ export default function CustomerMarketplace() {
     } finally {
       setOrdersLoading(false);
     }
-  };
+  }, [customerEmail]);
 
   useEffect(() => {
     if (currentView === "my-orders") {
       loadCustomerOrders();
     }
-  }, [currentView, currentUser]);
+  }, [currentView, loadCustomerOrders]);
 
   // -------------------------------------------------------------
   // 3. FILTERING & SORTING
@@ -320,7 +324,7 @@ export default function CustomerMarketplace() {
     try {
       if (authMode === "login") {
         const data = await auth.login(authEmail.trim(), authPassword);
-        setCurrentUser({
+        setLocalUser({
           email: authEmail.trim(),
           name: data?.memberName || authEmail.split("@")[0],
           role: data?.role || "Customer",
@@ -328,7 +332,7 @@ export default function CustomerMarketplace() {
         setAuthModalOpen(false);
       } else {
         const data = await auth.register(authEmail.trim(), authPassword, authName.trim() || "Customer");
-        setCurrentUser({
+        setLocalUser({
           email: authEmail.trim(),
           name: authName.trim() || authEmail.split("@")[0],
           role: "Customer",
