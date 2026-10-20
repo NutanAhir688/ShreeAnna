@@ -192,28 +192,37 @@ class _HomeScreenState extends State<HomeScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.helloFarmer(farmerName),
-                      style: const TextStyle(
-                        fontSize: 19,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF202420),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.helloFarmer(farmerName),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 19,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF202420),
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 5),
+                      const SizedBox(height: 5),
 
-                    Text(
-                      l10n.currentFpo(locationText),
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF596159)),
-                    ),
-                  ],
+                      Text(
+                        l10n.currentFpo(locationText),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 11, color: Color(0xFF596159)),
+                      ),
+                    ],
+                  ),
                 ),
 
+                const SizedBox(width: 8),
+
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
                       tooltip: 'Driver Journey',
@@ -283,6 +292,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       icon: const Icon(Icons.agriculture, size: 19),
                       label: Text(
                         l10n.sellMillet,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
                       ),
                       style: ElevatedButton.styleFrom(
@@ -312,6 +323,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       icon: const Icon(Icons.add_location_alt_outlined, size: 19),
                       label: Text(
                         l10n.addFarmTitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
                       ),
                       style: ElevatedButton.styleFrom(
@@ -352,6 +365,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       icon: const Icon(Icons.landscape_outlined, size: 18),
                       label: Text(
                         l10n.manageFarms,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                       ),
                       style: OutlinedButton.styleFrom(
@@ -381,6 +396,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       icon: const Icon(Icons.help_outline, size: 18),
                       label: Text(
                         l10n.helpSupport,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                       ),
                       style: OutlinedButton.styleFrom(
@@ -532,12 +549,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     const SizedBox(width: 6),
 
-                    Text(
-                      l10n.pendingAction(pendingCount),
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: ShreeAnnaTheme.primaryGreen,
-                        fontWeight: FontWeight.w600,
+                    Expanded(
+                      child: Text(
+                        l10n.pendingAction(pendingCount),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: ShreeAnnaTheme.primaryGreen,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
@@ -591,14 +612,20 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Lot #$lotNumber',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF596159),
+              Expanded(
+                child: Text(
+                  'Lot #$lotNumber',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF596159),
+                  ),
                 ),
               ),
+
+              const SizedBox(width: 8),
 
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -608,6 +635,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 child: Text(
                   status,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.bold,
@@ -622,6 +651,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
           Text(
             millet,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
