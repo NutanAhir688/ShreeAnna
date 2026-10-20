@@ -64,9 +64,17 @@ public static class DbSeeder
                     ""driver_name"" character varying(150),
                     ""driver_phone"" character varying(30),
                     ""vehicle_number"" character varying(50),
+                    ""customer_latitude"" numeric(10,6),
+                    ""customer_longitude"" numeric(10,6),
+                    ""driver_latitude"" numeric(10,6),
+                    ""driver_longitude"" numeric(10,6),
                     ""created_at"" timestamp with time zone NOT NULL,
                     ""delivered_at"" timestamp with time zone
                 );
+                ALTER TABLE ""orders"" ADD COLUMN IF NOT EXISTS ""customer_latitude"" numeric(10,6);
+                ALTER TABLE ""orders"" ADD COLUMN IF NOT EXISTS ""customer_longitude"" numeric(10,6);
+                ALTER TABLE ""orders"" ADD COLUMN IF NOT EXISTS ""driver_latitude"" numeric(10,6);
+                ALTER TABLE ""orders"" ADD COLUMN IF NOT EXISTS ""driver_longitude"" numeric(10,6);
                 CREATE TABLE IF NOT EXISTS ""order_items"" (
                     ""id"" uuid NOT NULL PRIMARY KEY,
                     ""order_id"" uuid NOT NULL,
@@ -240,9 +248,25 @@ public static class DbSeeder
                     ""driver_name"" character varying(150),
                     ""driver_phone"" character varying(30),
                     ""vehicle_number"" character varying(50),
+                    ""customer_latitude"" numeric(10,6),
+                    ""customer_longitude"" numeric(10,6),
+                    ""driver_latitude"" numeric(10,6),
+                    ""driver_longitude"" numeric(10,6),
                     ""created_at"" timestamp with time zone NOT NULL,
                     ""delivered_at"" timestamp with time zone
                 );
+                ALTER TABLE ""orders"" ADD COLUMN IF NOT EXISTS ""customer_latitude"" numeric(10,6);
+                ALTER TABLE ""orders"" ADD COLUMN IF NOT EXISTS ""customer_longitude"" numeric(10,6);
+                ALTER TABLE ""orders"" ADD COLUMN IF NOT EXISTS ""driver_latitude"" numeric(10,6);
+                ALTER TABLE ""orders"" ADD COLUMN IF NOT EXISTS ""driver_longitude"" numeric(10,6);
+                UPDATE ""orders""
+                SET ""driver_latitude"" = 23.0125, ""driver_longitude"" = 72.5855
+                WHERE ""customer_latitude"" >= 22.8 AND ""customer_latitude"" <= 23.3
+                  AND (""driver_latitude"" IS NULL OR ABS(""driver_latitude"" - (""customer_latitude"" + 0.015)) < 0.002);
+                UPDATE ""orders""
+                SET ""driver_latitude"" = 22.8397, ""driver_longitude"" = 74.2558
+                WHERE (""customer_latitude"" IS NULL OR ""customer_latitude"" < 22.8 OR ""customer_latitude"" > 23.3)
+                  AND (""driver_latitude"" IS NULL OR (""customer_latitude"" IS NOT NULL AND ABS(""driver_latitude"" - (""customer_latitude"" + 0.015)) < 0.002));
                 CREATE TABLE IF NOT EXISTS ""order_items"" (
                     ""id"" uuid NOT NULL PRIMARY KEY,
                     ""order_id"" uuid NOT NULL,
@@ -591,6 +615,29 @@ public static class DbSeeder
     {
         if (await context.Warehouses.AnyAsync())
         {
+            if (!await context.Warehouses.AnyAsync(w => w.WarehouseCode == "WH-GUJ-006"))
+            {
+                context.Warehouses.Add(new Warehouse
+                {
+                    Id = Guid.Parse("aa000006-6666-6666-6666-666666666666"),
+                    WarehouseCode = "WH-GUJ-006",
+                    Name = "Ahmedabad Central Millet Distribution Hub",
+                    Location = "Gita Mandir Logistics Depot, Ahmedabad, Gujarat",
+                    District = "Ahmedabad",
+                    Taluka = "Ahmedabad City",
+                    Village = "Jamalpur",
+                    ManagerName = "Nilesh Shah",
+                    ContactPhone = "+91 98765 66666",
+                    CapacityInTons = 12000,
+                    UtilizedCapacityTons = 4500,
+                    Latitude = 23.0125m,
+                    Longitude = 72.5855m,
+                    StorageCondition = "Hermetic Grain Silos, Ambient",
+                    Status = "ACTIVE",
+                    CreatedAt = DateTime.UtcNow
+                });
+                await context.SaveChangesAsync();
+            }
             return;
         }
 
@@ -688,6 +735,25 @@ public static class DbSeeder
                 Latitude = 21.5222m,
                 Longitude = 70.4579m,
                 StorageCondition = "Dry Grain, Aerated",
+                Status = "ACTIVE",
+                CreatedAt = DateTime.UtcNow
+            },
+            new Warehouse
+            {
+                Id = Guid.Parse("aa000006-6666-6666-6666-666666666666"),
+                WarehouseCode = "WH-GUJ-006",
+                Name = "Ahmedabad Central Millet Distribution Hub",
+                Location = "Gita Mandir Logistics Depot, Ahmedabad, Gujarat",
+                District = "Ahmedabad",
+                Taluka = "Ahmedabad City",
+                Village = "Jamalpur",
+                ManagerName = "Nilesh Shah",
+                ContactPhone = "+91 98765 66666",
+                CapacityInTons = 12000,
+                UtilizedCapacityTons = 4500,
+                Latitude = 23.0125m,
+                Longitude = 72.5855m,
+                StorageCondition = "Hermetic Grain Silos, Ambient",
                 Status = "ACTIVE",
                 CreatedAt = DateTime.UtcNow
             }

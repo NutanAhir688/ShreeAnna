@@ -29,6 +29,32 @@ public class OrderService : IOrderService
         decimal deliveryFee = 40.00m;
         decimal totalAmount = subtotal + deliveryFee;
 
+        decimal custLat = request.CustomerLatitude ?? 22.8398m;
+        decimal custLng = request.CustomerLongitude ?? 74.2536m;
+
+        // Anchor driver origin to the nearest genuine warehouse / distribution depot
+        var warehouses = await _context.Warehouses
+            .Where(w => w.Latitude.HasValue && w.Longitude.HasValue && w.Status == "ACTIVE")
+            .ToListAsync();
+
+        decimal driverLat = 22.8397m; // Dahod Rural Grain Warehouse
+        decimal driverLng = 74.2558m;
+
+        if (warehouses.Count > 0)
+        {
+            var closest = warehouses
+                .OrderBy(w => Math.Pow((double)(w.Latitude!.Value - custLat), 2) + Math.Pow((double)(w.Longitude!.Value - custLng), 2))
+                .First();
+            driverLat = closest.Latitude!.Value;
+            driverLng = closest.Longitude!.Value;
+        }
+        else if (custLat >= 22.8m && custLat <= 23.3m && custLng >= 72.3m && custLng <= 73.0m)
+        {
+            // Ahmedabad Central Logistics Depot
+            driverLat = 23.0125m;
+            driverLng = 72.5855m;
+        }
+
         var order = new Order
         {
             OrderNumber = orderNumber,
@@ -46,6 +72,10 @@ public class OrderService : IOrderService
             TotalAmount = totalAmount,
             Status = "CONFIRMED",
             DeliveryOtp = deliveryOtp,
+            CustomerLatitude = custLat,
+            CustomerLongitude = custLng,
+            DriverLatitude = driverLat,
+            DriverLongitude = driverLng,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -199,6 +229,24 @@ public class OrderService : IOrderService
 
     private static OrderResponse MapToResponse(Order order)
     {
+        var dLat = order.DriverLatitude;
+        var dLng = order.DriverLongitude;
+
+        // Clean legacy fake driver offsets (+0.0150 / -0.0180) to genuine logistics hub locations
+        if (order.CustomerLatitude.HasValue && dLat.HasValue && Math.Abs((double)(dLat.Value - (order.CustomerLatitude.Value + 0.0150m))) < 0.002)
+        {
+            if (order.CustomerLatitude.Value >= 22.8m && order.CustomerLatitude.Value <= 23.3m)
+            {
+                dLat = 23.0125m; // Ahmedabad Central Depot
+                dLng = 72.5855m;
+            }
+            else
+            {
+                dLat = 22.8397m; // Dahod Warehouse
+                dLng = 74.2558m;
+            }
+        }
+
         return new OrderResponse(
             order.Id,
             order.OrderNumber,
@@ -232,7 +280,11 @@ public class OrderService : IOrderService
                 i.UnitPrice,
                 i.Quantity,
                 i.TotalPrice
-            )).ToList()
+            )).ToList(),
+            order.CustomerLatitude,
+            order.CustomerLongitude,
+            dLat,
+            dLng
         );
     }
 }

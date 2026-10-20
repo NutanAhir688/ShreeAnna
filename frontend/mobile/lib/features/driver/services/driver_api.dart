@@ -84,4 +84,34 @@ class DriverApi {
       throw Exception(decoded['message'] ?? 'Failed to abort ride.');
     }
   }
+
+  Future<List<Map<String, dynamic>>> getCustomerOrders() async {
+    try {
+      final response = await _apiClient.get(ApiConfig.customerOrders);
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      }
+    } catch (e) {
+      debugPrint('Error fetching customer orders: $e');
+    }
+    return [];
+  }
+
+  Future<bool> confirmCustomerOrderDelivery(String orderId, String otp) async {
+    final response = await _apiClient.post(
+      ApiConfig.confirmOrderDelivery(orderId),
+      body: {'otp': otp.trim()},
+    );
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      Map<String, dynamic> decoded = {};
+      try {
+        decoded = jsonDecode(response.body);
+      } catch (_) {}
+      throw Exception(decoded['message'] ?? 'Invalid delivery OTP. Please verify with customer.');
+    }
+  }
 }
+

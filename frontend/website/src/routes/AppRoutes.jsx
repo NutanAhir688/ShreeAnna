@@ -60,6 +60,8 @@ function AppRoutes() {
       {/* Public Landing, Customer Store, Login & Verification Routes */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/store" element={<CustomerMarketplace />} />
+      <Route path="/store/product/:id" element={<CustomerMarketplace />} />
+      <Route path="/store/:id" element={<CustomerMarketplace />} />
       <Route path="/marketplace/products" element={<CustomerMarketplace />} />
       <Route path="/my-orders" element={<CustomerMarketplace />} />
       <Route path="/login" element={<Login />} />

@@ -70,6 +70,8 @@ class ApiConfig {
   static String get driverList => '$baseUrl/api/dispatches/drivers';
   static String dispatchByLot(String lotId) =>
     '$baseUrl/api/dispatches/by-lot/${Uri.encodeComponent(lotId)}';
+  static String get customerOrders => '$baseUrl/api/orders';
+  static String confirmOrderDelivery(String orderId) => '$baseUrl/api/orders/$orderId/confirm-delivery';
 
   static String get notifications => '$baseUrl/api/notifications';
   static String get notificationsReadAll => '$baseUrl/api/notifications/read-all';
