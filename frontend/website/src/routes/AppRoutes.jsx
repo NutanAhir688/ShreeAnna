@@ -46,6 +46,9 @@ import BuyerDetails from "@/features/buyers/pages/BuyerDetails";
 import FPOManagement from "@/features/fpo/pages/FPOManagement";
 import FPOMemberDetails from "@/features/fpo/pages/FPOMemberDetails";
 import Reports from "@/features/reports/pages/Reports";
+import Profile from "@/features/profile/pages/Profile";
+import Settings from "@/features/settings/pages/Settings";
+import Support from "@/features/support/pages/Support";
 
 import VerifyCertificate from "../features/quality/pages/VerifyCertificate";
 import LandingPage from "../features/landing/pages/LandingPage";
@@ -139,8 +142,9 @@ function AppRoutes() {
           <Route path="/fpo/members/:id" element={<FPOMemberDetails />} />
 
           <Route path="/reports" element={<Reports />} />
-          <Route path="/settings" element={<Dashboard />} />
-          <Route path="/support" element={<Dashboard />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/support" element={<Support />} />
         </Route>
       </Route>
 

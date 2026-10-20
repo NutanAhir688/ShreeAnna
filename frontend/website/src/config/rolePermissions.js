@@ -16,6 +16,7 @@ import {
   CircleDollarSign,
   Building2,
   UsersRound,
+  User,
 } from "lucide-react";
 
 export const ROLE_CONFIGS = {
@@ -351,6 +352,7 @@ export const ROLE_CONFIGS = {
 export const COMMON_SYSTEM_SECTION = {
   title: "SYSTEM",
   items: [
+    { to: "/profile", icon: User, label: "Profile" },
     { to: "/settings", icon: Settings, label: "Settings" },
     { to: "/support", icon: HelpCircle, label: "Support" },
   ],
