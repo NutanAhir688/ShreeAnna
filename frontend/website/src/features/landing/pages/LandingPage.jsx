@@ -178,7 +178,7 @@ export default function LandingPage() {
       <FloatingNav
         navItems={navItems}
         rightElement={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <a
               href="/downloads/shreeanna-mobile.apk"
               download="shreeanna-mobile.apk"
@@ -192,14 +192,14 @@ export default function LandingPage() {
               size="sm"
               variant="ghost"
               onClick={() => navigate("/login")}
-              className="text-xs text-slate-300 hover:text-white hover:bg-slate-800/80 cursor-pointer"
+              className="text-[11px] sm:text-xs text-slate-300 hover:text-white hover:bg-slate-800/80 cursor-pointer h-7 px-2 sm:px-3"
             >
               Log In
             </Button>
             <Button
               size="sm"
               onClick={() => navigate("/dashboard")}
-              className="bg-gradient-to-r from-amber-500 to-emerald-600 hover:from-amber-400 hover:to-emerald-500 text-slate-950 font-bold text-xs h-7 px-3 shadow-md border-0 cursor-pointer rounded-full"
+              className="bg-gradient-to-r from-amber-500 to-emerald-600 hover:from-amber-400 hover:to-emerald-500 text-slate-950 font-bold text-[11px] sm:text-xs h-7 px-2.5 sm:px-3 shadow-md border-0 cursor-pointer rounded-full"
             >
               Launch Portal
             </Button>
