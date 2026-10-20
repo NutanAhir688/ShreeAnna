@@ -93,6 +93,15 @@ const MILLET_VARIETIES = [
 export default function LandingPage() {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 30);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Keep landing page on light theme
   useEffect(() => {
@@ -198,8 +207,14 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-[#FBFBFA] text-[#142017] font-sans selection:bg-[#25633A] selection:text-white relative overflow-x-hidden antialiased">
-      {/* 1. Header / Navigation Bar with Marketplace link */}
-      <header className="sticky top-0 z-50 bg-[#FBFBFA]/95 backdrop-blur-md border-b border-[#E7ECE4] transition-all">
+      {/* 1. Header / Navigation Bar with transparent overlay over hero */}
+      <header
+        className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
+          scrolled
+            ? "bg-[#FBFBFA]/90 backdrop-blur-md border-b border-[#E7ECE4]/80 shadow-2xs py-1"
+            : "bg-transparent border-b border-transparent py-2"
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           {/* Brand Logo on Left */}
           <a href="#" className="flex items-center gap-3 group">
@@ -355,22 +370,23 @@ export default function LandingPage() {
         )}
       </header>
 
-      {/* 2. Hero Section: Image seamlessly in background (matching reference image) */}
-      <section id="hero" className="relative min-h-[580px] lg:min-h-[680px] flex items-center overflow-hidden">
-        {/* Real photographic background image spanning the right half / background */}
+      {/* 2. Hero Section: Image seamlessly in background spanning to top */}
+      <section id="hero" className="relative min-h-[660px] lg:min-h-[740px] flex items-center overflow-hidden pt-28 sm:pt-32 lg:pt-36 pb-16 lg:pb-24">
+        {/* Real photographic background image spanning the right half / background all the way up */}
         <div className="absolute inset-0 z-0">
           <img
             src="/images/millet_farmer_hero.jpg"
             alt="Farmer in green millet crop field"
-            className="w-full h-full object-cover object-[center_right] lg:object-right"
+            className="w-full h-full object-cover"
+            style={{ objectPosition: "right top" }}
           />
           {/* Gradient fade from solid warm light #FBFBFA on left to transparent on right */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#FBFBFA] via-[#FBFBFA]/95 via-45% md:via-50% to-transparent pointer-events-none" />
-          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#FBFBFA] to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#FBFBFA] via-[#FBFBFA]/85 via-40% md:via-46% to-transparent pointer-events-none" />
+          <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#FBFBFA] to-transparent pointer-events-none" />
         </div>
 
         {/* Hero Foreground Content */}
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24 w-full">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 w-full">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             {/* Left Column: Headlines & Actions */}
             <div className="lg:col-span-7 space-y-6 text-left max-w-xl">
