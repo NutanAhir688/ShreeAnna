@@ -343,7 +343,8 @@ public static class DbSeeder
             ("logistics@shreeanna.com", Roles.LogisticsCoordinator, "Ramesh Verma (Logistics Coordinator)"),
             ("accountant@shreeanna.com", Roles.Accountant, "Priya Sharma (Accountant)"),
             ("driver@shreeanna.com", Roles.Driver, "Ravi Kumar (Driver)"),
-            ("processor@shreeanna.com", Roles.Processor, "Pooja Hegde (Millet Shakti SHG / Processor)")
+            ("processor@shreeanna.com", Roles.Processor, "Pooja Hegde (Millet Shakti SHG / Processor)"),
+            ("customer@shreeanna.com", Roles.Customer, "Anil Sharma (Retail Customer)")
         };
 
         foreach (var acc in seedAccounts)

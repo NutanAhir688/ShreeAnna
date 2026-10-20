@@ -193,10 +193,10 @@ export default function LandingPage() {
     }
   };
 
-  const [apkDownloadUrl, setApkDownloadUrl] = useState("/downloads/shreeanna-mobile.apk");
+  const [apkDownloadUrl, setApkDownloadUrl] = useState("https://github.com/mukund58/ShreeAnna/releases/download/v1.0.0/shreeanna-mobile.apk");
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setApkDownloadUrl(`${window.location.origin}/downloads/shreeanna-mobile.apk`);
+      setApkDownloadUrl(`https://github.com/mukund58/ShreeAnna/releases/download/v1.0.0/shreeanna-mobile.apk`);
     }
   }, []);
 

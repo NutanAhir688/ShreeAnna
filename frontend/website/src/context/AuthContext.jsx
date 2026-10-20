@@ -74,6 +74,8 @@ export function AuthProvider({ children }) {
       LogisticsCoordinator: "logistics@shreeanna.com",
       Accountant: "accountant@shreeanna.com",
       Driver: "driver@shreeanna.com",
+      Processor: "processor@shreeanna.com",
+      Customer: "customer@shreeanna.com",
     };
 
     const targetEmail = roleEmailMap[newRole] || "fpo@shreeanna.com";
