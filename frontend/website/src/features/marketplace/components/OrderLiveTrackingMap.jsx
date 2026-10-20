@@ -22,6 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { ordersApi } from "@/services/api";
 
 export default function OrderLiveTrackingMap({
   order,
@@ -318,43 +319,38 @@ export default function OrderLiveTrackingMap({
     };
   }, [customerLat, customerLng, initialDriverLat, initialDriverLng]);
 
-  // Smooth Driver Movement along the Real Road Route
+  // Maintain Driver Marker at Genuine Position (No automatic fake movement)
   useEffect(() => {
-    if (isDelivered || !mapInstanceRef.current || !driverMarkerRef.current) return;
+    if (!driverMarkerRef.current || !driverPos) return;
+    driverMarkerRef.current.setLatLng([driverPos.lat, driverPos.lng]);
+  }, [driverPos]);
 
-    if (!routeCoordinates || routeCoordinates.length < 2) return;
+  // Periodic Telemetry Sync: Sync with server if driver's actual GPS updates
+  useEffect(() => {
+    if (!order?.id || isDelivered) return;
 
-    let step = 0;
-    const totalPoints = routeCoordinates.length;
-    // Step forward along the real road points, stopping just at destination
-    const maxStep = Math.max(1, Math.floor(totalPoints * 0.95));
-
-    const interval = setInterval(() => {
-      step = (step + 1) % maxStep;
-      const currentPoint = routeCoordinates[step];
-      if (!currentPoint) return;
-
-      setDriverPos({ lat: currentPoint[0], lng: currentPoint[1] });
-
-      if (driverMarkerRef.current) {
-        driverMarkerRef.current.setLatLng(currentPoint);
+    const interval = setInterval(async () => {
+      try {
+        const updated = await ordersApi.getById(order.id);
+        if (updated && updated.driverLatitude && updated.driverLongitude) {
+          const newLat = Number(updated.driverLatitude);
+          const newLng = Number(updated.driverLongitude);
+          if (!isNaN(newLat) && !isNaN(newLng)) {
+            setDriverPos((prev) => {
+              if (!prev || Math.abs(prev.lat - newLat) > 0.0001 || Math.abs(prev.lng - newLng) > 0.0001) {
+                return { lat: newLat, lng: newLng };
+              }
+              return prev;
+            });
+          }
+        }
+      } catch (err) {
+        // Silent catch for background poll
       }
-
-      // Dynamically shorten remaining route polyline as the driver progresses
-      if (routeLineRef.current) {
-        const remainingCoords = routeCoordinates.slice(step);
-        routeLineRef.current.setLatLngs(remainingCoords);
-      }
-
-      const fractionRemaining = 1 - step / totalPoints;
-      setRemainingKm(
-        Math.max(0.1, Number((remainingKm * fractionRemaining).toFixed(1)))
-      );
-      setEtaMinutes(Math.max(2, Math.round(etaMinutes * fractionRemaining)));
-    }, 2000);
+    }, 12000);
 
     return () => clearInterval(interval);
-  }, [isDelivered, routeCoordinates]);
+  }, [order?.id, isDelivered]);
 
   const fitMapBounds = () => {
     if (mapInstanceRef.current) {
