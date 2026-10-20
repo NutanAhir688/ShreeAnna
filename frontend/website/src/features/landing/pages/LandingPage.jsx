@@ -371,7 +371,7 @@ export default function LandingPage() {
       </header>
 
       {/* 2. Hero Section: Image seamlessly in background spanning to top */}
-      <section id="hero" className="relative min-h-[660px] lg:min-h-[740px] flex items-center overflow-hidden pt-28 sm:pt-32 lg:pt-36 pb-16 lg:pb-24">
+      <section id="hero" className="relative min-h-[660px] lg:min-h-[800px] flex items-center overflow-hidden pt-28 sm:pt-32 lg:pt-36 pb-16 lg:pb-24">
         {/* Real photographic background image spanning the right half / background all the way up */}
         <div className="absolute inset-0 z-0">
           <img
@@ -430,61 +430,7 @@ export default function LandingPage() {
             </div>
 
             {/* Right Column: Floating Glass Widget Directly on the Background Field */}
-            <div className="lg:col-span-5 flex justify-end items-end pt-8 lg:pt-32">
-              <div className="bg-black/45 backdrop-blur-md border border-white/25 rounded-2xl p-4 sm:p-5 shadow-2xl text-white flex items-center justify-between sm:justify-start gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-xs">
-                    <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-                      <Sprout className="w-3.5 h-3.5 text-emerald-300" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-slate-200 font-medium">Soil Health</p>
-                      <p className="font-bold text-white leading-none">Good</p>
-                    </div>
-                  </div>
 
-                  <div className="flex items-center gap-2 text-xs">
-                    <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-                      <Droplets className="w-3.5 h-3.5 text-teal-300" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-slate-200 font-medium">Moisture</p>
-                      <p className="font-bold text-white leading-none">Optimal</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="h-10 w-[1px] bg-white/25 mx-1" />
-
-                {/* Circular Score Gauge */}
-                <div className="flex flex-col items-center justify-center pl-1">
-                  <div className="relative w-14 h-14 flex items-center justify-center">
-                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                      <path
-                        className="text-white/20"
-                        strokeWidth="3.5"
-                        stroke="currentColor"
-                        fill="none"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                      <path
-                        className="text-[#59D17E]"
-                        strokeDasharray="78, 100"
-                        strokeWidth="3.5"
-                        strokeLinecap="round"
-                        stroke="currentColor"
-                        fill="none"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-xs font-black text-white">78%</span>
-                    </div>
-                  </div>
-                  <p className="text-[10px] text-slate-200 mt-0.5">Crop Score</p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
@@ -662,13 +608,14 @@ export default function LandingPage() {
               </div>
 
               <div className="pt-2 flex flex-wrap items-center gap-3">
-                <Button
-                  onClick={() => navigate("/login")}
-                  className="bg-[#1B4324] hover:bg-[#14341C] text-white font-semibold text-xs sm:text-sm h-11 px-6 rounded-full shadow-md cursor-pointer flex items-center gap-2"
-                >
-                  <span>Access Farmer Portal</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
+                <a href={apkDownloadUrl} download="shreeanna-mobile.apk">
+                  <Button
+                    className="bg-[#1B4324] hover:bg-[#14341C] text-white font-semibold text-xs sm:text-sm h-11 px-6 rounded-full shadow-md cursor-pointer flex items-center gap-2 transition-all hover:scale-[1.02]"
+                  >
+                    <Download className="w-4 h-4 text-[#86D49B]" />
+                    <span>Download APK</span>
+                  </Button>
+                </a>
                 <a href="#verify">
                   <Button
                     variant="outline"
