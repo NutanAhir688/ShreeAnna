@@ -17,6 +17,7 @@ using backend.Features.Logistics.Services;
 using backend.Features.Notifications.Services;
 using backend.Features.Settlements.Services;
 using backend.Features.Reports.Services;
+using backend.Features.Marketplace.Services;
 
 // Enable legacy timestamp behavior for Npgsql to prevent ArgumentException with DateTimeKind.Unspecified
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
@@ -127,6 +128,7 @@ builder.Services.AddScoped<IRazorpayMockGatewayService, RazorpayMockGatewayServi
 builder.Services.AddScoped<ISettlementService, SettlementService>();
 builder.Services.AddScoped<IReportsService, ReportsService>();
 builder.Services.AddScoped<backend.Features.Procurement.Services.IPurchaseRequestService, backend.Features.Procurement.Services.PurchaseRequestService>();
+builder.Services.AddScoped<IMarketplaceService, MarketplaceService>();
 
 // --------------------------------------------------
 // Controllers & Swagger

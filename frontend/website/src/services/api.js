@@ -227,11 +227,19 @@ export const logisticsApi = {
 // MARKETPLACE
 // ─────────────────────────────────────────────────────────────
 export const marketplaceApi = {
-  getAll: () => request("/api/marketplace"),
+  getAll: (params) => {
+    const query = params ? `?${new URLSearchParams(params).toString()}` : "";
+    return request(`/api/marketplace${query}`);
+  },
   getById: (id) => request(`/api/marketplace/${id}`),
   create: (data) => request("/api/marketplace", { method: "POST", body: data }),
+  update: (id, data) => request(`/api/marketplace/${id}`, { method: "PUT", body: data }),
   updateStatus: (id, status) =>
     request(`/api/marketplace/${id}/status`, { method: "PATCH", body: { status } }),
+  unpublish: (id) =>
+    request(`/api/marketplace/${id}/unpublish`, { method: "POST" }),
+  delete: (id) =>
+    request(`/api/marketplace/${id}`, { method: "DELETE" }),
 };
 
 // ─────────────────────────────────────────────────────────────

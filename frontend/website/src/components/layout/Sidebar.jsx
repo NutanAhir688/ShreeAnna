@@ -3,9 +3,11 @@ import { useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { ROLE_CONFIGS, COMMON_SYSTEM_SECTION } from "@/config/rolePermissions";
 import { farmsApi } from "@/services/api";
-import { ChevronDown, Shield } from "lucide-react";
+import { ChevronDown, Shield, X } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 
-function Sidebar() {
+function Sidebar({ mobileOpen = false, onClose }) {
   const { user } = useAuth();
   const location = useLocation();
   const userRole = user?.role || "FpoManager";
@@ -36,7 +38,6 @@ function Sidebar() {
     };
   }, [user, location.pathname]);
 
-
   const sectionsToRender = [
     ...roleConfig.sections.filter((section) => {
       const title = section.title?.trim().toUpperCase();
@@ -61,90 +62,146 @@ function Sidebar() {
     COMMON_SYSTEM_SECTION,
   ];
 
-
-
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs transition-colors">
-      <div className="flex h-full flex-col">
+    <>
+      {/* Desktop Persistent Sidebar */}
+      <aside className="hidden lg:flex fixed left-0 top-0 z-40 h-screen w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs transition-colors flex-col">
+        <SidebarInner
+          roleConfig={roleConfig}
+          sectionsToRender={sectionsToRender}
+          user={user}
+          pendingFarmCount={pendingFarmCount}
+        />
+      </aside>
 
-        {/* Brand Header */}
-        <div className="flex h-16 items-center border-b border-slate-800 px-6 justify-between bg-slate-900 text-white">
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-emerald-400">
-              ShreeAnna
-            </h1>
-            <p className="text-xs font-semibold text-slate-300">
-              {roleConfig.portalTitle}
-            </p>
-          </div>
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${roleConfig.badgeColor || "bg-emerald-100 text-emerald-800"}`}>
-            {roleConfig.roleName.split(" ")[0]}
-          </span>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto p-4 space-y-4">
-          {sectionsToRender.map((section, idx) => (
-            <div key={section.title || `sec-${idx}`}>
-              {section.title && (
-                <p className="mb-2 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">
-                  {section.title}
-                </p>
-              )}
-
-              <div className="space-y-1">
-                {section.items.map((item, itemIdx) => {
-                  if (item.type === "dropdown") {
-                    return (
-                      <DropdownNavItem
-                        key={item.label}
-                        label={item.label}
-                        icon={item.icon}
-                        items={item.items}
-                      />
-                    );
-                  }
-
-                  const dynamicBadge =
-                    item.to === "/farm-verification"
-                      ? (pendingFarmCount !== null ? (pendingFarmCount > 0 ? pendingFarmCount : null) : item.badgeCount)
-                      : item.badgeCount;
-
-                  return (
-                    <NavItem
-                      key={`${item.to}-${item.label}-${itemIdx}`}
-                      to={item.to}
-                      icon={item.icon}
-                      label={item.label}
-                      badgeCount={dynamicBadge}
-                      end={item.end}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </nav>
-
-        {/* Bottom User Info */}
-        <div className="border-t border-slate-200 dark:border-slate-800 p-3 bg-slate-50/50 dark:bg-slate-800/50 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
-          <div className="flex items-center gap-2 truncate">
-            <Shield className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <span className="font-semibold text-slate-700 dark:text-slate-200 truncate">
-              {user?.memberName || user?.email || "User"}
-            </span>
-          </div>
-          <span className="text-[10px] bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-slate-700 dark:text-slate-200 font-medium shrink-0">
-            {roleConfig.roleName}
-          </span>
-        </div>
-
-      </div>
-    </aside>
+      {/* Mobile & Tablet Responsive Drawer Sheet */}
+      <Sheet open={mobileOpen} onOpenChange={(open) => !open && onClose?.()}>
+        <SheetContent
+          side="left"
+          showCloseButton={false}
+          className="p-0 w-72 max-w-[85vw] border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col gap-0 lg:hidden"
+        >
+          <SheetHeader className="sr-only">
+            <SheetTitle>Navigation Menu</SheetTitle>
+            <SheetDescription>Main navigation links for the portal</SheetDescription>
+          </SheetHeader>
+          <SidebarInner
+            roleConfig={roleConfig}
+            sectionsToRender={sectionsToRender}
+            user={user}
+            pendingFarmCount={pendingFarmCount}
+            onNavigate={onClose}
+            onClose={onClose}
+            isMobile={true}
+          />
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }
 
-function DropdownNavItem({ label, icon: Icon, items }) {
+function SidebarInner({
+  roleConfig,
+  sectionsToRender,
+  user,
+  pendingFarmCount,
+  onNavigate,
+  onClose,
+  isMobile = false,
+}) {
+  return (
+    <div className="flex h-full flex-col">
+      {/* Brand Header */}
+      <div className="flex h-16 items-center border-b border-slate-800 px-5 sm:px-6 justify-between bg-slate-900 text-white shrink-0">
+        <div className="truncate">
+          <h1 className="text-xl font-bold tracking-tight text-emerald-400 truncate">
+            ShreeAnna
+          </h1>
+          <p className="text-xs font-semibold text-slate-300 truncate">
+            {roleConfig.portalTitle}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${roleConfig.badgeColor || "bg-emerald-100 text-emerald-800"}`}>
+            {roleConfig.roleName.split(" ")[0]}
+          </span>
+          {isMobile && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={onClose}
+              className="text-slate-400 hover:text-white hover:bg-slate-800 h-8 w-8 cursor-pointer rounded-lg ml-1"
+              aria-label="Close navigation menu"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto p-4 space-y-4">
+        {sectionsToRender.map((section, idx) => (
+          <div key={section.title || `sec-${idx}`}>
+            {section.title && (
+              <p className="mb-2 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">
+                {section.title}
+              </p>
+            )}
+
+            <div className="space-y-1">
+              {section.items.map((item, itemIdx) => {
+                if (item.type === "dropdown") {
+                  return (
+                    <DropdownNavItem
+                      key={item.label}
+                      label={item.label}
+                      icon={item.icon}
+                      items={item.items}
+                      onNavigate={onNavigate}
+                    />
+                  );
+                }
+
+                const dynamicBadge =
+                  item.to === "/farm-verification"
+                    ? (pendingFarmCount !== null ? (pendingFarmCount > 0 ? pendingFarmCount : null) : item.badgeCount)
+                    : item.badgeCount;
+
+                return (
+                  <NavItem
+                    key={`${item.to}-${item.label}-${itemIdx}`}
+                    to={item.to}
+                    icon={item.icon}
+                    label={item.label}
+                    badgeCount={dynamicBadge}
+                    end={item.end}
+                    onNavigate={onNavigate}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </nav>
+
+      {/* Bottom User Info */}
+      <div className="border-t border-slate-200 dark:border-slate-800 p-3 bg-slate-50/50 dark:bg-slate-800/50 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 shrink-0">
+        <div className="flex items-center gap-2 truncate">
+          <Shield className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <span className="font-semibold text-slate-700 dark:text-slate-200 truncate">
+            {user?.memberName || user?.email || "User"}
+          </span>
+        </div>
+        <span className="text-[10px] bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-slate-700 dark:text-slate-200 font-medium shrink-0">
+          {roleConfig.roleName}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function DropdownNavItem({ label, icon: Icon, items, onNavigate }) {
   const location = useLocation();
   const isChildActive = items.some((item) => {
     const [targetPath] = item.to.split("?");
@@ -176,6 +233,7 @@ function DropdownNavItem({ label, icon: Icon, items }) {
               icon={subItem.icon}
               label={subItem.label}
               end={subItem.end}
+              onNavigate={onNavigate}
             />
           ))}
         </div>
@@ -184,7 +242,7 @@ function DropdownNavItem({ label, icon: Icon, items }) {
   );
 }
 
-function NavItem({ to, icon: Icon, label, badgeCount, end = false }) {
+function NavItem({ to, icon: Icon, label, badgeCount, end = false, onNavigate }) {
   const location = useLocation();
 
   const [targetPath, targetSearch] = to.split("?");
@@ -248,6 +306,7 @@ function NavItem({ to, icon: Icon, label, badgeCount, end = false }) {
   return (
     <Link
       to={to}
+      onClick={onNavigate}
       className={`
         flex items-center gap-3 rounded-lg px-3 py-2
         text-xs font-semibold transition-all

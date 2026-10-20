@@ -18,16 +18,17 @@ function Marketplace() {
   const [status, setStatus] = useState("all");
   const [millet, setMillet] = useState("all");
 
-  useEffect(() => {
-    async function loadListings() {
-      try {
-        const data = await marketplaceApi.getAll();
-        if (Array.isArray(data)) setMarketplaceListings(data);
-      } catch (err) {
-        console.error("Error loading marketplace listings:", err);
-        setMarketplaceListings([]);
-      }
+  const loadListings = async () => {
+    try {
+      const data = await marketplaceApi.getAll();
+      if (Array.isArray(data)) setMarketplaceListings(data);
+    } catch (err) {
+      console.error("Error loading marketplace listings:", err);
+      setMarketplaceListings([]);
     }
+  };
+
+  useEffect(() => {
     loadListings();
   }, []);
 
@@ -97,10 +98,12 @@ function Marketplace() {
       <MarketplaceTable
         listings={filteredListings}
         onView={(listingId) =>
-          navigate(
-            `/marketplace/${listingId}`
-          )
+          navigate(`/marketplace/${listingId}`)
         }
+        onEdit={(listingId) =>
+          navigate(`/marketplace/${listingId}/edit`)
+        }
+        onRefresh={loadListings}
       />
     </div>
   );
