@@ -1,4 +1,4 @@
-import { Bell, ChevronDown, Search, LogOut, User as UserIcon, RefreshCw, Sun, Moon, Menu } from "lucide-react";
+import { Bell, ChevronDown, Search, LogOut, User as UserIcon, RefreshCw, Sun, Moon, Menu, Settings as SettingsIcon, HelpCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { ROLE_CONFIGS } from "@/config/rolePermissions";
@@ -166,9 +166,17 @@ function Topbar({ onMenuClick }) {
                 {theme === "dark" ? <Sun className="mr-2 h-4 w-4 text-amber-400" /> : <Moon className="mr-2 h-4 w-4 text-slate-600" />}
                 <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer">
+              <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer">
                 <UserIcon className="mr-2 h-4 w-4" />
                 <span>Profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/settings")} className="cursor-pointer">
+                <SettingsIcon className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/support")} className="cursor-pointer">
+                <HelpCircle className="mr-2 h-4 w-4" />
+                <span>Support & Helpdesk</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="text-red-600 dark:text-red-400 cursor-pointer">
