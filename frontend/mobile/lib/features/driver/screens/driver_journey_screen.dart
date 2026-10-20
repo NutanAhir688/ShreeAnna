@@ -31,6 +31,14 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
   RegisteredDriver? _selectedDriver;
   DriverDispatchModel? _activeDispatch;
 
+  List<DriverDispatchModel> _activeDispatches = [];
+  List<DriverDispatchModel> _historyDispatches = [];
+
+  List<Map<String, dynamic>> _assignedCustomerOrders = [];
+  List<Map<String, dynamic>> _historyCustomerOrders = [];
+
+  int _selectedTab = 0; // 0: Assigned & Active, 1: Delivery History
+
   DriverLocationPublisher? _locationPublisher;
   bool _isTracking = false;
   bool _isStartingTracking = false;
@@ -40,7 +48,6 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
   final TextEditingController _otpController = TextEditingController();
   final TextEditingController _orderOtpController = TextEditingController();
   bool _isVerifyingOrderOtp = false;
-  Map<String, dynamic>? _selectedCustomerOrder;
 
   @override
   void initState() {
@@ -72,24 +79,79 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
       final phoneToQuery = selected?.phone ?? widget.initialDriverPhone ?? '9876543210';
       final dispatches = await _driverApi.getDriverJourneys(phoneToQuery);
 
+      // Separate dispatches into active and history
+      final activeList = dispatches.where((d) {
+        final s = d.status.toUpperCase();
+        return s == 'IN_TRANSIT' || s == 'VEHICLE_ASSIGNED' || s == 'SCHEDULED';
+      }).toList();
+
+      final historyList = dispatches.where((d) {
+        final s = d.status.toUpperCase();
+        return s == 'DELIVERED' || s == 'COMPLETED' || s == 'ABORTED';
+      }).toList();
+
+      // Only assign active dispatch if activeList has one; strictly null if all are completed
       DriverDispatchModel? active;
-      if (dispatches.isNotEmpty) {
+      if (activeList.isNotEmpty) {
         try {
-          active = dispatches.firstWhere(
-            (d) => d.status.toUpperCase() == 'IN_TRANSIT' ||
-                   d.status.toUpperCase() == 'VEHICLE_ASSIGNED' ||
-                   d.status.toUpperCase() == 'SCHEDULED',
-          );
+          active = activeList.firstWhere((d) => d.status.toUpperCase() == 'IN_TRANSIT');
         } catch (_) {
-          active = dispatches.first;
+          active = activeList.first;
         }
+      } else {
+        active = null;
       }
+
+      // Fetch customer orders
+      final allOrders = await _driverApi.getCustomerOrders();
+
+      List<Map<String, dynamic>> driverAssignedOrders = [];
+      if (selected != null) {
+        driverAssignedOrders = allOrders.where((o) {
+          final s = (o['status'] ?? '').toString().toUpperCase();
+          if (s == 'DELIVERED' || s == 'COMPLETED' || s == 'CANCELLED') return false;
+          final orderDriverPhone = (o['driverPhone'] ?? '').toString();
+          final orderDriverId = (o['assignedDriverId'] ?? '').toString();
+          return (orderDriverPhone.isNotEmpty && orderDriverPhone == selected!.phone) ||
+                 (orderDriverId.isNotEmpty && orderDriverId == selected!.id);
+        }).toList();
+      }
+
+      final effectiveAssignedOrders = driverAssignedOrders.isNotEmpty
+          ? driverAssignedOrders
+          : allOrders.where((o) {
+              final s = (o['status'] ?? '').toString().toUpperCase();
+              return s != 'DELIVERED' && s != 'COMPLETED' && s != 'CANCELLED';
+            }).toList();
+
+      List<Map<String, dynamic>> driverHistoryOrders = [];
+      if (selected != null) {
+        driverHistoryOrders = allOrders.where((o) {
+          final s = (o['status'] ?? '').toString().toUpperCase();
+          if (s != 'DELIVERED' && s != 'COMPLETED') return false;
+          final orderDriverPhone = (o['driverPhone'] ?? '').toString();
+          final orderDriverId = (o['assignedDriverId'] ?? '').toString();
+          return (orderDriverPhone.isNotEmpty && orderDriverPhone == selected!.phone) ||
+                 (orderDriverId.isNotEmpty && orderDriverId == selected!.id);
+        }).toList();
+      }
+
+      final effectiveHistoryOrders = driverHistoryOrders.isNotEmpty
+          ? driverHistoryOrders
+          : allOrders.where((o) {
+              final s = (o['status'] ?? '').toString().toUpperCase();
+              return s == 'DELIVERED' || s == 'COMPLETED';
+            }).toList();
 
       if (mounted) {
         setState(() {
           _drivers = driversList;
           _selectedDriver = selected;
           _activeDispatch = active;
+          _activeDispatches = activeList;
+          _historyDispatches = historyList;
+          _assignedCustomerOrders = effectiveAssignedOrders;
+          _historyCustomerOrders = effectiveHistoryOrders;
           _isLoading = false;
         });
       }
@@ -226,6 +288,32 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
     }
   }
 
+  Future<void> _openGoogleMapsForLocation(double? lat, double? lng, String address) async {
+    final hasCoords = lat != null && lng != null && lat != 0 && lng != 0;
+    final urlString = hasCoords
+        ? 'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving'
+        : 'https://www.google.com/maps/dir/?api=1&destination=${Uri.encodeComponent(address)}&travelmode=driving';
+    final Uri uri = Uri.parse(urlString);
+    try {
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+    } catch (e) {
+      debugPrint('Error launching map: $e');
+    }
+  }
+
+  Future<void> _callPhone(String phone) async {
+    final cleanPhone = phone.replaceAll(RegExp(r'[^0-9+]'), '');
+    final Uri uri = Uri.parse('tel:$cleanPhone');
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      debugPrint('Error calling phone: $e');
+    }
+  }
+
   Future<void> _handleDriverChange(RegisteredDriver driver) async {
     if (_isTracking) {
       await _stopTracking();
@@ -240,21 +328,68 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
 
     try {
       final dispatches = await _driverApi.getDriverJourneys(driver.phone);
+      final activeList = dispatches.where((d) {
+        final s = d.status.toUpperCase();
+        return s == 'IN_TRANSIT' || s == 'VEHICLE_ASSIGNED' || s == 'SCHEDULED';
+      }).toList();
+
+      final historyList = dispatches.where((d) {
+        final s = d.status.toUpperCase();
+        return s == 'DELIVERED' || s == 'COMPLETED' || s == 'ABORTED';
+      }).toList();
+
       DriverDispatchModel? active;
-      if (dispatches.isNotEmpty) {
+      if (activeList.isNotEmpty) {
         try {
-          active = dispatches.firstWhere(
-            (d) => d.status.toUpperCase() == 'IN_TRANSIT' ||
-                   d.status.toUpperCase() == 'VEHICLE_ASSIGNED' ||
-                   d.status.toUpperCase() == 'SCHEDULED',
-          );
+          active = activeList.firstWhere((d) => d.status.toUpperCase() == 'IN_TRANSIT');
         } catch (_) {
-          active = dispatches.first;
+          active = activeList.first;
         }
+      } else {
+        active = null;
       }
+
+      final allOrders = await _driverApi.getCustomerOrders();
+
+      List<Map<String, dynamic>> driverAssignedOrders = allOrders.where((o) {
+        final s = (o['status'] ?? '').toString().toUpperCase();
+        if (s == 'DELIVERED' || s == 'COMPLETED' || s == 'CANCELLED') return false;
+        final orderDriverPhone = (o['driverPhone'] ?? '').toString();
+        final orderDriverId = (o['assignedDriverId'] ?? '').toString();
+        return (orderDriverPhone.isNotEmpty && orderDriverPhone == driver.phone) ||
+               (orderDriverId.isNotEmpty && orderDriverId == driver.id);
+      }).toList();
+
+      final effectiveAssignedOrders = driverAssignedOrders.isNotEmpty
+          ? driverAssignedOrders
+          : allOrders.where((o) {
+              final s = (o['status'] ?? '').toString().toUpperCase();
+              return s != 'DELIVERED' && s != 'COMPLETED' && s != 'CANCELLED';
+            }).toList();
+
+      List<Map<String, dynamic>> driverHistoryOrders = allOrders.where((o) {
+        final s = (o['status'] ?? '').toString().toUpperCase();
+        if (s != 'DELIVERED' && s != 'COMPLETED') return false;
+        final orderDriverPhone = (o['driverPhone'] ?? '').toString();
+        final orderDriverId = (o['assignedDriverId'] ?? '').toString();
+        return (orderDriverPhone.isNotEmpty && orderDriverPhone == driver.phone) ||
+               (orderDriverId.isNotEmpty && orderDriverId == driver.id);
+      }).toList();
+
+      final effectiveHistoryOrders = driverHistoryOrders.isNotEmpty
+          ? driverHistoryOrders
+          : allOrders.where((o) {
+              final s = (o['status'] ?? '').toString().toUpperCase();
+              return s == 'DELIVERED' || s == 'COMPLETED';
+            }).toList();
+
       if (mounted) {
         setState(() {
           _activeDispatch = active;
+          _activeDispatches = activeList;
+          _historyDispatches = historyList;
+          _assignedCustomerOrders = effectiveAssignedOrders;
+          _historyCustomerOrders = effectiveHistoryOrders;
           _isLoading = false;
         });
       }
@@ -265,7 +400,9 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
     }
   }
 
-  void _showPickupCodeModal() {
+  void _showPickupCodeModal([DriverDispatchModel? targetDispatch]) {
+    final dispatch = targetDispatch ?? _activeDispatch;
+    if (dispatch == null) return;
     _otpController.clear();
     showModalBottomSheet(
       context: context,
@@ -312,7 +449,7 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'Ask farmer (${_activeDispatch?.farmerOrProcessorName ?? 'Farmer'}) for the 4-digit verification code to confirm pickup.',
+                    'Ask farmer (${dispatch.farmerOrProcessorName}) for the 4-digit verification code to confirm pickup.',
                     style: const TextStyle(fontSize: 12, color: Color(0xFF596159)),
                   ),
                   const SizedBox(height: 15),
@@ -387,22 +524,21 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
                               final messenger = ScaffoldMessenger.of(this.context);
                               setModalState(() => _isVerifying = true);
                               try {
-                                if (_activeDispatch != null) {
-                                  final updated = await _driverApi.verifyPickup(_activeDispatch!.id, code);
-                                  if (mounted) {
-                                    setState(() {
-                                      _activeDispatch = updated;
-                                    });
-                                  }
-                                  nav.pop();
-                                  messenger.showSnackBar(
-                                    const SnackBar(
-                                      backgroundColor: Color(0xFF087F23),
-                                      content: Text('Pickup Verified! Route set to Warehouse Destination.'),
-                                    ),
-                                  );
-                                  _startTracking();
+                                final updated = await _driverApi.verifyPickup(dispatch.id, code);
+                                if (mounted) {
+                                  setState(() {
+                                    _activeDispatch = updated;
+                                  });
                                 }
+                                nav.pop();
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    backgroundColor: Color(0xFF087F23),
+                                    content: Text('Pickup Verified! Route set to Warehouse Destination.'),
+                                  ),
+                                );
+                                await _loadDriverData();
+                                _startTracking();
                               } catch (e) {
                                 messenger.showSnackBar(
                                   SnackBar(
@@ -533,9 +669,9 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
                                 }
                                 nav.pop();
                                 messenger.showSnackBar(
-                                  const SnackBar(
-                                    backgroundColor: Color(0xFF2E7D32),
-                                    content: Text('Ride completed! Delivery successfully confirmed.'),
+                                  SnackBar(
+                                    backgroundColor: const Color(0xFF2E7D32),
+                                    content: Text('Shipment #${_activeDispatch?.dispatchCode ?? ''} delivered! Moved to History. Assigned tasks shown below.'),
                                   ),
                                 );
                                 await _loadDriverData();
@@ -576,314 +712,9 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
     );
   }
 
-  Future<void> _verifyCustomerOrderDelivery() async {
-    final otp = _orderOtpController.text.trim();
-    if (otp.length != 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter the 4-digit OTP provided by customer.')),
-      );
-      return;
-    }
 
-    setState(() => _isVerifyingOrderOtp = true);
-    final messenger = ScaffoldMessenger.of(context);
 
-    try {
-      String? orderId = _selectedCustomerOrder?['id']?.toString();
 
-      // If no order specifically chosen, look up the latest active order
-      if (orderId == null) {
-        final orders = await _driverApi.getCustomerOrders();
-        final pending = orders.where((o) => (o['status'] ?? '').toString().toUpperCase() != 'DELIVERED').toList();
-        if (pending.isNotEmpty) {
-          orderId = pending.first['id']?.toString();
-          _selectedCustomerOrder = pending.first;
-        } else if (orders.isNotEmpty) {
-          orderId = orders.first['id']?.toString();
-          _selectedCustomerOrder = orders.first;
-        }
-      }
-
-      if (orderId == null) {
-        throw Exception('No active customer order found to verify delivery for.');
-      }
-
-      await _driverApi.confirmCustomerOrderDelivery(orderId, otp);
-
-      _orderOtpController.clear();
-      messenger.showSnackBar(
-        SnackBar(
-          backgroundColor: const Color(0xFF2E7D32),
-          content: Text('Delivery confirmed! Handshake for Order ${_selectedCustomerOrder?['orderNumber'] ?? ''} completed successfully.'),
-        ),
-      );
-      await _loadDriverData();
-    } catch (e) {
-      messenger.showSnackBar(
-        SnackBar(
-          backgroundColor: Colors.red,
-          content: Text(e.toString().replaceAll('Exception: ', '')),
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isVerifyingOrderOtp = false);
-      }
-    }
-  }
-
-  void _showAssignedCustomerOrdersModal() async {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return FutureBuilder<List<Map<String, dynamic>>>(
-          future: _driverApi.getCustomerOrders(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const SizedBox(
-                height: 250,
-                child: Center(child: CircularProgressIndicator(color: ShreeAnnaTheme.primaryGreen)),
-              );
-            }
-            final orders = snapshot.data ?? [];
-            return Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Assigned Customer Orders',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF202420)),
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        icon: const Icon(Icons.close),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  if (orders.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 24),
-                      child: Center(child: Text('No customer orders found.')),
-                    )
-                  else
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 320),
-                      child: ListView.separated(
-                        shrinkWrap: true,
-                        itemCount: orders.length,
-                        separatorBuilder: (context, index) => const Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final o = orders[index];
-                          final orderNum = o['orderNumber'] ?? 'Order';
-                          final custName = o['customerName'] ?? 'Customer';
-                          final addr = o['shippingAddress'] ?? '';
-                          final isDeliv = (o['status'] ?? '').toString().toUpperCase() == 'DELIVERED';
-                          final isSelected = _selectedCustomerOrder?['id'] == o['id'];
-
-                          return ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                            leading: Container(
-                              width: 38,
-                              height: 38,
-                              decoration: BoxDecoration(
-                                color: isDeliv ? const Color(0xFFE8F5E9) : const Color(0xFFDBEAFE),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                isDeliv ? Icons.check_circle : Icons.shopping_bag_outlined,
-                                color: isDeliv ? const Color(0xFF2E7D32) : const Color(0xFF2563EB),
-                                size: 20,
-                              ),
-                            ),
-                            title: Text(
-                              '$orderNum • $custName',
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Text(
-                              addr,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                            ),
-                            trailing: isDeliv
-                                ? const Text('DELIVERED', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF087F23)))
-                                : isSelected
-                                    ? const Icon(Icons.radio_button_checked, color: Color(0xFF2563EB))
-                                    : const Icon(Icons.radio_button_off, color: Color(0xFF94A3B8)),
-                            onTap: () {
-                              setState(() => _selectedCustomerOrder = o);
-                              Navigator.pop(ctx);
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildDoorstepOrderHandoverCard() {
-    final activeOrderNum = _selectedCustomerOrder?['orderNumber'] ?? 'Active Customer Order';
-    final custName = _selectedCustomerOrder?['customerName'] ?? 'Doorstep Customer';
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0F7FF),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFBAE6FD)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: const [
-                  Icon(Icons.local_shipping, color: Color(0xFF2563EB), size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'DRIVER HANDHELD DEVICE',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.8,
-                      color: Color(0xFF1E3A8A),
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFDBEAFE),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  _selectedDriver?.name ?? 'Mahesh Naik',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1D4ED8),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Driver requests OTP from customer at doorstep ($activeOrderNum - $custName):',
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF1E40AF),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                flex: 4,
-                child: TextField(
-                  controller: _orderOtpController,
-                  keyboardType: TextInputType.number,
-                  maxLength: 4,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 6,
-                    color: Color(0xFF1E3A8A),
-                  ),
-                  decoration: InputDecoration(
-                    hintText: '••••',
-                    counterText: '',
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFF93C5FD)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                flex: 6,
-                child: SizedBox(
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: _isVerifyingOrderOtp ? null : _verifyCustomerOrderDelivery,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF3B82F6),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    child: _isVerifyingOrderOtp
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Text(
-                            'Driver: Confirm Delivery',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: _showAssignedCustomerOrdersModal,
-              icon: const Icon(Icons.list_alt, size: 14, color: Color(0xFF2563EB)),
-              label: Text(
-                _selectedCustomerOrder == null ? 'Select Active Customer Order' : 'Order: ${_selectedCustomerOrder!['orderNumber']}',
-                style: const TextStyle(fontSize: 11, color: Color(0xFF2563EB), fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _showAbortRideModal() {
     if (_activeDispatch == null) return;
@@ -1155,21 +986,1119 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildDriverProfileCard(),
+                  const SizedBox(height: 12),
+                  _buildTabSwitcher(),
                   const SizedBox(height: 16),
-                  _buildDoorstepOrderHandoverCard(),
-                  const SizedBox(height: 16),
-                  if (_activeDispatch == null)
-                    _buildNoJourneyCard()
-                  else ...[
-                    _buildMapCard(),
-                    const SizedBox(height: 16),
-                    _buildJourneyDetailsCard(),
-                    const SizedBox(height: 16),
-                    _buildActionCard(),
-                  ],
+                  if (_selectedTab == 0)
+                    _buildActiveAndAssignedView()
+                  else
+                    _buildDeliveryHistoryView(),
                 ],
               ),
             ),
+    );
+  }
+
+  Widget _buildTabSwitcher() {
+    final activeCount = _assignedCustomerOrders.length + _activeDispatches.length;
+    final historyCount = _historyCustomerOrders.length + _historyDispatches.length;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFD5DFD0)),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          Expanded(
+            child: InkWell(
+              onTap: () => setState(() => _selectedTab = 0),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: _selectedTab == 0 ? ShreeAnnaTheme.primaryGreen : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.assignment_outlined,
+                      size: 16,
+                      color: _selectedTab == 0 ? Colors.white : const Color(0xFF596159),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Assigned & Active',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: _selectedTab == 0 ? Colors.white : const Color(0xFF596159),
+                      ),
+                    ),
+                    if (activeCount > 0) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: _selectedTab == 0 ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFE8F5E9),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '$activeCount',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: _selectedTab == 0 ? Colors.white : ShreeAnnaTheme.primaryGreen,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: InkWell(
+              onTap: () => setState(() => _selectedTab = 1),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: _selectedTab == 1 ? ShreeAnnaTheme.primaryGreen : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.history,
+                      size: 16,
+                      color: _selectedTab == 1 ? Colors.white : const Color(0xFF596159),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Delivery History',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: _selectedTab == 1 ? Colors.white : const Color(0xFF596159),
+                      ),
+                    ),
+                    if (historyCount > 0) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: _selectedTab == 1 ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFE8F5E9),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '$historyCount',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: _selectedTab == 1 ? Colors.white : ShreeAnnaTheme.primaryGreen,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActiveAndAssignedView() {
+    final pendingPickups = _activeDispatches.where((d) => d.status.toUpperCase() != 'IN_TRANSIT').toList();
+    final hasActiveTransit = _activeDispatch != null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (hasActiveTransit) ...[
+          _buildActiveJourneyHeader(),
+          const SizedBox(height: 12),
+          _buildMapCard(),
+          const SizedBox(height: 16),
+          _buildJourneyDetailsCard(),
+          const SizedBox(height: 16),
+          _buildActionCard(),
+          const SizedBox(height: 24),
+        ],
+        _buildAssignedCustomerDeliveriesSection(),
+        const SizedBox(height: 20),
+        if (pendingPickups.isNotEmpty) ...[
+          _buildAssignedFarmerPickupsSection(pendingPickups),
+          const SizedBox(height: 20),
+        ],
+        if (!hasActiveTransit && _assignedCustomerOrders.isEmpty && pendingPickups.isEmpty)
+          _buildNoJourneyCard(),
+      ],
+    );
+  }
+
+  Widget _buildActiveJourneyHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.near_me, color: Color(0xFF38BDF8), size: 16),
+              SizedBox(width: 8),
+              Text(
+                'ACTIVE TRANSIT IN PROGRESS',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          Text(
+            '#${_activeDispatch?.dispatchCode ?? ''}',
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF38BDF8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAssignedCustomerDeliveriesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.local_shipping_outlined, color: Color(0xFF2563EB), size: 18),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Assigned Customer Deliveries',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+              ],
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: _assignedCustomerOrders.isNotEmpty ? const Color(0xFFDBEAFE) : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '${_assignedCustomerOrders.length} Pending',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: _assignedCustomerOrders.isNotEmpty ? const Color(0xFF1D4ED8) : const Color(0xFF64748B),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        if (_assignedCustomerOrders.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Row(
+              children: const [
+                Icon(Icons.check_circle_outline, color: Color(0xFF10B981), size: 20),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'No pending customer doorstep deliveries right now.',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          ..._assignedCustomerOrders.map((o) => _buildCustomerOrderCard(o)),
+      ],
+    );
+  }
+
+  Widget _buildCustomerOrderCard(Map<String, dynamic> o) {
+    final orderNum = o['orderNumber'] ?? 'Order';
+    final custName = o['customerName'] ?? 'Customer';
+    final custPhone = (o['customerPhone'] ?? '').toString();
+    final address = o['shippingAddress'] ?? '';
+    final city = o['city'] ?? '';
+    final fullAddress = city.isNotEmpty ? '$address, $city' : address;
+    final total = o['totalAmount'] ?? o['subtotal'] ?? 0;
+    final double? custLat = (o['customerLatitude'] as num?)?.toDouble();
+    final double? custLng = (o['customerLongitude'] as num?)?.toDouble();
+    final items = (o['items'] as List<dynamic>?) ?? [];
+    final itemsSummary = items.map((i) => '${i['quantity']}x ${i['productTitle']}').join(', ');
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFBFDBFE)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDBEAFE),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text(
+                      'DOORSTEP DELIVERY',
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF1E40AF)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    orderNum,
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                  ),
+                ],
+              ),
+              Text(
+                '₹$total',
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF166534)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.person_pin_circle_outlined, size: 18, color: Color(0xFF2563EB)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      custName,
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                    ),
+                    if (custPhone.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Text(
+                            custPhone,
+                            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                          ),
+                          const SizedBox(width: 8),
+                          InkWell(
+                            onTap: () => _callPhone(custPhone),
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.call, size: 12, color: Color(0xFF2563EB)),
+                                  SizedBox(width: 2),
+                                  Text(
+                                    'Call',
+                                    style: TextStyle(fontSize: 11, color: Color(0xFF2563EB), fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.location_on_outlined, size: 18, color: Color(0xFF64748B)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  fullAddress,
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF334155)),
+                ),
+              ),
+            ],
+          ),
+          if (itemsSummary.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.shopping_bag_outlined, size: 18, color: Color(0xFF64748B)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    itemsSummary,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11, color: Color(0xFF475569)),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                flex: 4,
+                child: OutlinedButton.icon(
+                  onPressed: () => _openGoogleMapsForLocation(custLat, custLng, fullAddress),
+                  icon: const Icon(Icons.directions, size: 16, color: Color(0xFF2563EB)),
+                  label: const Text(
+                    'NAVIGATE',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    side: const BorderSide(color: Color(0xFF93C5FD)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                flex: 6,
+                child: ElevatedButton.icon(
+                  onPressed: () => _showOrderDeliveryModal(o),
+                  icon: const Icon(Icons.verified_outlined, size: 16, color: Colors.white),
+                  label: const Text(
+                    'HANDOVER (OTP)',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    backgroundColor: const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                    elevation: 1,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showOrderDeliveryModal(Map<String, dynamic> order) {
+    _orderOtpController.clear();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final orderNum = order['orderNumber'] ?? 'Order';
+            final custName = order['customerName'] ?? 'Customer';
+            final addr = order['shippingAddress'] ?? '';
+
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                top: 20,
+                left: 20,
+                right: 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(Icons.verified_outlined, color: Color(0xFF2563EB), size: 24),
+                          SizedBox(width: 8),
+                          Text(
+                            'Customer Handover OTP',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF202420)),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Ask recipient $custName for the 4-digit delivery PIN to complete handover for $orderNum at $addr.',
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF596159)),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _orderOtpController,
+                    keyboardType: TextInputType.number,
+                    maxLength: 4,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 8),
+                    decoration: InputDecoration(
+                      hintText: '• • • •',
+                      counterText: '',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: _isVerifyingOrderOtp
+                          ? null
+                          : () async {
+                              final otp = _orderOtpController.text.trim();
+                              if (otp.length != 4) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Please enter the 4-digit OTP provided by customer.')),
+                                );
+                                return;
+                              }
+                              setModalState(() => _isVerifyingOrderOtp = true);
+                              final nav = Navigator.of(ctx);
+                              final messenger = ScaffoldMessenger.of(this.context);
+                              try {
+                                await _driverApi.confirmCustomerOrderDelivery(order['id'].toString(), otp);
+                                _orderOtpController.clear();
+                                nav.pop();
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    backgroundColor: const Color(0xFF2E7D32),
+                                    content: Text('Delivery confirmed! Handshake for Order $orderNum completed. Moved to history.'),
+                                  ),
+                                );
+                                await _loadDriverData();
+                              } catch (e) {
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    backgroundColor: Colors.red,
+                                    content: Text(e.toString().replaceAll('Exception: ', '')),
+                                  ),
+                                );
+                              } finally {
+                                setModalState(() => _isVerifyingOrderOtp = false);
+                              }
+                            },
+                      icon: _isVerifyingOrderOtp
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Icon(Icons.check_circle_outline, color: Colors.white),
+                      label: Text(
+                        _isVerifyingOrderOtp ? 'VERIFYING...' : 'CONFIRM DELIVERY & HANDOVER',
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2563EB),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildAssignedFarmerPickupsSection(List<DriverDispatchModel> pickups) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF3C7),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.agriculture_outlined, color: Color(0xFFD97706), size: 18),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Assigned Procurement Pickups',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+              ],
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF3C7),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '${pickups.length} Scheduled',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFB45309),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        ...pickups.map((p) => _buildFarmerPickupCard(p)),
+      ],
+    );
+  }
+
+  Widget _buildFarmerPickupCard(DriverDispatchModel p) {
+    final isSelectedActive = _activeDispatch?.id == p.id;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isSelectedActive ? ShreeAnnaTheme.primaryGreen : const Color(0xFFFDE68A),
+          width: isSelectedActive ? 2 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.amber.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF3C7),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text(
+                      'FARMER PICKUP',
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF92400E)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '#${p.dispatchCode}',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  '${p.totalQuantityKg.toStringAsFixed(0)} kg',
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF166534)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.person_outline, size: 18, color: Color(0xFFD97706)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '${p.farmerOrProcessorName} • ${p.milletType}',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.location_on_outlined, size: 18, color: Color(0xFF64748B)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  p.sourceAddress,
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF334155)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.warehouse_outlined, size: 18, color: Color(0xFF64748B)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  p.destinationAddress,
+                  style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                flex: 4,
+                child: OutlinedButton.icon(
+                  onPressed: () => _openGoogleMapsForLocation(p.pickupLatitude, p.pickupLongitude, p.sourceAddress),
+                  icon: const Icon(Icons.directions, size: 16, color: Color(0xFFD97706)),
+                  label: const Text(
+                    'NAVIGATE',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFD97706)),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    side: const BorderSide(color: Color(0xFFFCD34D)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                flex: 6,
+                child: ElevatedButton.icon(
+                  onPressed: () => _showPickupCodeModal(p),
+                  icon: const Icon(Icons.pin_outlined, size: 16, color: Colors.white),
+                  label: const Text(
+                    'ENTER PICKUP CODE',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    backgroundColor: ShreeAnnaTheme.primaryGreen,
+                    foregroundColor: Colors.white,
+                    elevation: 1,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeliveryHistoryView() {
+    final totalCount = _historyDispatches.length + _historyCustomerOrders.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E9),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.check_circle_outline, color: Color(0xFF16A34A), size: 18),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Delivery History',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+              ],
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '$totalCount Completed',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF166534),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (totalCount == 0)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              children: const [
+                Icon(Icons.history_toggle_off_rounded, size: 40, color: Color(0xFF94A3B8)),
+                SizedBox(height: 10),
+                Text(
+                  'No Delivery History Yet',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Completed warehouse shipments and customer doorstep deliveries will appear here.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                ),
+              ],
+            ),
+          )
+        else ...[
+          if (_historyDispatches.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(left: 2, bottom: 8),
+              child: Text(
+                'Warehouse Shipments (${_historyDispatches.length})',
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
+              ),
+            ),
+            ..._historyDispatches.map((d) => _buildHistoryDispatchCard(d)),
+            const SizedBox(height: 16),
+          ],
+          if (_historyCustomerOrders.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(left: 2, bottom: 8),
+              child: Text(
+                'Customer Doorstep Deliveries (${_historyCustomerOrders.length})',
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
+              ),
+            ),
+            ..._historyCustomerOrders.map((o) => _buildHistoryCustomerOrderCard(o)),
+          ],
+        ],
+      ],
+    );
+  }
+
+  Widget _buildHistoryDispatchCard(DriverDispatchModel d) {
+    final statusUpper = d.status.toUpperCase();
+    final isDelivered = statusUpper == 'DELIVERED' || statusUpper == 'COMPLETED';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: isDelivered ? const Color(0xFFBBF7D0) : const Color(0xFFFECACA)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: isDelivered ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      isDelivered ? 'DELIVERED' : statusUpper,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: isDelivered ? const Color(0xFF166534) : const Color(0xFFC62828),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '#${d.dispatchCode}',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                  ),
+                ],
+              ),
+              Text(
+                '${d.finalReceivedQuantityKg ?? d.totalQuantityKg} kg',
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF166534)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${d.farmerOrProcessorName} • ${d.milletType}',
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.location_on_outlined, size: 16, color: Color(0xFF64748B)),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'From: ${d.sourceAddress}',
+                  style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.warehouse_outlined, size: 16, color: Color(0xFF16A34A)),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Delivered To: ${d.destinationAddress}',
+                  style: const TextStyle(fontSize: 11, color: Color(0xFF15803D), fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.verified, size: 12, color: Color(0xFF16A34A)),
+                    SizedBox(width: 4),
+                    Text('Warehouse Handover Verified', style: TextStyle(fontSize: 10, color: Color(0xFF475569))),
+                  ],
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () => _openGoogleMapsForLocation(d.destinationLatitude, d.destinationLongitude, d.destinationAddress),
+                icon: const Icon(Icons.map_outlined, size: 14, color: Color(0xFF16A34A)),
+                label: const Text('View Map', style: TextStyle(fontSize: 11, color: Color(0xFF16A34A), fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistoryCustomerOrderCard(Map<String, dynamic> o) {
+    final orderNum = o['orderNumber'] ?? 'Order';
+    final custName = o['customerName'] ?? 'Customer';
+    final address = o['shippingAddress'] ?? '';
+    final total = o['totalAmount'] ?? o['subtotal'] ?? 0;
+    final items = (o['items'] as List<dynamic>?) ?? [];
+    final itemsSummary = items.map((i) => '${i['quantity']}x ${i['productTitle']}').join(', ');
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFBBF7D0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F5E9),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text(
+                      'DELIVERED',
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF166534)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    orderNum,
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                  ),
+                ],
+              ),
+              Text(
+                '₹$total',
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF166534)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Recipient: $custName',
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.home_outlined, size: 16, color: Color(0xFF64748B)),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  address,
+                  style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                ),
+              ),
+            ],
+          ),
+          if (itemsSummary.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.shopping_bag_outlined, size: 16, color: Color(0xFF64748B)),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    itemsSummary,
+                    style: const TextStyle(fontSize: 11, color: Color(0xFF475569)),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.check_circle, size: 12, color: Color(0xFF16A34A)),
+                SizedBox(width: 4),
+                Text('Handshake Verified via Customer OTP', style: TextStyle(fontSize: 10, color: Color(0xFF475569))),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1252,28 +2181,59 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
   }
 
   Widget _buildNoJourneyCard() {
+    final historyCount = _historyDispatches.length + _historyCustomerOrders.length;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFD5DFD0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
-        children: const [
-          Icon(Icons.check_circle_outline, size: 48, color: ShreeAnnaTheme.primaryGreen),
-          SizedBox(height: 12),
-          Text(
-            'No Active Journey Assigned',
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(
+              color: Color(0xFFE8F5E9),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.task_alt, size: 36, color: ShreeAnnaTheme.primaryGreen),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'All Deliveries & Pickups Completed',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF202420)),
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
-            'All dispatches for your vehicle are currently completed.',
-            style: TextStyle(fontSize: 12, color: Color(0xFF596159)),
+            'Vehicle ${_selectedDriver?.vehicleNumber ?? _activeDispatch?.vehicleNumber ?? ''} is on duty and ready for new assignments.',
+            style: const TextStyle(fontSize: 12, color: Color(0xFF596159)),
             textAlign: TextAlign.center,
           ),
+          if (historyCount > 0) ...[
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () => setState(() => _selectedTab = 1),
+              icon: const Icon(Icons.history, size: 16, color: ShreeAnnaTheme.primaryGreen),
+              label: Text(
+                'VIEW DELIVERY HISTORY ($historyCount)',
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: ShreeAnnaTheme.primaryGreen),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: ShreeAnnaTheme.primaryGreen),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1454,6 +2414,30 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
                 ),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Color(0xFF86EFAC), width: 1.5),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _activeDispatch = null;
+                    _selectedTab = 0;
+                  });
+                  _loadDriverData();
+                },
+                icon: const Icon(Icons.assignment_turned_in_outlined, color: Colors.white, size: 18),
+                label: const Text(
+                  'MOVE TO HISTORY & VIEW ASSIGNED TASKS',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ShreeAnnaTheme.primaryGreen,
+                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
               ),
