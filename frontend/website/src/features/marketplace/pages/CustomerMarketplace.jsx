@@ -1146,16 +1146,13 @@ export default function CustomerMarketplace() {
                               </span>
                             </div>
 
-                            {/* OTP Simulation button for demo */}
-                            <Button
-                              size="sm"
-                              onClick={() => handleVerifyDeliveryOtp(order.id, order.deliveryOtp)}
-                              disabled={otpVerifying}
-                              className="w-full bg-[#1B4324] hover:bg-[#14341C] text-white text-xs h-8 rounded-lg cursor-pointer"
-                            >
-                              <KeyRound className="w-3.5 h-3.5 mr-1.5" />
-                              <span>{otpVerifying ? "Verifying..." : "Confirm Delivery (Enter OTP)"}</span>
-                            </Button>
+                            <div className="text-[11px] text-slate-500 bg-slate-50 p-2 rounded-lg border border-slate-200/80 flex items-center justify-between">
+                              <span className="flex items-center gap-1.5 text-slate-700 font-medium">
+                                <Truck className="w-3.5 h-3.5 text-emerald-700" />
+                                <span>Driver verifies OTP at doorstep</span>
+                              </span>
+                              <span className="text-[10px] text-emerald-700 font-bold">Awaiting Handover</span>
+                            </div>
                           </div>
                         )}
                       </div>
