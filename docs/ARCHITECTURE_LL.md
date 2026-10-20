@@ -345,6 +345,95 @@ sequenceDiagram
 
 ---
 
+### 2.8 Akka.NET Actor-Based Support Chat Lifecycle
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Farmer as Farmer (Mobile / Web)
+    participant ChatCtrl as SupportChatController (.NET)
+    participant ChatSvc as SupportChatService
+    participant ActorSystem as Akka ActorSystem
+    participant ChatMgr as ChatManagerActor
+    participant FarmerActor as UserSessionActor (Farmer)
+    participant InspectorActor as UserSessionActor (Inspector)
+    actor Inspector as Quality Inspector (Web Desk)
+
+    Farmer->>ChatCtrl: POST /api/support/chat/connect { userId, role: "Farmer", stage: "Inspection", lotId }
+    ChatCtrl->>ChatSvc: ConnectSessionAsync(request)
+    ChatSvc->>ChatMgr: ConnectUserSession(userId, role, metadata)
+    ChatMgr->>ActorSystem: GetOrCreate child UserSessionActor(userId)
+    ChatMgr-->>ChatSvc: Session Initialized
+    ChatSvc-->>ChatCtrl: 200 OK (List<ChatMessageDto> history)
+    ChatCtrl-->>Farmer: Connected to active support session
+
+    Farmer->>ChatCtrl: POST /api/support/chat/send { senderId, recipientId, content, stage: "Inspection" }
+    ChatCtrl->>ChatSvc: SendMessageAsync(request)
+    ChatSvc->>ChatMgr: RouteChatMessage(message)
+    ChatMgr->>FarmerActor: AppendMessage(message)
+    ChatMgr->>InspectorActor: DeliverMessage(message, increment unread)
+    InspectorActor-->>ChatMgr: Acknowledged
+    ChatSvc-->>ChatCtrl: 200 OK (Updated message thread)
+
+    Inspector->>ChatCtrl: GET /api/support/chat/sessions/active (4s Web Poll)
+    ChatCtrl->>ChatSvc: GetActiveSessionsAsync()
+    ChatSvc->>ChatMgr: QueryActiveSessions()
+    ChatMgr-->>ChatSvc: List<ChatSessionSummaryDto> (badges, lot codes, stage tags)
+    ChatSvc-->>ChatCtrl: 200 OK
+    ChatCtrl-->>Inspector: Render WhatsApp-style conversation list & chat stream
+```
+
+- **Impacted Files:**
+  - Mobile: `frontend/mobile/lib/features/support/screen/inspector_chat_screen.dart`, `lot_details_screen.dart`
+  - Web: `frontend/website/src/features/portal/pages/Support.jsx`, `frontend/website/src/services/api.js`
+  - Backend: `backend/Features/Support/Controllers/SupportChatController.cs`, `SupportChatService.cs`, `Actors/ChatManagerActor.cs`, `Actors/UserSessionActor.cs`, `Actors/SupportChatMessages.cs`
+- **DTOs & Models:** `ConnectSessionRequest`, `SendMessageRequest`, `ResetSessionRequest`, `ChatMessageDto`, `ChatSessionSummaryDto`
+
+---
+
+### 2.9 Customer Marketplace & E-Commerce Order Lifecycle
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Customer as Customer (Web Marketplace)
+    participant Catalog as LandingPage.jsx / Marketplace.jsx
+    participant Cart as CartDrawer (Slide-out)
+    participant OrdersCtrl as OrdersController (.NET)
+    participant OrderSvc as OrderService
+    participant DB as PostgreSQL (Orders, OrderItems, Products)
+    actor Driver as Delivery Driver
+
+    Customer->>Catalog: Clicks "Buy Now" on Millet Product
+    Catalog->>Cart: Directly adds product item without requiring pre-login modal
+    Customer->>Cart: Reviews items, inputs shipping details, clicks "Place Order"
+    Cart->>OrdersCtrl: POST /api/orders (CreateOrderRequest)
+    OrdersCtrl->>OrderSvc: CreateOrderAsync(request)
+    OrderSvc->>OrderSvc: Generate OrderNumber (ORD-YYYYMMDD-XXXX) & 6-digit DeliveryOtp
+    OrderSvc->>DB: Insert Order (Status: "Pending") + OrderItems
+    OrdersCtrl-->>Cart: 201 Created (OrderResponse with delivery details)
+
+    Note over OrdersCtrl,Driver: Driver Allocation & Dispatch
+    OrdersCtrl->>OrderSvc: POST /api/orders/{id}/assign-driver (AssignOrderDriverRequest)
+    OrderSvc->>DB: Update Order (AssignedDriverId, Status: "Shipped")
+
+    Note over Customer,Driver: Physical Delivery & OTP Handshake
+    Driver->>Customer: Arrives at address and requests 6-digit delivery OTP
+    Customer->>Driver: Provides OTP
+    Driver->>OrdersCtrl: POST /api/orders/{id}/confirm-delivery { otp }
+    OrdersCtrl->>OrderSvc: ConfirmDeliveryWithOtpAsync(id, otp)
+    OrderSvc->>DB: Verify OTP, mark Status: "Delivered", DeliveredAt: UtcNow
+    OrdersCtrl-->>Driver: 200 OK (Delivery Confirmed)
+```
+
+- **Impacted Files:**
+  - Web: `frontend/website/src/features/landing/pages/LandingPage.jsx`, `frontend/website/src/features/portal/pages/Orders.jsx`, `services/api.js`
+  - Backend: `backend/Features/Orders/Controllers/OrdersController.cs`, `OrderService.cs`, `DTOs/OrderDTOs.cs`, `Order.cs`, `OrderItem.cs`
+  - Database: `public."Orders"`, `public."OrderItems"`, `public."Products"`
+- **DTOs & Models:** `CreateOrderRequest`, `CreateOrderItemRequest`, `AssignOrderDriverRequest`, `ConfirmDeliveryOtpRequest`, `OrderResponse`, `OrderItemResponse`
+
+---
+
 ## 3. Database Schema & Entity Inventory
 
 All tables are defined in PostgreSQL with standard UTC timestamps and decimal precision constraints configured in `backend/Data/AppDbContext.cs`:
@@ -368,6 +457,9 @@ All tables are defined in PostgreSQL with standard UTC timestamps and decimal pr
 | `StockMovements` | `Id (UUID)` | `WarehouseId`, `BatchId`| — | `MovementType (Inward/Outward)`, `QuantityKg`, `Timestamp` |
 | `Settlements` | `Id (UUID)` | `LotId`, `FarmerId` | `SettlementNumber` | `TotalAmount`, `FpoMarginAmount`, `NetPayableToFarmer`, `Status`, `ShortUrl` |
 | `PurchaseRequests`| `Id (UUID)` | `BuyerId`, `LotId` | `RequestCode` | `RequestedQuantityKg`, `OfferedPricePerKg`, `Status` |
+| `Products` | `Id (UUID)` | — | `ProductCode` | `Title`, `Category`, `Price`, `AvailableQuantity`, `ProducerName`, `ImageUrl` |
+| `Orders` | `Id (UUID)` | `AssignedDriverId` | `OrderNumber` | `CustomerName`, `CustomerEmail`, `CustomerPhone`, `ShippingAddress`, `Status`, `DeliveryOtp`, `TotalAmount` |
+| `OrderItems` | `Id (UUID)` | `OrderId (UUID)` | — | `ProductId`, `ProductTitle`, `UnitPrice`, `Quantity`, `TotalPrice` |
 
 ---
 
@@ -377,6 +469,7 @@ All tables are defined in PostgreSQL with standard UTC timestamps and decimal pr
 | :--- | :--- | :--- | :--- | :--- |
 | `POST` | `/api/auth/login` | Anonymous | `AuthController` | `LoginRequest` → `LoginResponse` |
 | `POST` | `/api/auth/refresh` | Anonymous (Cookie) | `AuthController` | None → `LoginResponse` |
+| `POST` | `/api/auth/register-customer` | Anonymous | `AuthController` | `RegisterCustomerRequest` → `LoginResponse` |
 | `POST` | `/api/auth/farmer/send-otp` | Anonymous | `FarmerAuthController` | `SendOtpRequest` → Status |
 | `POST` | `/api/auth/farmer/verify-otp` | Anonymous | `FarmerAuthController` | `VerifyOtpRequest` → `LoginResponse` |
 | `GET` | `/api/farmers` | Authorized | `FarmersController` | None → `List<FarmerResponse>` |
@@ -391,6 +484,7 @@ All tables are defined in PostgreSQL with standard UTC timestamps and decimal pr
 | `POST` | `/api/quality/inspections` | QualityInspector | `QualityController` | `CreateInspectionRequest` → `InspectionResponse` |
 | `GET` | `/api/quality/certificates/verify/{no}` | Anonymous | `QualityController` | None → `QualityCertificateResponse` |
 | `POST` | `/api/dispatches` | FPO Officer | `LogisticsController` | `CreateDispatchRequest` → `DispatchResponse` |
+| `POST` | `/api/dispatches/{id}/assign-driver`| FPO Officer | `LogisticsController`| `AssignDriverRequest` → `DispatchResponse` |
 | `POST` | `/api/dispatches/{id}/verify-pickup`| Driver / Anonymous| `LogisticsController`| `VerifyPickupRequest` → `DispatchResponse` |
 | `POST` | `/api/lots/{lotId}/location` | Driver | `LotsController` | `RecordDriverLocationRequest` → Status |
 | `POST` | `/api/warehouses/receipts` | WarehouseManager | `WarehousesController` | `CreateWarehouseReceiptRequest` → Response |
@@ -398,3 +492,14 @@ All tables are defined in PostgreSQL with standard UTC timestamps and decimal pr
 | `POST` | `/api/settlements/{id}/pay` | FPO / Accountant | `SettlementsController` | `ProcessPaymentRequest` → `SettlementResponse` |
 | `GET` | `/api/reports/summary` | Authorized | `ReportsController` | None → `ReportsSummaryResponse` |
 | `GET` | `/api/reports/margin` | Authorized | `ReportsController` | None → `FpoMarginReportResponse` |
+| `GET` | `/api/marketplace/products` | Anonymous | `MarketplaceController`| None → `List<ProductResponse>` |
+| `POST` | `/api/orders` | Anonymous / Customer | `OrdersController` | `CreateOrderRequest` → `OrderResponse` |
+| `GET` | `/api/orders` | Anonymous / Customer | `OrdersController` | `?email=...` → `List<OrderResponse>` |
+| `GET` | `/api/orders/{id}` | Anonymous / Customer | `OrdersController` | None → `OrderResponse` |
+| `POST` | `/api/orders/{id}/assign-driver` | FPO / Logistics | `OrdersController` | `AssignOrderDriverRequest` → `OrderResponse` |
+| `POST` | `/api/orders/{id}/confirm-delivery`| Anonymous / Driver | `OrdersController` | `ConfirmDeliveryOtpRequest` → `OrderResponse` |
+| `POST` | `/api/support/chat/connect` | Authorized / Public | `SupportChatController`| `ConnectSessionRequest` → `List<ChatMessageDto>` |
+| `POST` | `/api/support/chat/send` | Authorized / Public | `SupportChatController`| `SendMessageRequest` → `List<ChatMessageDto>` |
+| `GET` | `/api/support/chat/sessions/{id}/messages`| Authorized / Public| `SupportChatController`| None → `List<ChatMessageDto>` |
+| `GET` | `/api/support/chat/sessions/active`| Authorized / Staff | `SupportChatController`| None → `List<ChatSessionSummaryDto>` |
+| `POST` | `/api/support/chat/reset` | Authorized / Public | `SupportChatController`| `ResetSessionRequest` → Status |
