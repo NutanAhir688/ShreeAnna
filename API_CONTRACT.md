@@ -910,3 +910,189 @@ Home Dashboard API
 ```
 
 That is a much better first milestone than trying to build all those wireframe screens at once.
+
+---
+
+# 12. Support Chat API (Akka.NET Actor System)
+
+Base route: `/api/support/chat`
+
+## 12.1 Connect User Session
+Initializes or joins an active actor session.
+```http
+POST /api/support/chat/connect
+Content-Type: application/json
+
+{
+  "userId": "farmer_9876543210",
+  "userName": "Ramesh Kumar",
+  "role": "Farmer",
+  "stage": "Inspection",
+  "lotId": "550e8400-e29b-41d4-a716-446655440000",
+  "assignedInspectorId": "quality_inspector_1"
+}
+```
+
+**Response (200 OK):**
+```json
+[
+  {
+    "id": "msg_01HZX8...",
+    "senderId": "system",
+    "senderName": "ShreeAnna Assistant",
+    "senderRole": "System",
+    "content": "Connected to Quality Inspector support desk for Lot LOT-20261020-001.",
+    "stage": "Inspection",
+    "lotId": "550e8400-e29b-41d4-a716-446655440000",
+    "timestamp": "2026-10-20T18:00:00Z"
+  }
+]
+```
+
+## 12.2 Send Chat Message
+Routes message through Akka `ChatManagerActor` to recipient's `UserSessionActor`.
+```http
+POST /api/support/chat/send
+Content-Type: application/json
+
+{
+  "senderId": "farmer_9876543210",
+  "senderName": "Ramesh Kumar",
+  "senderRole": "Farmer",
+  "recipientId": "quality_inspector_1",
+  "content": "Sir, when will the moisture inspection take place for my Ragi lot?",
+  "stage": "Inspection",
+  "lotId": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**Response (200 OK):**
+Returns updated `List<ChatMessageDto>`.
+
+## 12.3 Query Conversation History
+```http
+GET /api/support/chat/sessions/{sessionId}/messages
+```
+
+**Response (200 OK):**
+Returns `List<ChatMessageDto>`.
+
+## 12.4 Query Active Support Sessions (Staff Web Desk)
+Used by Quality Inspectors and FPO staff every 4 seconds to power the WhatsApp-style conversation queue.
+```http
+GET /api/support/chat/sessions/active
+```
+
+**Response (200 OK):**
+```json
+[
+  {
+    "sessionId": "farmer_9876543210",
+    "userName": "Ramesh Kumar",
+    "userRole": "Farmer",
+    "lastMessage": "Sir, when will the moisture inspection take place for my Ragi lot?",
+    "lastMessageTime": "2026-10-20T18:02:15Z",
+    "unreadCount": 1,
+    "currentStage": "Inspection",
+    "lotCode": "LOT-20261020-001",
+    "lotId": "550e8400-e29b-41d4-a716-446655440000"
+  }
+]
+```
+
+---
+
+# 13. Marketplace & Customer Orders API
+
+Base route: `/api/orders` & `/api/marketplace`
+
+## 13.1 Register Customer Account
+Strictly creates an account with the `Customer` role.
+```http
+POST /api/auth/register-customer
+Content-Type: application/json
+
+{
+  "name": "Ananya Sharma",
+  "email": "ananya@example.com",
+  "phone": "9811223344",
+  "password": "Password123!"
+}
+```
+
+**Response (200 OK):**
+Returns `LoginResponse` with JWT token and user profile.
+
+## 13.2 Create Customer Order
+```http
+POST /api/orders
+Content-Type: application/json
+
+{
+  "customerName": "Ananya Sharma",
+  "customerEmail": "ananya@example.com",
+  "customerPhone": "9811223344",
+  "shippingAddress": "402, Green Acre Heights, Bodakdev",
+  "city": "Ahmedabad",
+  "state": "Gujarat",
+  "pincode": "380054",
+  "paymentMethod": "CARD",
+  "items": [
+    {
+      "productId": "880e8400-e29b-41d4-a716-446655440000",
+      "productTitle": "Organic Pearl Millet Flour (1kg)",
+      "category": "Flour",
+      "producerName": "Sabarkantha Millet FPO",
+      "imageUrl": "https://...",
+      "price": 140.0,
+      "quantity": 2
+    }
+  ]
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "id": "770e8400-e29b-41d4-a716-446655440000",
+  "orderNumber": "ORD-20261020-8912",
+  "customerName": "Ananya Sharma",
+  "customerEmail": "ananya@example.com",
+  "customerPhone": "9811223344",
+  "shippingAddress": "402, Green Acre Heights, Bodakdev",
+  "subtotal": 280.0,
+  "deliveryFee": 40.0,
+  "totalAmount": 320.0,
+  "status": "Pending",
+  "deliveryOtp": "491823",
+  "createdAt": "2026-10-20T18:05:00Z",
+  "items": [...]
+}
+```
+
+## 13.3 Assign Delivery Driver
+```http
+POST /api/orders/{id}/assign-driver
+Content-Type: application/json
+
+{
+  "driverId": "660e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**Response (200 OK):**
+Returns `OrderResponse` with `status: "Shipped"` and driver details.
+
+## 13.4 Confirm Delivery with Customer OTP
+```http
+POST /api/orders/{id}/confirm-delivery
+Content-Type: application/json
+
+{
+  "otp": "491823"
+}
+```
+
+**Response (200 OK):**
+Returns `OrderResponse` with `status: "Delivered"` and `deliveredAt` timestamp.
+

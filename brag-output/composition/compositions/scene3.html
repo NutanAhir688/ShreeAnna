@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="./gsap.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #091a12;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: #ffffff;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .brand-bar {
+        position: absolute;
+        top: 60px;
+        left: 80px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .brand-icon {
+        width: 52px;
+        height: 52px;
+        background: #064e3b;
+        border: 2px solid #10b981;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+      }
+      .brand-name {
+        font-size: 34px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: #ffffff;
+      }
+      .card-grid {
+        display: flex;
+        gap: 40px;
+        align-items: stretch;
+        max-width: 1440px;
+        width: 100%;
+      }
+      .glass-card {
+        background: #10261c;
+        border: 1px solid #1f5039;
+        border-radius: 24px;
+        padding: 40px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      }
+      .logistics-card {
+        flex: 1.2;
+      }
+      .handshake-card {
+        flex: 0.8;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+      }
+      .section-badge {
+        display: inline-block;
+        padding: 8px 16px;
+        background: #064e3b;
+        border: 1px solid #10b981;
+        border-radius: 8px;
+        color: #ecfdf5;
+        font-size: 15px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 20px;
+      }
+      .card-heading {
+        font-size: 32px;
+        font-weight: 800;
+        margin-bottom: 28px;
+        color: #ffffff;
+      }
+      .route-box {
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        margin-bottom: 32px;
+      }
+      .route-node {
+        flex: 1;
+      }
+      .route-label {
+        font-size: 14px;
+        font-weight: 700;
+        color: #34d399;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 6px;
+      }
+      .route-val {
+        font-size: 20px;
+        font-weight: 800;
+        color: #ffffff;
+      }
+      .status-pill {
+        background: #064e3b;
+        border: 1px solid #10b981;
+        padding: 18px 24px;
+        border-radius: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .handshake-code {
+        font-size: 64px;
+        font-weight: 900;
+        letter-spacing: 0.15em;
+        color: #fde68a;
+        background: #173829;
+        padding: 16px 36px;
+        border-radius: 18px;
+        border: 2px dashed #f59e0b;
+        margin: 24px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="scene3" data-start="0" data-duration="5">
+      <div class="brand-bar">
+        <div class="brand-icon">🌾</div>
+        <div class="brand-name">ShreeAnna</div>
+      </div>
+      <div class="card-grid">
+        <div id="s3-logistics" class="glass-card logistics-card">
+          <span class="section-badge">Live Dispatch #DISP-202610-891</span>
+          <div class="card-heading">GPS-Tracked Farm-to-Warehouse Transit</div>
+          <div class="route-box">
+            <div class="route-node">
+              <div class="route-label">ORIGIN</div>
+              <div class="route-val">Palampur Farm Parcel #12</div>
+            </div>
+            <div style="font-size: 28px; color: #fde68a">➔</div>
+            <div class="route-node">
+              <div class="route-label">DESTINATION</div>
+              <div class="route-val">Central FPO Warehouse (Silo 04)</div>
+            </div>
+          </div>
+          <div class="status-pill">
+            <div>
+              <div style="font-size: 14px; color: #d1fae5">DRIVER & VEHICLE</div>
+              <div style="font-size: 18px; font-weight: 800; color: #ffffff">Suresh Patel | GJ-01-AX-4820</div>
+            </div>
+            <div style="background: #10b981; color: #091a12; font-weight: 800; font-size: 14px; padding: 8px 16px; border-radius: 9999px">
+              LIVE GPS TELEMETRY
+            </div>
+          </div>
+        </div>
+
+        <div id="s3-handshake" class="glass-card handshake-card">
+          <span class="section-badge">Farmer Verification</span>
+          <div style="font-size: 22px; font-weight: 800; color: #ffffff">Secure 6-Digit Pickup Code</div>
+          <div class="handshake-code">739 201</div>
+          <div style="font-size: 16px; color: #d1fae5; max-width: 280px; line-height: 1.4">
+            Driver must verify with the farmer on-site before grain dispatch
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo("#s3-logistics", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, 0.1);
+      tl.fromTo("#s3-handshake", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.4)" }, 0.4);
+      tl.to("#root", { opacity: 0, scale: 0.97, duration: 0.4, ease: "power2.in" }, 4.6);
+      window.__timelines["scene3"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

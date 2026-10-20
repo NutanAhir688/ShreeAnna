@@ -5,13 +5,27 @@
 
 | Area                                   | Status                                         | Approx. |
 | -------------------------------------- | ---------------------------------------------- | ------: |
-| 📱 Farmer & Driver Mobile App (Flutter)| 🟢 Feature-complete with live backend & GPS    |    ~92% |
-| 💻 FPO Web Dashboard (React + Vite)    | 🟢 Multi-role portals & real payment workflows |    ~96% |
-| ⚙️ .NET 10 Backend & PostgreSQL        | 🟢 Full end-to-end controllers & microservices |    ~88% |
-| 🔗 Frontend ↔ Backend Integration      | 🟢 End-to-end API connected (No mock data)     |    ~90% |
-| 🧪 Production-level validation/testing | 🟡 Unit/API verified, load testing pending     |    ~65% |
+| 📱 Farmer & Driver Mobile App (Flutter)| 🟢 Feature-complete with live backend & GPS    |    ~95% |
+| 💻 FPO Web Dashboard (React + Vite)    | 🟢 Multi-role portals & real payment workflows |    ~98% |
+| ⚙️ .NET 10 Backend & PostgreSQL        | 🟢 Full end-to-end controllers & microservices |    ~96% |
+| 🔗 Frontend ↔ Backend Integration      | 🟢 End-to-end API connected (No mock data)     |    ~96% |
+| 🧪 Production-level validation/testing | 🟢 E2E verified with Playwright & Flutter tests|    ~82% |
 
 These percentages reflect actual functional implementations across frontend, backend, mobile, and payment gateway integration.
+
+---
+
+## 🎬 Platform Launch Demo
+
+<div align="center">
+  <a href="brag-output/brag.mp4">
+    <img src="brag-output/brag.jpg" alt="ShreeAnna Platform Launch Demo" width="100%" style="border-radius: 12px; max-width: 900px;" />
+  </a>
+  <p>
+    <em>🎥 <strong><a href="brag-output/brag.mp4">▶ Click to Watch the 20-Second Launch Walkthrough (`brag-output/brag.mp4`)</a></strong></em><br />
+    <em>Cadastral Geo-Tagging &bull; Real-Time Akka.NET Chat Support &bull; GPS Dispatch Telemetry &bull; Direct Bank Settlements</em>
+  </p>
+</div>
 
 ---
 
@@ -145,13 +159,16 @@ The system is seeded with dedicated role accounts. **All accounts use the passwo
 
 | Role | Email | Password | Access & Features |
 | :--- | :--- | :--- | :--- |
-| **FPO Manager** | `fpo@shreeanna.com` | `Password123!` | Full dashboard, farmer/farm approvals, lots |
+| **FPO Manager** | `fpo@shreeanna.com` | `Password123!` | Full dashboard, farmer/farm approvals, lots, settings |
 | **Accountant** | `accountant@shreeanna.com` | `Password123!` | Finance portal, settlement ledger, Razorpay payout |
 | **Logistics Coordinator** | `logistics@shreeanna.com` | `Password123!` | Dispatch scheduling, driver vehicle assignment |
 | **Warehouse Manager** | `warehouse@shreeanna.com` | `Password123!` | Intake receiving, lot allocation, capacity |
-| **Quality Inspector** | `quality@shreeanna.com` | `Password123!` | Quality grading, moisture test, issue certificates |
+| **Quality Inspector** | `quality@shreeanna.com` | `Password123!` | Quality grading, moisture test, WhatsApp support desk |
 | **Procurement Officer** | `procurement@shreeanna.com` | `Password123!` | Procurement contracts & pricing agreements |
+| **Customer** | `customer@shreeanna.com` | `Password123!` | Consumer marketplace, cart, order tracking |
 | **Driver** | `driver@shreeanna.com` | `Password123!` | Web driver view |
+
+> **Note on Registration:** Clicking **Create Account** on the web login dialog strictly creates a user with the **Customer** role only, preventing unauthorized role elevation.
 
 ---
 
@@ -269,6 +286,18 @@ The system is seeded with dedicated role accounts. **All accounts use the passwo
 
 ---
 
+## 💬 1-to-1 Farmer-Inspector Live Chat (Mobile)
+
+| Module                                      | Status                           |
+| ------------------------------------------- | -------------------------------- |
+| 1-to-1 Inspector Chat Screen                | ✅ InspectorChatScreen.dart      |
+| Direct launch from Lot Details              | ✅ LotDetailsScreen integration  |
+| Procurement Journey stage binding           | ✅ Stage & Lot tags pre-bound    |
+| Live message thread & polling               | ✅ Akka.NET backend connection   |
+| System greeting & inspector presence        | ✅ Real-time message status      |
+
+---
+
 ## 📄 Digital Document Generation & PDF Download (Offline Ready)
 
 | Module                                      | Status                           |
@@ -321,6 +350,46 @@ The web dashboard is customized with dedicated views and permissions across role
 3. **Logistics Portal** (`LogisticsCoordinator`)
 4. **Warehouse Portal** (`WarehouseManager`)
 5. **Quality Portal** (`QualityInspector`)
+6. **Customer Portal** (`Customer`)
+
+---
+
+## 💬 WhatsApp-Style Support Desk (`Support.jsx`)
+
+| Module                                      | Status                           |
+| ------------------------------------------- | -------------------------------- |
+| Two-Pane WhatsApp Layout                    | ✅ Support.jsx (shadcn/ui)       |
+| Live Conversation Queue                     | ✅ Active farmers & lot codes    |
+| Stage & Lot Status Badges                   | ✅ Real-time journey tags        |
+| Unread Message Counter Badges               | ✅ Dynamic badge indicators      |
+| Background Polling (4s Interval)            | ✅ Akka.NET active sessions API  |
+| Chronological Message Stream & Auto-scroll  | ✅ Sender bubble formatting      |
+| Role-Customized Views                       | ✅ Inspector vs Manager desks    |
+
+---
+
+## 🛒 Customer Marketplace & Order Fulfillment
+
+| Module                                      | Status                           |
+| ------------------------------------------- | -------------------------------- |
+| Value-Added Millet Products Catalog         | ✅ LandingPage.jsx & Marketplace |
+| Direct "Buy Now" to Slide-Out Cart          | ✅ No premature login wall       |
+| Cart Quantity Adjustment & Subtotal Calc    | ✅ Real-time price breakdown     |
+| Customer-Only Registration Guardrail        | ✅ `/api/auth/register-customer` |
+| Order Creation & 6-Digit Delivery OTP       | ✅ OrdersController integration  |
+| Driver Order Assignment                     | ✅ AssignOrderDriverRequest      |
+| Customer Order History & OTP Handshake      | ✅ Orders.jsx (Safe re-rendering)|
+
+---
+
+## ⚙️ Universal Settings & Profile Pages
+
+| Module                                      | Status                           |
+| ------------------------------------------- | -------------------------------- |
+| Universal Profile Page                      | ✅ Profile.jsx (All roles)       |
+| Universal Settings Page                     | ✅ Settings.jsx (All roles)      |
+| Role & Employee Credentials Display         | ✅ Live JWT / FPO profile mapping|
+| Notification Preferences                    | ✅ Configurable toggles          |
 
 ---
 
@@ -416,7 +485,7 @@ The web dashboard is customized with dedicated views and permissions across role
 | Module                                 | Status                           |
 | -------------------------------------- | -------------------------------- |
 | Reports dashboard                      | ✅ Reports.jsx                   |
-| Financial & Revenue Reports            | ✅ FPO margins & payouts         |
+| Financial & Revenue Reports            | ✅ FPO margins & payouts (Live)  |
 | Procurement aggregation by Millet type | ✅ Volume & pricing trends       |
 | Inventory & Stock utilization reports  | ✅ Warehouse capacity tracking   |
 | Logistics & Fulfillment reports        | ✅ Transit turnaround times      |
@@ -432,12 +501,14 @@ The web dashboard is customized with dedicated views and permissions across role
 | .NET 10 Web API project              | ✅                               |
 | PostgreSQL 16 database               | ✅ Hosted on port 5432           |
 | Entity Framework Core 10             | ✅ Code-first with Migrations    |
+| Akka.NET Actor Support System        | ✅ In-memory sessions & routing  |
+| OpenAPI / Swagger Resilience         | ✅ Unique CustomSchemaIds (104 paths)|
 | JWT Authentication & Bearer Tokens   | ✅ Secure token validation       |
 | Refresh Token Rotation               | ✅ Silent refresh in cookie/body |
-| Role-based RBAC Authorization        | ✅ Manager, Inspector, Driver, etc.|
+| Role-based RBAC Authorization        | ✅ Manager, Inspector, Customer  |
 | Clean Feature-driven architecture    | ✅ Features/{Domain}/...         |
 | Real Database Seeder                 | ✅ Initial lots, farms, drivers  |
-| Swagger / OpenAPI Documentation      | ✅ Interactive docs at `/swagger`|
+| Interactive Swagger UI               | ✅ Accessible at `/swagger`      |
 
 ---
 
@@ -445,7 +516,7 @@ The web dashboard is customized with dedicated views and permissions across role
 
 | Feature / Domain       | Endpoints                               | Status |
 | ---------------------- | --------------------------------------- | ------ |
-| **Auth**               | `/api/auth/login`, `/api/auth/refresh`  | ✅     |
+| **Auth**               | `/api/auth/login`, `/refresh`, `/register-customer` | ✅ |
 | **Driver Auth**        | `/api/driver/auth/login`, `/verify-otp` | ✅     |
 | **Farmers**            | `/api/farmers`, `/api/farmers/{id}`     | ✅     |
 | **Farms**              | `/api/farms`, `/api/farms/verify`       | ✅     |
@@ -453,12 +524,15 @@ The web dashboard is customized with dedicated views and permissions across role
 | **Quality Inspection** | `/api/quality/inspect`, `/certificates` | ✅     |
 | **Warehouses**         | `/api/warehouses`, `/receive`, `/allocate` | ✅  |
 | **Inventory**          | `/api/inventory/movements`, `/stats`    | ✅     |
-| **Logistics**          | `/api/logistics`, `/assign`, `/verify-code` | ✅ |
-| **Driver GPS**         | `/api/logistics/{id}/location`          | ✅     |
+| **Logistics**          | `/api/logistics`, `/assign-driver`, `/verify-code` | ✅ |
+| **Driver GPS**         | `/api/lots/{id}/location`               | ✅     |
 | **Settlements**        | `/api/settlements`, `/create-payment-link`, `/pay` | ✅ |
 | **Notifications**      | `/api/notifications`, `/mark-read`     | ✅     |
 | **Dashboard**          | `/api/dashboard/stats`, `/recent-activities` | ✅ |
 | **Reports**            | `/api/reports/summary`, `/finance`, `/revenue`, `/margin` | ✅ |
+| **Support Chat**       | `/api/support/chat/connect`, `/send`, `/messages`, `/active` | ✅ |
+| **Marketplace**        | `/api/marketplace/products`             | ✅     |
+| **Customer Orders**    | `/api/orders`, `/{id}/assign-driver`, `/confirm-delivery` | ✅ |
 
 ---
 
@@ -497,6 +571,10 @@ Razorpay MockGateway Engine         ✅             ✅          ✅     ✅
 Download Bill / Voucher PDFs        ✅             ✅          ✅     ✅
 In-App Notifications                ✅             ✅          ✅     ✅
 Multi-Role Dashboards (Accountant)  ✅             ✅          ✅     —
+Live Akka Support Chat Desk         ✅             ✅          ✅     ✅
+Customer Marketplace & Cart         ✅             ✅          ✅     —
+Customer Orders & Delivery OTP      ✅             ✅          ✅     —
+Universal Settings & Profile        ✅             ✅          ✅     ✅
 ========================================================================
 ```
 
@@ -512,8 +590,9 @@ Multi-Role Dashboards (Accountant)  ✅             ✅          ✅     —
   MOBILE APP                  WEB PORTAL                   .NET 10 API
  (Flutter 3.x)            (React 19 + shadcn)             (PostgreSQL)
       │                            │                            │
-   ~92% 🟢                      ~96% 🟢                       ~88% 🟢
+   ~95% 🟢                      ~98% 🟢                       ~96% 🟢
   (Farmer & Driver)        (Multi-Role Portals)         (EF Core & Microservices)
 ```
 
 The system operates with **zero mock or placeholder data arrays**, using live PostgreSQL models, end-to-end controllers, and real Razorpay MockGateway payment integrations across mobile and web interfaces.
+

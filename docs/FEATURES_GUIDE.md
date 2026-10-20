@@ -197,3 +197,76 @@ Recognizing that Indian farmers speak diverse regional languages, the Flutter mo
 - Managed through Flutter's `intl` toolchain with ARB definitions: `app_en.arb`, `app_hi.arb`, and `app_gu.arb`.
 - State managed globally by `AppLanguage.instance` with persistent preferences in local device storage.
 - Zero restart required: language switching updates the UI dynamically across all screens and validation messages.
+
+---
+
+### 2.11 Akka.NET Actor-Based Support Chat & WhatsApp-Style Support Desk
+
+#### Operational Overview
+Farmers require immediate, context-aware assistance during their procurement journey (e.g., questions regarding moisture grading during inspection, pickup arrival times, or settlement calculations). The old static ticket submission form has been replaced with an **Akka.NET Actor-based live support chat system**.
+
+#### Actor Model Benefits & Design
+- **Process per Connection:** Akka.NET maintains a dedicated `UserSessionActor` per connected user session.
+- **Fault Isolation:** A failure or disconnect in one user's session actor does not affect other active users or the central system.
+- **Ephemeral In-Memory Queues:** Messages are buffered in memory and delivered upon polling/reconnection, providing near real-time interaction without database lock overhead.
+- **`ChatManagerActor` Coordination:** Maintains active session registries, routes messages between farmers and inspectors, and publishes unread badges.
+
+#### Multi-Stage Journey Context
+Every chat session carries contextual metadata matching the farmer's current stage:
+- `FarmRegistration`: Land boundary & AnyRoR survey guidance.
+- `Inspection`: 1-to-1 direct dialogue between farmer and assigned Quality Inspector regarding test schedules or moisture findings.
+- `Logistics`: Coordination with driver and transporter.
+- `Warehouse`: Weighbridge and inward receipt queries.
+- `Settlement`: Payout timeline and deductions clarification.
+
+#### WhatsApp-Style Web Support Desk (`Support.jsx`)
+Quality Inspectors and FPO staff access a WhatsApp-inspired two-pane support desk:
+- **Left Pane:** Real-time conversation queue displaying farmer names, lot codes, stage badges, last message snippets, and unread message counter badges. Automatically updates every 4 seconds via `GET /api/support/chat/sessions/active`.
+- **Right Pane:** Selected conversation stream showing chronological message bubbles, timestamps, sender roles, and an auto-scrolling input bar.
+
+#### Mobile 1-to-1 Inspector Chat (`InspectorChatScreen`)
+On the Flutter mobile app, when a farmer views lot details during the inspection phase (`LotDetailsScreen`), a direct "Chat with Quality Inspector" button opens a dedicated chat screen pre-bound to the assigned inspector and lot code.
+
+---
+
+### 2.12 Customer Marketplace, Slide-out Cart & Order Delivery Handshake
+
+#### Operational Overview
+To bridge the millet farmer directly to consumers, ShreeAnna includes a public marketplace with finished value-added millet products (e.g., Pearl Millet Flour, Ragi Cookies, Millet Energy Bars, Foxtail Upma Mix).
+
+#### Frictionless Shopping & Cart Architecture
+- **No Premature Login Wall:** Clicking the "Buy Now" button directly adds items to a local shopping cart drawer with quantity adjustments and removes friction before checkout.
+- **Slide-Out Cart Drawer:** Allows customer review, item removal, and subtotal calculation before order placement.
+- **Strict Customer-Only Registration:** When users click "Create Account" on the login modal, the backend strictly invokes `POST /api/auth/register-customer`, ensuring newly created accounts can only ever have the `Customer` role.
+
+#### Order Lifecycle & 6-Digit Delivery OTP Handshake
+1. Customer inputs delivery address and places order via `POST /api/orders`.
+2. Backend generates unique order number (`ORD-YYYYMMDD-XXXX`) and a secure 6-digit **Delivery OTP**.
+3. Logistics coordinator assigns an available driver via `POST /api/orders/{id}/assign-driver` (`AssignOrderDriverRequest`).
+4. Upon delivery arrival, the driver requests the 6-digit OTP from the customer and verifies it via `POST /api/orders/{id}/confirm-delivery`.
+5. Successful verification transitions order status to `Delivered` and records exact UTC delivery timestamp.
+
+---
+
+### 2.13 Universal Settings, Support Desk & Profile Across All Roles
+
+#### Operational Overview
+Every authenticated portal role (`Admin`, `FpoAdmin`, `QualityInspector`, `WarehouseManager`, `LogisticsCoordinator`, `Accountant`, `Customer`) now has access to uniform navigation pages:
+- **Profile (`Profile.jsx`):** Displays employee/user code, assigned role, email, phone, location, and department.
+- **Settings (`Settings.jsx`):** Allows configuring notification preferences, display options, and security settings.
+- **Support Desk (`Support.jsx`):** Access to the Akka.NET live chat desk customized to the user's role and assigned duties.
+
+---
+
+### 2.14 OpenAPI / Swagger Schema Disambiguation & Self-Healing Resilience
+
+#### Operational Overview
+With Clean Architecture and vertical slicing, multiple domain slices can contain DTOs with matching names (e.g. `AssignDriverRequest` in `Features.Orders.DTOs` vs `Features.Logistics.DTOs`). 
+
+#### Resilience Implementation
+In `backend/Program.cs`:
+- Swashbuckle schema generation is configured with:
+  ```csharp
+  options.CustomSchemaIds(type => type.FullName?.Replace("+", ".") ?? type.Name);
+  ```
+- This guarantees fully-qualified, unambiguous schema identifiers, preventing `InvalidOperationException` collisions and ensuring all 104 API endpoints are continuously discoverable and documented at `http://localhost:5066/swagger`.

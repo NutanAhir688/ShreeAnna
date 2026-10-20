@@ -26,11 +26,18 @@
 | **13. Payment Link** | React Web | HTTPS POST `/api/settlements/{id}/create-payment-link`| `SettlementsController` → `RazorpayMock` | `Settlements` |
 | **14. Payment Process** | React Web | HTTPS POST `/api/settlements/{id}/pay` | `SettlementsController` → `SettlementService` | `Settlements`, `ProcurementLots` |
 | **15. BI Analytics** | React Web | HTTPS GET `/api/reports/summary` | `ReportsController` → `ReportsService` | Multi-table Read Aggregation |
+| **16. Support Chat Connect** | Flutter / React Web | HTTPS POST `/api/support/chat/connect` | `SupportChatController` → `ChatManagerActor` | Akka `UserSessionActor` in-memory |
+| **17. 1-to-1 Live Support Chat** | Flutter / React Web | HTTPS POST `/api/support/chat/send` | `SupportChatController` → Akka Message Router | Akka Actor Session Queue |
+| **18. Support Desk Web Stream** | React Web | HTTPS GET `/api/support/chat/sessions/active` | `SupportChatController` → `SupportChatService` | Akka Session Summaries |
+| **19. Customer Order Placement**| React Web | HTTPS POST `/api/orders` | `OrdersController` → `OrderService` | `Orders`, `OrderItems` |
+| **20. Order Driver Allocation** | React Web | HTTPS POST `/api/orders/{id}/assign-driver` | `OrdersController` → `OrderService` | `Orders` (Driver & Shipped) |
+| **21. Customer Delivery OTP** | Delivery Driver / Web | HTTPS POST `/api/orders/{id}/confirm-delivery` | `OrdersController` → `OrderService` | `Orders` (Marked Delivered) |
 
 ---
 
 ## 2. Cross-Subsystem State Machine Mapping
 
+### 2.1 Procurement & Grain Provenance State Machine
 ```mermaid
 stateDiagram-v2
     [*] --> FarmRegistered : Farmer submits farm boundary
@@ -38,7 +45,7 @@ stateDiagram-v2
     FarmVerified --> LotCreated : Farmer initiates sale of harvest
     LotCreated --> AgreementDrafted : FPO officer inputs price offer
     AgreementDrafted --> AgreementSigned : Farmer accepts agreement terms in app
-    AgreementSigned --> QualityInspected : Quality Inspector grades grain moisture & purity
+    AgreementSigned --> QualityInspected : Quality Inspector grades grain (Chat support active)
     QualityInspected --> DispatchAssigned : Logistics manager assigns vehicle & driver
     DispatchAssigned --> GoodsPickedUp : Driver enters farmer 6-digit verification code
     GoodsPickedUp --> InTransit : Driver broadcasts live GPS telemetry
@@ -47,6 +54,17 @@ stateDiagram-v2
     InventoryBatched --> SettlementGenerated : Price calculation & FPO margin applied
     SettlementGenerated --> PaymentDisbursed : Razorpay link or direct bank transfer executed
     PaymentDisbursed --> [*] : Complete immutable provenance recorded
+```
+
+### 2.2 Customer E-Commerce Order Lifecycle
+```mermaid
+stateDiagram-v2
+    [*] --> CartPending : Customer adds millet product to cart
+    CartPending --> OrderPlaced : Customer submits shipping details (Delivery OTP generated)
+    OrderPlaced --> DriverAssigned : Logistics assigns fulfillment driver (AssignOrderDriverRequest)
+    DriverAssigned --> OutForDelivery : Driver dispatches package with transit tracking
+    OutForDelivery --> Delivered : Customer provides 6-digit OTP to driver
+    Delivered --> [*] : Order completed & invoice archived
 ```
 
 For deeper architectural context and sequence diagrams, refer to:
