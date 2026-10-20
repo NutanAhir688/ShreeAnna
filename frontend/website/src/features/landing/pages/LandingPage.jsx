@@ -27,6 +27,9 @@ import {
   BadgeCheck,
   PhoneCall,
   Search,
+  ArrowLeft,
+  FileText,
+  Clock,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -583,198 +586,263 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 5. "Technology that grows with you" (Mobile & Farm Overview Showcase matching Image 1) */}
+      {/* 5. "Procurement Journey" (Mobile App Showcase matching Image 2, Farm Overview removed) */}
       <section id="technology" className="py-20 lg:py-28 bg-[#FBFBFA] border-b border-[#E5EDE2]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
-            {/* Left Column: Headlines & Benefits */}
-            <div className="lg:col-span-5 space-y-6 text-left">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-10 items-center">
+            {/* Left Column: Headlines & Real Verified Pipeline */}
+            <div className="lg:col-span-6 space-y-6 text-left">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EBF3E8] text-[#225732] text-xs font-bold border border-[#D1E2CD]">
                 <Sprout className="w-3.5 h-3.5 text-[#2E7D42]" />
-                <span>SMART. SIMPLE. POWERFUL.</span>
+                <span>DIGITAL LOT PROVENANCE</span>
               </div>
 
               <h2 className="text-3xl sm:text-4xl lg:text-[44px] font-serif font-bold text-[#142017] leading-[1.15]">
-                Technology that <br />
-                <span className="text-[#266838]">grows with you</span>
+                Transparent Procurement. <br />
+                <span className="text-[#266838]">Tracked from Farm to Payout.</span>
               </h2>
 
               <p className="text-sm sm:text-base text-[#56655A] leading-relaxed">
-                ShreeAnna is your digital farming partner. Access real-time data, verified crop provenance, and smart tools — all in one place.
+                ShreeAnna gives smallholder farmers real-time transparency across their entire procurement lifecycle — from harvest submission, NABL quality testing, and digital agreement signing to direct bank settlement.
               </p>
 
-              {/* 3 Bullet Points with green checkmarks */}
-              <div className="space-y-3 pt-2">
+              {/* Real Project Pipeline Bullets */}
+              <div className="space-y-3.5 pt-2">
                 <div className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-[#1B4324] text-white flex items-center justify-center shrink-0">
                     <Check className="w-3.5 h-3.5 stroke-[3]" />
                   </div>
-                  <span className="text-sm font-semibold text-slate-800">Real-time field monitoring</span>
+                  <span className="text-sm font-semibold text-slate-800">
+                    End-to-end harvest lot tracking & warehouse receipting
+                  </span>
                 </div>
 
                 <div className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-[#1B4324] text-white flex items-center justify-center shrink-0">
                     <Check className="w-3.5 h-3.5 stroke-[3]" />
                   </div>
-                  <span className="text-sm font-semibold text-slate-800">AI-powered recommendations</span>
+                  <span className="text-sm font-semibold text-slate-800">
+                    NABL certified quality testing & digital certificates
+                  </span>
                 </div>
 
                 <div className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-[#1B4324] text-white flex items-center justify-center shrink-0">
                     <Check className="w-3.5 h-3.5 stroke-[3]" />
                   </div>
-                  <span className="text-sm font-semibold text-slate-800">Easy to use on mobile & web</span>
+                  <span className="text-sm font-semibold text-slate-800">
+                    Digitally executed agreements & verified bank payout
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-full bg-[#1B4324] text-white flex items-center justify-center shrink-0">
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-800">
+                    Easy to use on mobile & web in regional languages
+                  </span>
                 </div>
               </div>
 
-              <div className="pt-2">
+              <div className="pt-2 flex flex-wrap items-center gap-3">
                 <Button
                   onClick={() => navigate("/login")}
                   className="bg-[#1B4324] hover:bg-[#14341C] text-white font-semibold text-xs sm:text-sm h-11 px-6 rounded-full shadow-md cursor-pointer flex items-center gap-2"
                 >
-                  <span>Learn More</span>
+                  <span>Access Farmer Portal</span>
                   <ArrowRight className="w-4 h-4" />
                 </Button>
+                <a href="#verify">
+                  <Button
+                    variant="outline"
+                    className="rounded-full border-[#C5D5C0] text-[#1B4324] text-xs sm:text-sm h-11 px-5 hover:bg-[#EFF5EB]"
+                  >
+                    Verify Certificate
+                  </Button>
+                </a>
               </div>
             </div>
 
-            {/* Right Column: Smartphone Mockup + Farm Overview Card Side-by-Side (Matching Image 1) */}
-            <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-12 gap-5 items-center">
-              {/* Phone Mockup (5 cols) */}
-              <div className="sm:col-span-5 flex justify-center">
-                <div className="w-[260px] bg-slate-950 rounded-[40px] p-3 shadow-2xl border-4 border-slate-800 text-slate-800">
-                  <div className="bg-white rounded-[32px] overflow-hidden p-3.5 space-y-3 border border-slate-100">
-                    {/* Header */}
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1">
-                        <span>Hello, Farmer</span>
-                        <span>🌾</span>
-                      </h4>
-                      <p className="text-[10px] text-slate-500">Here's your farm summary</p>
-                    </div>
-
-                    {/* Metric 1: Crop Health */}
-                    <div className="p-2.5 rounded-xl bg-[#F8FAF7] border border-[#E5EDE2] flex items-center justify-between">
-                      <div>
-                        <p className="text-[10px] text-slate-500 font-medium">Crop Health</p>
-                        <p className="text-xs font-bold text-slate-900">Good</p>
+            {/* Right Column: Realistic Phone Component (matching Image 2 Procurement Journey screen) */}
+            <div className="lg:col-span-6 flex justify-center">
+              <div className="w-full max-w-[340px] sm:max-w-[370px] bg-slate-950 rounded-[48px] p-3 shadow-[0_30px_70px_rgba(0,0,0,0.22)] border-[5px] border-slate-800 text-slate-800">
+                <div className="bg-[#F8FAF7] rounded-[38px] overflow-hidden p-4 space-y-3.5 border border-slate-200/80">
+                  {/* Status Bar */}
+                  <div className="flex items-center justify-between text-slate-800 text-[11px] font-bold px-1">
+                    <span>5:18</span>
+                    <div className="flex items-center gap-1.5 text-[10px]">
+                      <span className="text-[9px] font-mono font-medium">170 KB/s</span>
+                      <span className="px-1 py-0.2 bg-slate-200 text-slate-700 rounded text-[8px] font-bold">5G+</span>
+                      <span className="px-1 py-0.2 bg-slate-200 text-slate-700 rounded text-[8px] font-bold">VoNR</span>
+                      <div className="flex items-center gap-0.5 font-bold">
+                        <span className="text-[10px]">81</span>
+                        <div className="w-4 h-2 border border-slate-700 rounded-xs p-0.5 flex items-center">
+                          <div className="w-2.5 h-full bg-slate-800 rounded-2xs" />
+                        </div>
                       </div>
-                      <span className="w-7 h-7 rounded-full bg-emerald-100 text-[#1B4324] text-[10px] font-black flex items-center justify-center">
-                        78%
-                      </span>
                     </div>
+                  </div>
 
-                    {/* Metric 2: Soil Moisture */}
-                    <div className="p-2.5 rounded-xl bg-teal-50/60 border border-teal-100 flex items-center justify-between">
-                      <div>
-                        <p className="text-[10px] text-teal-800 font-medium">Soil Moisture</p>
-                        <p className="text-xs font-bold text-teal-950">Optimal</p>
+                  {/* Lot Details Header */}
+                  <div className="flex items-center gap-3 pt-1">
+                    <button className="text-slate-800 hover:text-[#1B4324] cursor-pointer">
+                      <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
+                    </button>
+                    <h3 className="text-base font-extrabold text-[#1B4324] tracking-tight">Lot Details</h3>
+                  </div>
+
+                  {/* Top Green Banner: Agreement Executed & Signed (v1.0) */}
+                  <div className="rounded-2xl p-3.5 bg-[#EAF5ED] border border-[#A7DBB4] space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-4.5 h-4.5 rounded-full bg-[#1B4324] text-white flex items-center justify-center shrink-0">
+                        <Check className="w-3 h-3 stroke-[3]" />
                       </div>
-                      <span className="w-7 h-7 rounded-full bg-teal-100 text-teal-800 text-[10px] font-black flex items-center justify-center">
-                        65%
-                      </span>
+                      <h4 className="text-xs font-bold text-[#1B4324]">Agreement Executed & Signed (v1.0)</h4>
                     </div>
+                    <p className="text-[11px] text-slate-600 leading-snug">
+                      Version v1.0 contract has been accepted and digitally signed.
+                    </p>
+                    <button className="w-full bg-[#1B4324] hover:bg-[#14341C] text-white rounded-xl py-2 px-3 text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs cursor-pointer">
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Review Agreement (v1.0)</span>
+                    </button>
+                  </div>
 
-                    {/* Metric 3: Weather */}
-                    <div className="p-2.5 rounded-xl bg-blue-50/60 border border-blue-100 flex items-center justify-between">
-                      <div>
-                        <p className="text-[10px] text-blue-800 font-medium">Weather</p>
-                        <p className="text-xs font-bold text-blue-950">24°C Partly Cloudy</p>
+                  {/* Section Title */}
+                  <h4 className="text-xs font-extrabold text-slate-900 tracking-tight pt-0.5">Procurement Journey</h4>
+
+                  {/* Timeline with Continuous Connecting Line */}
+                  <div className="relative space-y-3 pl-1">
+                    <div className="absolute left-[11px] top-2 bottom-4 w-[2px] bg-slate-200 z-0" />
+
+                    {/* Step 1: Lot Submitted */}
+                    <div className="relative flex items-center justify-between gap-2 z-10">
+                      <div className="flex items-start gap-2.5">
+                        <div className="w-6 h-6 rounded-full bg-[#1B4324] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-900 leading-tight">Lot Submitted</p>
+                          <p className="text-[10px] text-slate-500">Your lot has been submitted to the FPO.</p>
+                        </div>
                       </div>
-                      <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">
-                        24%
+                    </div>
+
+                    {/* Step 2: Quality Inspection */}
+                    <div className="relative flex items-center justify-between gap-2 z-10">
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        <div className="w-6 h-6 rounded-full bg-[#1B4324] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-900 leading-tight">Quality Inspection</p>
+                          <p className="text-[10px] text-slate-500">Quality inspection completed & verified.</p>
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full bg-[#F3F0FA] border border-[#DFD6F5] text-[#6B46C1] text-[10px] font-bold shrink-0">
+                        View Results
                       </span>
                     </div>
 
-                    {/* Metric 4: Upcoming Task */}
-                    <div className="p-2 rounded-xl bg-amber-50/70 border border-amber-200/80">
-                      <p className="text-[9px] font-bold uppercase tracking-wider text-amber-800">Upcoming Task</p>
-                      <p className="text-[11px] font-bold text-slate-800 mt-0.5">Irrigation Scheduled</p>
-                      <p className="text-[9px] text-slate-500">Today, 6:00 AM</p>
-                    </div>
-
-                    {/* Bottom nav tabs inside phone */}
-                    <div className="pt-2 border-t border-slate-100 flex justify-around text-[9px] font-bold text-slate-400">
-                      <span className="text-[#1B4324]">Home</span>
-                      <span>Crops</span>
-                      <span>Market</span>
-                      <span>Profile</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Farm Overview Card (7 cols) */}
-              <div className="sm:col-span-7 bg-white rounded-2xl border border-[#E3ECE0] p-4 shadow-xl space-y-3.5">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                  <h4 className="text-xs font-bold text-slate-900">Farm Overview</h4>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                    Live Telemetry
-                  </span>
-                </div>
-
-                {/* Satellite image with field tags */}
-                <div className="relative rounded-xl overflow-hidden aspect-16/9 bg-slate-100 border border-slate-200">
-                  <img
-                    src="/images/farm_satellite_overview.jpg"
-                    alt="Satellite farm overview with crop fields"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                  <div className="absolute bottom-2 left-2 right-2 flex flex-wrap gap-1.5">
-                    <span className="bg-black/60 backdrop-blur-xs text-white text-[9px] font-bold px-2 py-0.5 rounded border border-white/20">
-                      Field A: 12.5 Ac Ragi
-                    </span>
-                    <span className="bg-black/60 backdrop-blur-xs text-white text-[9px] font-bold px-2 py-0.5 rounded border border-white/20">
-                      Field B: 8.5 Ac Bajra
-                    </span>
-                    <span className="bg-black/60 backdrop-blur-xs text-white text-[9px] font-bold px-2 py-0.5 rounded border border-white/20">
-                      Field C: 15.2 Ac Foxtail
-                    </span>
-                  </div>
-                </div>
-
-                {/* Recent Activity */}
-                <div className="space-y-1.5 pt-1">
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Recent Activity</p>
-                  <div className="space-y-1 text-xs">
-                    <div className="flex justify-between items-center text-slate-700">
-                      <span className="flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        <span>Irrigation Completed</span>
+                    {/* Step 3: Quality Certificate */}
+                    <div className="relative flex items-center justify-between gap-2 z-10">
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        <div className="w-6 h-6 rounded-full bg-[#1B4324] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-900 leading-tight">Quality Certificate</p>
+                          <p className="text-[10px] text-slate-500">Quality certificate issued & verified.</p>
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full bg-[#F3F0FA] border border-[#DFD6F5] text-[#6B46C1] text-[10px] font-bold shrink-0">
+                        View Certificate
                       </span>
-                      <span className="text-[10px] text-slate-400">Today, 6:00 AM</span>
                     </div>
-                    <div className="flex justify-between items-center text-slate-700">
-                      <span className="flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                        <span>Soil Nutrition Monitored</span>
-                      </span>
-                      <span className="text-[10px] text-slate-400">Yesterday, 4:30 PM</span>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Market Price MSP */}
-                <div className="pt-2 border-t border-slate-100">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase">Market Price (MSP)</span>
-                    <span className="text-[9px] text-[#2E7D42] font-semibold">Government Verified</span>
+                    {/* Step 4: Procurement Agreement */}
+                    <div className="relative flex items-center justify-between gap-2 z-10">
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        <div className="w-6 h-6 rounded-full bg-[#1B4324] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-900 leading-tight">Procurement Agreement</p>
+                          <p className="text-[10px] text-slate-500">Procurement agreement signed & approved.</p>
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full bg-[#F3F0FA] border border-[#DFD6F5] text-[#6B46C1] text-[10px] font-bold shrink-0">
+                        View Agreement
+                      </span>
+                    </div>
+
+                    {/* Step 5: Pickup / Delivery */}
+                    <div className="relative flex items-center justify-between gap-2 z-10">
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        <div className="w-6 h-6 rounded-full bg-[#1B4324] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-900 leading-tight">Pickup / Delivery</p>
+                          <p className="text-[10px] text-slate-500">Pickup completed & delivered to warehouse.</p>
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full bg-[#F3F0FA] border border-[#DFD6F5] text-[#6B46C1] text-[10px] font-bold shrink-0">
+                        Track Details
+                      </span>
+                    </div>
+
+                    {/* Step 6: Warehouse Receipt */}
+                    <div className="relative flex items-center justify-between gap-2 z-10">
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        <div className="w-6 h-6 rounded-full bg-[#1B4324] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-900 leading-tight">Warehouse Receipt</p>
+                          <p className="text-[10px] text-slate-500">Millet received & verified at warehouse.</p>
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full bg-[#F3F0FA] border border-[#DFD6F5] text-[#6B46C1] text-[10px] font-bold shrink-0">
+                        View Receipt
+                      </span>
+                    </div>
+
+                    {/* Step 7: Payment (In progress) */}
+                    <div className="relative flex items-center justify-between gap-2 z-10">
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        <div className="w-6 h-6 rounded-full bg-amber-50 border-2 border-amber-500 text-amber-600 flex items-center justify-center shrink-0 shadow-2xs">
+                          <Clock className="w-3 h-3 text-amber-600 animate-pulse" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-amber-700 leading-tight">Payment</p>
+                          <p className="text-[10px] text-slate-500">Warehouse verified. Payout in progress.</p>
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full bg-[#F3F0FA] border border-[#DFD6F5] text-[#6B46C1] text-[10px] font-bold shrink-0">
+                        View Payment
+                      </span>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
-                    <div className="p-1.5 rounded-lg bg-[#F8FAF7] border border-[#E5EDE2]">
-                      <span className="text-slate-500 block">Ragi</span>
-                      <span className="font-bold text-[#1B4324]">₹4,290 / Qtl</span>
-                    </div>
-                    <div className="p-1.5 rounded-lg bg-[#F8FAF7] border border-[#E5EDE2]">
-                      <span className="text-slate-500 block">Bajra</span>
-                      <span className="font-bold text-[#1B4324]">₹2,625 / Qtl</span>
-                    </div>
-                    <div className="p-1.5 rounded-lg bg-[#F8FAF7] border border-[#E5EDE2]">
-                      <span className="text-slate-500 block">Kangni</span>
-                      <span className="font-bold text-[#1B4324]">₹3,850 / Qtl</span>
+
+                  {/* Harvest Details */}
+                  <div className="space-y-1 pt-1">
+                    <h4 className="text-xs font-extrabold text-slate-900 tracking-tight">Harvest Details</h4>
+                    <div className="rounded-xl bg-white border border-slate-200/80 p-2.5 space-y-1.5 text-xs shadow-2xs">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[11px] text-slate-500">Millet Type</span>
+                        <span className="font-bold text-slate-800">Crop</span>
+                      </div>
+                      <div className="flex justify-between items-center border-t border-slate-100 pt-1.5">
+                        <span className="text-[11px] text-slate-500">Estimated Quantity</span>
+                        <span className="font-bold text-slate-900">699 kg</span>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Home indicator bar */}
+                  <div className="w-24 h-1 bg-slate-300 rounded-full mx-auto mt-2" />
                 </div>
               </div>
             </div>
