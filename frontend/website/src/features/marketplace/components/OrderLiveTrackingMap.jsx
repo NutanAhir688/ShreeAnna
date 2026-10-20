@@ -26,9 +26,6 @@ import { Input } from "@/components/ui/input";
 export default function OrderLiveTrackingMap({
   order,
   onClose,
-  onVerifyOtp,
-  isVerifyingOtp = false,
-  otpMessage = "",
 }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -37,8 +34,6 @@ export default function OrderLiveTrackingMap({
   const routeCasingRef = useRef(null);
 
   const [copiedOtp, setCopiedOtp] = useState(false);
-  const [driverOtpInput, setDriverOtpInput] = useState("");
-  const [showDriverTerminal, setShowDriverTerminal] = useState(false);
   const [driverPos, setDriverPos] = useState(null);
   const [etaMinutes, setEtaMinutes] = useState(12);
   const [remainingKm, setRemainingKm] = useState(2.2);
@@ -574,99 +569,19 @@ export default function OrderLiveTrackingMap({
                 </p>
               </div>
             ) : (
-              <div className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 space-y-2">
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/90 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                     <span>Customer Status: Awaiting Handover</span>
                   </span>
-                  <Badge variant="outline" className="text-[10px] text-slate-600 dark:text-slate-300">
-                    Driver Confirms Handover
+                  <Badge variant="outline" className="text-[10px] text-emerald-700 dark:text-emerald-400 border-emerald-300 bg-emerald-50 dark:bg-emerald-950 font-semibold">
+                    Driver Verification Active
                   </Badge>
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal">
-                  You do not need to confirm delivery yourself. Keep your OTP handy and share it when the driver reaches your location.
+                  Your delivery driver ({order?.driverName || "Mahesh Naik"}) will verify your 4-digit OTP directly on their mobile handheld terminal upon physical arrival at your doorstep.
                 </p>
-
-                {/* DRIVER TERMINAL (Dedicated Driver Role Handover Simulation) */}
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-700">
-                  <button
-                    onClick={() => setShowDriverTerminal(!showDriverTerminal)}
-                    className="w-full py-1.5 px-2.5 rounded-xl bg-blue-50/70 hover:bg-blue-100/70 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer"
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <Truck className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                      <span>Driver Terminal (Handover Verification)</span>
-                    </span>
-                    {showDriverTerminal ? (
-                      <ChevronUp className="w-4 h-4" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4" />
-                    )}
-                  </button>
-
-                  {showDriverTerminal && (
-                    <div className="mt-2.5 p-3 rounded-xl bg-blue-50/50 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/60 space-y-2.5 animate-in fade-in-50 duration-150">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold text-blue-900 dark:text-blue-200 uppercase tracking-wider">
-                          Driver Handheld Device
-                        </span>
-                        <span className="text-[10px] text-blue-600 dark:text-blue-400 font-mono">
-                          {order?.driverName || "Mahesh Naik"}
-                        </span>
-                      </div>
-
-                      <p className="text-[10px] text-blue-800 dark:text-blue-300">
-                        Driver requests OTP from customer at doorstep to verify delivery:
-                      </p>
-
-                      {otpMessage && (
-                        <p
-                          className={`text-xs p-2 rounded-lg ${
-                            otpMessage.includes("success") || otpMessage.includes("successfully")
-                              ? "bg-emerald-100 text-emerald-800 font-semibold"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {otpMessage}
-                        </p>
-                      )}
-
-                      <div className="flex gap-2">
-                        <Input
-                          type="text"
-                          maxLength={4}
-                          value={driverOtpInput}
-                          onChange={(e) => setDriverOtpInput(e.target.value)}
-                          placeholder="Enter Customer OTP"
-                          className="h-9 text-center tracking-widest font-mono font-bold text-sm rounded-xl bg-white dark:bg-slate-900"
-                        />
-                        <Button
-                          onClick={() =>
-                            onVerifyOtp && onVerifyOtp(order?.id, driverOtpInput)
-                          }
-                          disabled={
-                            isVerifyingOtp ||
-                            driverOtpInput.trim().length !== 4
-                          }
-                          className="bg-blue-700 hover:bg-blue-800 text-white text-xs px-3.5 h-9 rounded-xl cursor-pointer shrink-0 font-semibold shadow-xs"
-                        >
-                          {isVerifyingOtp ? "Verifying..." : "Driver: Confirm Delivery"}
-                        </Button>
-                      </div>
-
-                      <div className="flex justify-end">
-                        <button
-                          type="button"
-                          onClick={() => setDriverOtpInput(order?.deliveryOtp || "4670")}
-                          className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                        >
-                          Paste Customer OTP ({order?.deliveryOtp})
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
               </div>
             )}
           </div>

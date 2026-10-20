@@ -38,6 +38,9 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
   bool _isLoading = true;
   bool _isVerifying = false;
   final TextEditingController _otpController = TextEditingController();
+  final TextEditingController _orderOtpController = TextEditingController();
+  bool _isVerifyingOrderOtp = false;
+  Map<String, dynamic>? _selectedCustomerOrder;
 
   @override
   void initState() {
@@ -49,6 +52,7 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
   void dispose() {
     _locationPublisher?.dispose();
     _otpController.dispose();
+    _orderOtpController.dispose();
     super.dispose();
   }
 
@@ -572,6 +576,315 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
     );
   }
 
+  Future<void> _verifyCustomerOrderDelivery() async {
+    final otp = _orderOtpController.text.trim();
+    if (otp.length != 4) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter the 4-digit OTP provided by customer.')),
+      );
+      return;
+    }
+
+    setState(() => _isVerifyingOrderOtp = true);
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      String? orderId = _selectedCustomerOrder?['id']?.toString();
+
+      // If no order specifically chosen, look up the latest active order
+      if (orderId == null) {
+        final orders = await _driverApi.getCustomerOrders();
+        final pending = orders.where((o) => (o['status'] ?? '').toString().toUpperCase() != 'DELIVERED').toList();
+        if (pending.isNotEmpty) {
+          orderId = pending.first['id']?.toString();
+          _selectedCustomerOrder = pending.first;
+        } else if (orders.isNotEmpty) {
+          orderId = orders.first['id']?.toString();
+          _selectedCustomerOrder = orders.first;
+        }
+      }
+
+      if (orderId == null) {
+        throw Exception('No active customer order found to verify delivery for.');
+      }
+
+      await _driverApi.confirmCustomerOrderDelivery(orderId, otp);
+
+      _orderOtpController.clear();
+      messenger.showSnackBar(
+        SnackBar(
+          backgroundColor: const Color(0xFF2E7D32),
+          content: Text('Delivery confirmed! Handshake for Order ${_selectedCustomerOrder?['orderNumber'] ?? ''} completed successfully.'),
+        ),
+      );
+      await _loadDriverData();
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isVerifyingOrderOtp = false);
+      }
+    }
+  }
+
+  void _showAssignedCustomerOrdersModal() async {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return FutureBuilder<List<Map<String, dynamic>>>(
+          future: _driverApi.getCustomerOrders(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox(
+                height: 250,
+                child: Center(child: CircularProgressIndicator(color: ShreeAnnaTheme.primaryGreen)),
+              );
+            }
+            final orders = snapshot.data ?? [];
+            return Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Assigned Customer Orders',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF202420)),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  if (orders.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Center(child: Text('No customer orders found.')),
+                    )
+                  else
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 320),
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: orders.length,
+                        separatorBuilder: (context, index) => const Divider(height: 1),
+                        itemBuilder: (context, index) {
+                          final o = orders[index];
+                          final orderNum = o['orderNumber'] ?? 'Order';
+                          final custName = o['customerName'] ?? 'Customer';
+                          final addr = o['shippingAddress'] ?? '';
+                          final isDeliv = (o['status'] ?? '').toString().toUpperCase() == 'DELIVERED';
+                          final isSelected = _selectedCustomerOrder?['id'] == o['id'];
+
+                          return ListTile(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                            leading: Container(
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: isDeliv ? const Color(0xFFE8F5E9) : const Color(0xFFDBEAFE),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                isDeliv ? Icons.check_circle : Icons.shopping_bag_outlined,
+                                color: isDeliv ? const Color(0xFF2E7D32) : const Color(0xFF2563EB),
+                                size: 20,
+                              ),
+                            ),
+                            title: Text(
+                              '$orderNum • $custName',
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                            ),
+                            subtitle: Text(
+                              addr,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                            ),
+                            trailing: isDeliv
+                                ? const Text('DELIVERED', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF087F23)))
+                                : isSelected
+                                    ? const Icon(Icons.radio_button_checked, color: Color(0xFF2563EB))
+                                    : const Icon(Icons.radio_button_off, color: Color(0xFF94A3B8)),
+                            onTap: () {
+                              setState(() => _selectedCustomerOrder = o);
+                              Navigator.pop(ctx);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildDoorstepOrderHandoverCard() {
+    final activeOrderNum = _selectedCustomerOrder?['orderNumber'] ?? 'Active Customer Order';
+    final custName = _selectedCustomerOrder?['customerName'] ?? 'Doorstep Customer';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0F7FF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFBAE6FD)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: const [
+                  Icon(Icons.local_shipping, color: Color(0xFF2563EB), size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'DRIVER HANDHELD DEVICE',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.8,
+                      color: Color(0xFF1E3A8A),
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDBEAFE),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  _selectedDriver?.name ?? 'Mahesh Naik',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1D4ED8),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Driver requests OTP from customer at doorstep ($activeOrderNum - $custName):',
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF1E40AF),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                flex: 4,
+                child: TextField(
+                  controller: _orderOtpController,
+                  keyboardType: TextInputType.number,
+                  maxLength: 4,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 6,
+                    color: Color(0xFF1E3A8A),
+                  ),
+                  decoration: InputDecoration(
+                    hintText: '••••',
+                    counterText: '',
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFF93C5FD)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                flex: 6,
+                child: SizedBox(
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: _isVerifyingOrderOtp ? null : _verifyCustomerOrderDelivery,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF3B82F6),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: _isVerifyingOrderOtp
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Text(
+                            'Driver: Confirm Delivery',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: _showAssignedCustomerOrdersModal,
+              icon: const Icon(Icons.list_alt, size: 14, color: Color(0xFF2563EB)),
+              label: Text(
+                _selectedCustomerOrder == null ? 'Select Active Customer Order' : 'Order: ${_selectedCustomerOrder!['orderNumber']}',
+                style: const TextStyle(fontSize: 11, color: Color(0xFF2563EB), fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showAbortRideModal() {
     if (_activeDispatch == null) return;
     String selectedReason = 'Vehicle Breakdown / Mechanical Issue';
@@ -842,6 +1155,8 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildDriverProfileCard(),
+                  const SizedBox(height: 16),
+                  _buildDoorstepOrderHandoverCard(),
                   const SizedBox(height: 16),
                   if (_activeDispatch == null)
                     _buildNoJourneyCard()

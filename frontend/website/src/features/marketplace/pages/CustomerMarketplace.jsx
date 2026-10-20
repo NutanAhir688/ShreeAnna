@@ -1569,9 +1569,6 @@ export default function CustomerMarketplace() {
                 setConfirmedOrder(null);
                 setCurrentView("my-orders");
               }}
-              onVerifyOtp={handleVerifyDeliveryOtp}
-              isVerifyingOtp={otpVerifying}
-              otpMessage={otpMessage}
             />
           </div>
         </div>
@@ -1586,9 +1583,6 @@ export default function CustomerMarketplace() {
             <OrderLiveTrackingMap
               order={activeTrackingOrder}
               onClose={() => setActiveTrackingOrder(null)}
-              onVerifyOtp={handleVerifyDeliveryOtp}
-              isVerifyingOtp={otpVerifying}
-              otpMessage={otpMessage}
             />
           </div>
         </div>
