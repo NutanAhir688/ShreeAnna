@@ -12,7 +12,7 @@ function DashboardLayout() {
   }, [location.pathname, location.search]);
 
   return (
-    <div className="min-h-screen bg-background dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
+    <div className="min-h-screen bg-[#FBFBFA] dark:bg-slate-950 text-[#142017] dark:text-slate-100 transition-colors duration-200 font-sans selection:bg-[#25633A] selection:text-white">
       
       {/* Sidebar (Desktop persistent + Mobile sheet) */}
       <Sidebar
@@ -27,7 +27,7 @@ function DashboardLayout() {
         <Topbar onMenuClick={() => setMobileMenuOpen(true)} />
 
         {/* Page content */}
-        <main className="p-3 sm:p-5 lg:p-6 bg-slate-50/50 dark:bg-slate-950/80 min-h-[calc(100vh-4rem)]">
+        <main className="p-4 sm:p-6 lg:p-8 bg-[#FBFBFA] dark:bg-slate-950/80 min-h-[calc(100vh-4rem)]">
           <Outlet />
         </main>
 

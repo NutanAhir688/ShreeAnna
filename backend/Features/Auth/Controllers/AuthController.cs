@@ -40,6 +40,25 @@ public class AuthController : ControllerBase
         return Ok(response);
     }
 
+    [HttpPost("register")]
+    [AllowAnonymous]
+    public async Task<ActionResult<LoginResponse>> Register(RegisterRequest request)
+    {
+        var (response, refreshToken, error) = await _authService.RegisterCustomerAsync(request);
+
+        if (response is null || string.IsNullOrEmpty(refreshToken))
+        {
+            return BadRequest(new
+            {
+                message = error ?? "Failed to create account. Please check your details."
+            });
+        }
+
+        SetRefreshTokenCookie(refreshToken);
+
+        return Ok(response);
+    }
+
     [HttpPost("refresh")]
     [AllowAnonymous]
     public async Task<ActionResult<LoginResponse>> Refresh([FromBody] RefreshRequest? request)

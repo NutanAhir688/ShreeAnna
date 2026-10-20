@@ -332,6 +332,20 @@ export const ROLE_CONFIGS = {
       },
     ],
   },
+  Customer: {
+    roleName: "Customer / Retail Buyer",
+    portalTitle: "Customer Portal",
+    badgeColor: "bg-emerald-100 text-emerald-800 border-emerald-300",
+    sections: [
+      {
+        title: null,
+        items: [
+          { to: "/store", icon: ShoppingCart, label: "Marketplace Store" },
+          { to: "/my-orders", icon: Package, label: "My Orders & Deliveries" },
+        ],
+      },
+    ],
+  },
 };
 
 export const COMMON_SYSTEM_SECTION = {

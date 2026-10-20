@@ -129,6 +129,7 @@ builder.Services.AddScoped<ISettlementService, SettlementService>();
 builder.Services.AddScoped<IReportsService, ReportsService>();
 builder.Services.AddScoped<backend.Features.Procurement.Services.IPurchaseRequestService, backend.Features.Procurement.Services.PurchaseRequestService>();
 builder.Services.AddScoped<IMarketplaceService, MarketplaceService>();
+builder.Services.AddScoped<backend.Features.Orders.Services.IOrderService, backend.Features.Orders.Services.OrderService>();
 
 // --------------------------------------------------
 // Controllers & Swagger
@@ -175,11 +176,19 @@ using (var scope = app.Services.CreateScope())
     try
     {
         await db.Database.MigrateAsync();
+    }
+    catch (Exception ex)
+    {
+        logger.LogWarning("MigrateAsync note: {Message}", ex.Message);
+    }
+
+    try
+    {
         await DbSeeder.SeedAsync(db);
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "An error occurred during database migration or seeding.");
+        logger.LogError(ex, "An error occurred during database seeding.");
     }
 }
 

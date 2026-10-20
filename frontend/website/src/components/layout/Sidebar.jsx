@@ -3,7 +3,7 @@ import { useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { ROLE_CONFIGS, COMMON_SYSTEM_SECTION } from "@/config/rolePermissions";
 import { farmsApi } from "@/services/api";
-import { ChevronDown, Shield, X } from "lucide-react";
+import { ChevronDown, Shield, X, Sprout } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 
@@ -65,7 +65,7 @@ function Sidebar({ mobileOpen = false, onClose }) {
   return (
     <>
       {/* Desktop Persistent Sidebar */}
-      <aside className="hidden lg:flex fixed left-0 top-0 z-40 h-screen w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs transition-colors flex-col">
+      <aside className="hidden lg:flex fixed left-0 top-0 z-40 h-screen w-64 border-r border-[#E7ECE4] dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs transition-colors flex-col">
         <SidebarInner
           roleConfig={roleConfig}
           sectionsToRender={sectionsToRender}
@@ -79,7 +79,7 @@ function Sidebar({ mobileOpen = false, onClose }) {
         <SheetContent
           side="left"
           showCloseButton={false}
-          className="p-0 w-72 max-w-[85vw] border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col gap-0 lg:hidden"
+          className="p-0 w-72 max-w-[85vw] border-r border-[#E7ECE4] dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col gap-0 lg:hidden"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Navigation Menu</SheetTitle>
@@ -112,17 +112,22 @@ function SidebarInner({
   return (
     <div className="flex h-full flex-col">
       {/* Brand Header */}
-      <div className="flex h-16 items-center border-b border-slate-800 px-5 sm:px-6 justify-between bg-slate-900 text-white shrink-0">
-        <div className="truncate">
-          <h1 className="text-xl font-bold tracking-tight text-emerald-400 truncate">
-            ShreeAnna
-          </h1>
-          <p className="text-xs font-semibold text-slate-300 truncate">
-            {roleConfig.portalTitle}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${roleConfig.badgeColor || "bg-emerald-100 text-emerald-800"}`}>
+      <div className="flex h-16 items-center border-b border-[#E7ECE4] dark:border-slate-800 px-4 sm:px-5 justify-between bg-white dark:bg-slate-900 shrink-0">
+        <Link to="/" className="flex items-center gap-2.5 truncate group" onClick={onNavigate}>
+          <div className="w-8 h-8 rounded-lg bg-[#1B4324] flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform shrink-0">
+            <Sprout className="w-4 h-4 text-[#86D49B]" />
+          </div>
+          <div className="truncate">
+            <h1 className="text-base font-bold tracking-tight text-[#142017] dark:text-white leading-tight">
+              Shree<span className="text-[#266838]">Anna</span>
+            </h1>
+            <p className="text-[10px] font-semibold text-[#617064] dark:text-slate-400 truncate leading-tight">
+              {roleConfig.portalTitle}
+            </p>
+          </div>
+        </Link>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EFF5EB] dark:bg-emerald-950/60 text-[#1B4324] dark:text-emerald-300 border border-[#D6E6D0] dark:border-emerald-800/60">
             {roleConfig.roleName.split(" ")[0]}
           </span>
           {isMobile && (
@@ -130,7 +135,7 @@ function SidebarInner({
               variant="ghost"
               size="icon-sm"
               onClick={onClose}
-              className="text-slate-400 hover:text-white hover:bg-slate-800 h-8 w-8 cursor-pointer rounded-lg ml-1"
+              className="text-[#617064] hover:text-[#142017] hover:bg-[#EFF5EB] dark:hover:bg-slate-800 h-8 w-8 cursor-pointer rounded-lg ml-1"
               aria-label="Close navigation menu"
             >
               <X className="h-4 w-4" />
@@ -186,14 +191,14 @@ function SidebarInner({
       </nav>
 
       {/* Bottom User Info */}
-      <div className="border-t border-slate-200 dark:border-slate-800 p-3 bg-slate-50/50 dark:bg-slate-800/50 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 shrink-0">
+      <div className="border-t border-[#E7ECE4] dark:border-slate-800 p-3 bg-[#FBFBFA] dark:bg-slate-800/50 flex items-center justify-between text-xs text-[#56655A] dark:text-slate-300 shrink-0">
         <div className="flex items-center gap-2 truncate">
-          <Shield className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-          <span className="font-semibold text-slate-700 dark:text-slate-200 truncate">
+          <Shield className="h-4 w-4 text-[#1B4324] dark:text-emerald-400 shrink-0" />
+          <span className="font-semibold text-[#142017] dark:text-slate-200 truncate">
             {user?.memberName || user?.email || "User"}
           </span>
         </div>
-        <span className="text-[10px] bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-slate-700 dark:text-slate-200 font-medium shrink-0">
+        <span className="text-[10px] bg-[#EFF5EB] dark:bg-slate-700 border border-[#D6E6D0] dark:border-slate-600 px-2 py-0.5 rounded-full text-[#1B4324] dark:text-slate-200 font-semibold shrink-0">
           {roleConfig.roleName}
         </span>
       </div>
@@ -211,13 +216,13 @@ function DropdownNavItem({ label, icon: Icon, items, onNavigate }) {
   const [open, setOpen] = useState(isChildActive);
 
   return (
-    <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/60">
+    <div className="rounded-xl border border-[#E7ECE4] dark:border-slate-700 bg-[#FBFBFA] dark:bg-slate-800/60">
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white"
+        className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-xs font-semibold text-[#4D5A50] dark:text-slate-200 transition-colors hover:bg-[#EFF5EB] dark:hover:bg-slate-700 hover:text-[#1B4324] dark:hover:text-white"
       >
-        <Icon className="h-4 w-4 shrink-0 text-slate-500 dark:text-slate-400" />
+        <Icon className="h-4 w-4 shrink-0 text-[#617064] dark:text-slate-400" />
         <span className="flex-1">{label}</span>
         <ChevronDown
           className={`h-3.5 w-3.5 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
@@ -225,7 +230,7 @@ function DropdownNavItem({ label, icon: Icon, items, onNavigate }) {
       </button>
 
       {open && (
-        <div className="space-y-1 border-t border-slate-200 dark:border-slate-700 px-2 pb-2 pt-1">
+        <div className="space-y-1 border-t border-[#E7ECE4] dark:border-slate-700 px-2 pb-2 pt-1">
           {items.map((subItem) => (
             <NavItem
               key={subItem.to + subItem.label}
@@ -308,11 +313,11 @@ function NavItem({ to, icon: Icon, label, badgeCount, end = false, onNavigate })
       to={to}
       onClick={onNavigate}
       className={`
-        flex items-center gap-3 rounded-lg px-3 py-2
+        flex items-center gap-3 rounded-xl px-3 py-2.5
         text-xs font-semibold transition-all
         ${isActive
-          ? "bg-emerald-700 dark:bg-emerald-600 text-white shadow-xs font-bold"
-          : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
+          ? "bg-[#1B4324] text-white shadow-xs font-bold"
+          : "text-[#4D5A50] dark:text-slate-300 hover:bg-[#EFF5EB] dark:hover:bg-slate-800 hover:text-[#1B4324] dark:hover:text-white"
         }
       `}
     >

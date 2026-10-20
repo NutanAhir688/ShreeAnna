@@ -6,6 +6,8 @@ public interface IAuthService
 {
     Task<(LoginResponse? Response, string? RefreshToken)> LoginAsync(LoginRequest request);
 
+    Task<(LoginResponse? Response, string? RefreshToken, string? Error)> RegisterCustomerAsync(RegisterRequest request);
+
     Task<(LoginResponse? Response, string? RefreshToken)> RefreshAsync(string refreshToken);
 
     Task RevokeRefreshTokenAsync(string refreshToken);

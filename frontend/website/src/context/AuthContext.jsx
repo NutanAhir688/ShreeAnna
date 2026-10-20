@@ -65,6 +65,27 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const register = async (email, password, fullName = "") => {
+    setLoading(true);
+    try {
+      const data = await auth.register(email, password, fullName);
+      const userData = {
+        userId: data.userId,
+        email: data.email,
+        role: "Customer",
+        memberName: data.memberName || fullName || data.email?.split("@")[0],
+      };
+
+      setUser(userData);
+      setToken(data.accessToken);
+      setLoading(false);
+      return userData;
+    } catch (err) {
+      setLoading(false);
+      throw err;
+    }
+  };
+
   const switchRole = async (newRole, name) => {
     const roleEmailMap = {
       FpoManager: "fpo@shreeanna.com",
@@ -74,6 +95,8 @@ export function AuthProvider({ children }) {
       LogisticsCoordinator: "logistics@shreeanna.com",
       Accountant: "accountant@shreeanna.com",
       Driver: "driver@shreeanna.com",
+      Processor: "processor@shreeanna.com",
+      Customer: "customer@shreeanna.com",
     };
 
     const targetEmail = roleEmailMap[newRole] || "fpo@shreeanna.com";
@@ -119,6 +142,7 @@ export function AuthProvider({ children }) {
         token,
         loading,
         login,
+        register,
         logout,
         switchRole,
         isAuthenticated: !!user,
