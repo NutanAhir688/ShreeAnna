@@ -36,7 +36,7 @@ function Topbar({ onMenuClick }) {
   };
 
   return (
-    <header className="sticky top-0 z-30 h-16 border-b border-slate-200 dark:border-slate-800 bg-background/95 backdrop-blur-xs shadow-2xs transition-colors">
+    <header className="sticky top-0 z-30 h-16 border-b border-[#E7ECE4] dark:border-slate-800 bg-[#FBFBFA]/90 dark:bg-slate-950/90 backdrop-blur-md shadow-2xs transition-colors">
       <div className="flex h-full items-center justify-between px-3 sm:px-6 gap-2 sm:gap-4">
 
         {/* Left side: Hamburger Trigger (mobile) & Active Portal / Role indicator */}
@@ -45,18 +45,18 @@ function Topbar({ onMenuClick }) {
             variant="ghost"
             size="icon"
             onClick={onMenuClick}
-            className="lg:hidden h-9 w-9 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer shrink-0"
+            className="lg:hidden h-9 w-9 text-[#56655A] dark:text-slate-300 hover:bg-[#EFF5EB] dark:hover:bg-slate-800 cursor-pointer shrink-0 rounded-lg"
             aria-label="Open navigation menu"
           >
             <Menu className="h-5 w-5" />
           </Button>
 
           <div className="min-w-0">
-            <h2 className="text-sm sm:text-base md:text-lg font-bold text-slate-900 dark:text-white transition-colors truncate">
+            <h2 className="text-sm sm:text-base md:text-lg font-serif font-bold text-[#142017] dark:text-white transition-colors truncate">
               {roleConfig.portalTitle}
             </h2>
-            <p className="text-[10px] sm:text-xs text-muted-foreground font-medium truncate">
-              Role: <span className="font-semibold text-slate-800 dark:text-slate-200">{roleConfig.roleName}</span>
+            <p className="text-[10px] sm:text-xs text-[#617064] dark:text-slate-400 font-medium truncate">
+              Role: <span className="font-semibold text-[#1B4324] dark:text-emerald-400">{roleConfig.roleName}</span>
             </p>
           </div>
         </div>
@@ -69,20 +69,20 @@ function Topbar({ onMenuClick }) {
             <DropdownMenuTrigger asChild>
               <div>
                 {/* Desktop/Tablet text button */}
-                <Button variant="outline" size="sm" className="hidden sm:flex items-center gap-2 border-slate-300 dark:border-slate-700 text-xs font-semibold cursor-pointer">
-                  <RefreshCw className="h-3.5 w-3.5 text-emerald-600" />
+                <Button variant="outline" size="sm" className="hidden sm:flex items-center gap-2 rounded-full border-[#D4DED1] dark:border-slate-700 bg-white dark:bg-slate-900 text-[#1B4324] dark:text-slate-200 hover:bg-[#EFF5EB] text-xs font-semibold cursor-pointer shadow-2xs">
+                  <RefreshCw className="h-3.5 w-3.5 text-[#266838]" />
                   <span>Switch Role</span>
-                  <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+                  <ChevronDown className="h-3.5 w-3.5 text-[#617064]" />
                 </Button>
                 {/* Mobile icon button */}
-                <Button variant="outline" size="icon" className="flex sm:hidden h-9 w-9 border-slate-300 dark:border-slate-700 cursor-pointer" title="Switch Role">
-                  <RefreshCw className="h-4 w-4 text-emerald-600" />
+                <Button variant="outline" size="icon" className="flex sm:hidden h-9 w-9 rounded-full border-[#D4DED1] dark:border-slate-700 text-[#1B4324] cursor-pointer" title="Switch Role">
+                  <RefreshCw className="h-4 w-4 text-[#266838]" />
                   <span className="sr-only">Switch Role</span>
                 </Button>
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel className="text-xs text-slate-500 uppercase font-bold">
+              <DropdownMenuLabel className="text-xs text-[#7A8A7E] uppercase font-bold">
                 Preview As Role
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
@@ -90,10 +90,10 @@ function Topbar({ onMenuClick }) {
                 <DropdownMenuItem
                   key={key}
                   onClick={() => switchRole(key, config.roleName)}
-                  className={`text-xs flex items-center justify-between cursor-pointer ${userRole === key ? "font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/50" : ""}`}
+                  className={`text-xs flex items-center justify-between cursor-pointer rounded-lg ${userRole === key ? "font-bold text-[#1B4324] bg-[#EFF5EB] dark:bg-emerald-950/50" : ""}`}
                 >
                   <span>{config.roleName}</span>
-                  {userRole === key && <span className="h-2 w-2 rounded-full bg-emerald-600" />}
+                  {userRole === key && <span className="h-2 w-2 rounded-full bg-[#1B4324]" />}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -101,10 +101,10 @@ function Topbar({ onMenuClick }) {
 
           {/* Search (Desktop only) */}
           <div className="relative hidden w-56 md:block">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7A8A7E]" />
             <Input
               placeholder="Search platform..."
-              className="pl-9 text-xs"
+              className="pl-9 text-xs rounded-full bg-white dark:bg-slate-900 border-[#DCE4DA] dark:border-slate-700 text-[#142017] placeholder:text-[#9AA89E] focus:border-[#266838]"
             />
           </div>
 
@@ -133,24 +133,24 @@ function Topbar({ onMenuClick }) {
           {/* User Profile Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-1.5 sm:gap-2.5 px-1.5 sm:px-2 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">
-                <Avatar className="h-8 w-8 border border-slate-200 dark:border-slate-700">
+              <Button variant="ghost" className="flex items-center gap-1.5 sm:gap-2.5 px-1.5 sm:px-2 hover:bg-[#EFF5EB] dark:hover:bg-slate-800 cursor-pointer rounded-xl">
+                <Avatar className="h-8 w-8 border border-[#DCE4DA] dark:border-slate-700">
                   <AvatarImage src="" />
-                  <AvatarFallback className="bg-emerald-600 text-white font-bold text-xs">
+                  <AvatarFallback className="bg-[#1B4324] text-white font-bold text-xs">
                     {getInitials(user?.memberName || user?.email)}
                   </AvatarFallback>
                 </Avatar>
 
                 <div className="hidden text-left md:block">
-                  <p className="text-xs font-bold text-slate-900 dark:text-white leading-tight">
+                  <p className="text-xs font-bold text-[#142017] dark:text-white leading-tight">
                     {user?.memberName || "User"}
                   </p>
-                  <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold leading-tight">
+                  <p className="text-[11px] text-[#266838] dark:text-emerald-400 font-semibold leading-tight">
                     {roleConfig.roleName}
                   </p>
                 </div>
 
-                <ChevronDown className="h-4 w-4 text-slate-400" />
+                <ChevronDown className="h-4 w-4 text-[#7A8A7E]" />
               </Button>
             </DropdownMenuTrigger>
 
