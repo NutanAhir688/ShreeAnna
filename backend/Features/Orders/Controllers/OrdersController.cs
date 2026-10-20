@@ -80,7 +80,7 @@ public class OrdersController : ControllerBase
 
     [HttpPost("{id:guid}/assign-driver")]
     [AllowAnonymous]
-    public async Task<ActionResult<OrderResponse>> AssignDriver(Guid id, [FromBody] AssignDriverRequest request)
+    public async Task<ActionResult<OrderResponse>> AssignDriver(Guid id, [FromBody] AssignOrderDriverRequest request)
     {
         try
         {
