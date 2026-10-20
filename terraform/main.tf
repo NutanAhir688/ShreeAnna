@@ -248,6 +248,26 @@ resource "azurerm_container_app" "backend" {
           value = var.database_connection_string
         }
       }
+
+      env {
+        name  = "MockGateway__BaseUrl"
+        value = "https://mockgateway.com/api/base/razorpay-qmgxzz"
+      }
+
+      env {
+        name  = "MockGateway__KeyId"
+        value = "rzp_test_P6JuER2JQ580UR"
+      }
+
+      env {
+        name  = "MockGateway__KeySecret"
+        value = "134S9NUTWf7DEUnnHrAo"
+      }
+
+      env {
+        name  = "MockGateway__AuthHeader"
+        value = "Basic cnpwX3Rlc3RfUDZKdUVSMkpRNTgwVVI6MTM0UzlOVVRXZjdERVVubkhyQW8="
+      }
     }
   }
 
