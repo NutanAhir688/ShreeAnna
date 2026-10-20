@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="./gsap.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #091a12;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: #ffffff;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .brand-bar {
+        position: absolute;
+        top: 60px;
+        left: 80px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .brand-icon {
+        width: 52px;
+        height: 52px;
+        background: #064e3b;
+        border: 2px solid #10b981;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+      }
+      .brand-name {
+        font-size: 34px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: #ffffff;
+      }
+      .card-grid {
+        display: flex;
+        gap: 40px;
+        align-items: stretch;
+        max-width: 1440px;
+        width: 100%;
+      }
+      .glass-card {
+        background: #10261c;
+        border: 1px solid #1f5039;
+        border-radius: 24px;
+        padding: 40px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      }
+      .timeline-card {
+        flex: 1.25;
+      }
+      .chat-card {
+        flex: 0.95;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .section-badge {
+        display: inline-block;
+        padding: 8px 16px;
+        background: #064e3b;
+        border: 1px solid #10b981;
+        border-radius: 8px;
+        color: #ecfdf5;
+        font-size: 15px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 20px;
+      }
+      .card-heading {
+        font-size: 30px;
+        font-weight: 800;
+        margin-bottom: 28px;
+        color: #ffffff;
+      }
+      .timeline-steps {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .step-item {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+      .step-dot {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+      .dot-done {
+        background: #047857;
+        color: #ffffff;
+      }
+      .dot-active {
+        background: #fbbf24;
+        color: #1c1917;
+      }
+      .dot-pending {
+        background: #163828;
+        color: #a7f3d0;
+      }
+      .step-text {
+        font-size: 19px;
+        font-weight: 700;
+        color: #ffffff;
+      }
+      .step-meta {
+        font-size: 15px;
+        color: #d1fae5;
+        margin-top: 2px;
+      }
+      .chat-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding-bottom: 18px;
+        border-bottom: 1px solid #1f5039;
+      }
+      .chat-avatar {
+        width: 48px;
+        height: 48px;
+        background: #047857;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 18px;
+        color: #ffffff;
+      }
+      .chat-user-name {
+        font-size: 20px;
+        font-weight: 800;
+        color: #ffffff;
+      }
+      .chat-role-badge {
+        font-size: 14px;
+        color: #a7f3d0;
+      }
+      .chat-bubble {
+        background: #173829;
+        border: 1px solid #2d6a4f;
+        padding: 24px;
+        border-radius: 20px;
+        border-top-left-radius: 4px;
+        margin: 28px 0;
+        font-size: 19px;
+        line-height: 1.55;
+        color: #ecfdf5;
+      }
+      .chat-badge {
+        display: inline-block;
+        margin-top: 14px;
+        background: #04382a;
+        color: #ffffff;
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="scene2" data-start="0" data-duration="5">
+      <div class="brand-bar">
+        <div class="brand-icon">🌾</div>
+        <div class="brand-name">ShreeAnna</div>
+      </div>
+      <div class="card-grid">
+        <div id="s2-timeline" class="glass-card timeline-card">
+          <span class="section-badge">Procurement Lot #LOT-202610-001</span>
+          <div class="card-heading">Organic Pearl Millet (Bajra) — 3,200 Kg</div>
+          <div class="timeline-steps">
+            <div class="step-item">
+              <div class="step-dot dot-done">✓</div>
+              <div>
+                <div class="step-text">Farm Lot Submitted</div>
+                <div class="step-meta">Cadastral Survey #429 Verified</div>
+              </div>
+            </div>
+            <div class="step-item">
+              <div class="step-dot dot-active">●</div>
+              <div>
+                <div class="step-text">Quality Inspection (Grade A Approved)</div>
+                <div class="step-meta">Moisture: 11.2% | Impurities: 0.6%</div>
+              </div>
+            </div>
+            <div class="step-item">
+              <div class="step-dot dot-pending">3</div>
+              <div>
+                <div class="step-text">Procurement Agreement (₹38.00 / Kg)</div>
+                <div class="step-meta">Digital Contract Minted</div>
+              </div>
+            </div>
+            <div class="step-item">
+              <div class="step-dot dot-pending">4</div>
+              <div>
+                <div class="step-text">Warehouse Inward Intake</div>
+                <div class="step-meta">Allocated to Silo 04</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="s2-chat" class="glass-card chat-card">
+          <div>
+            <div class="chat-header">
+              <div class="chat-avatar">QI</div>
+              <div>
+                <div class="chat-user-name">Prakash Solanki</div>
+                <div class="chat-role-badge">Quality Inspector • Active</div>
+              </div>
+            </div>
+            <div class="chat-bubble">
+              "Namaste Ramesh-bhai! I tested the moisture on your Pearl Millet lot. It is 11.2%, which qualifies for <strong>Grade A premium rate</strong>. QR certificate issued!"
+              <div class="chat-badge">Akka.NET 1-to-1 Support Session</div>
+            </div>
+          </div>
+          <div style="font-size: 16px; color: #d1fae5; font-weight: 500">
+            ⚡ Real-time actor-isolated communication across procurement stages
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo("#s2-timeline", { opacity: 0, x: -50 }, { opacity: 1, x: 0, duration: 0.6, ease: "power2.out" }, 0.1);
+      tl.fromTo("#s2-chat", { opacity: 0, x: 50 }, { opacity: 1, x: 0, duration: 0.6, ease: "power2.out" }, 0.3);
+      tl.fromTo(".chat-bubble", { scale: 0.92, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(1.4)" }, 0.8);
+      tl.to("#root", { opacity: 0, scale: 0.97, duration: 0.4, ease: "power2.in" }, 4.6);
+      window.__timelines["scene2"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

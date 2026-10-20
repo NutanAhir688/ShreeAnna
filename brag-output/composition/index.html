@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>ShreeAnna Launch Video</title>
+    <script src="./gsap.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #091a12;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+      .clip {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1920px;
+        height: 1080px;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="20"
+      data-width="1920"
+      data-height="1080"
+    >
+      <div id="host-scene1" data-composition-id="scene1" data-start="0" data-duration="5" data-composition-src="compositions/scene1.html" class="clip"></div>
+      <div id="host-scene2" data-composition-id="scene2" data-start="5" data-duration="5" data-composition-src="compositions/scene2.html" class="clip"></div>
+      <div id="host-scene3" data-composition-id="scene3" data-start="10" data-duration="5" data-composition-src="compositions/scene3.html" class="clip"></div>
+      <div id="host-scene4" data-composition-id="scene4" data-start="15" data-duration="5" data-composition-src="compositions/scene4.html" class="clip"></div>
+
+      <audio
+        id="bgm"
+        src="assets/music/happy-beats-business-moves-vol-1-by-ende-dot-app.mp3"
+        data-start="0"
+        data-duration="20"
+        data-volume="0.75"
+        data-fade-out="1.5"
+      ></audio>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

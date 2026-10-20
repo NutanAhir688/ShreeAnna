@@ -1,0 +1,28 @@
+=== X / TWITTER ===
+🌾 Introducing ShreeAnna: The digital value chain bringing transparency to India's millet revolution.
+
+From cadastral geo-tagging & actor-isolated chat support to instant bank settlements — zero middlemen, 100% fair trade for smallholder farmers. 🚜
+
+Check out the launch: [LINK_PLACEHOLDER]
+#Agritech #MilletRevolution #ShreeAnna #DigitalAgriculture #BuildInPublic #OpenSource
+
+=== LINKEDIN ===
+We built ShreeAnna to solve one of the hardest challenges in Indian agriculture: fair, transparent, and direct market access for millet farmers.
+
+Until now, smallholder farmers faced fragmented supply chains, opaque quality testing, and delayed payouts. ShreeAnna rebuilds the procurement lifecycle end-to-end:
+
+🌾 Cadastral Geo-Tagging: Precise farm parcel boundary mapping linked to registered farmers.
+🔍 Real-Time Quality Grading: Certified moisture and impurity scoring with Akka.NET actor-isolated support chat between farmers and inspectors.
+🚚 Transparent Farm-to-Silo Logistics: GPS telemetry and a 6-digit mutual handshake verification code.
+⚡ Automated Direct Bank Settlements: Immediate disbursements with itemized deductions and UTR tracking.
+
+Powered by .NET 10, Akka.NET, a modern web portal, and a Flutter mobile experience for on-ground operations.
+
+Watch the launch film and explore the project: [LINK_PLACEHOLDER]
+
+#Agritech #Agriculture #SupplyChain #SoftwareEngineering #DotNet #AkkaNET #Flutter #Startups #India
+
+=== SLACK / DISCORD ===
+Hey everyone! 🌾 Just wrapped up the launch demo for ShreeAnna — an end-to-end digital agritech platform connecting millet farmers directly to FPO warehouses with actor-isolated chat and automated bank settlements. 
+
+Check out the 20-second demo video and let me know your thoughts: [LINK_PLACEHOLDER]

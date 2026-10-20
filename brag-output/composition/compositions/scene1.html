@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="./gsap.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #091a12;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: #ffffff;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .bg-glow {
+        position: absolute;
+        width: 900px;
+        height: 900px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(16, 185, 129, 0.16) 0%, transparent 70%);
+        filter: blur(80px);
+        top: -200px;
+        right: -100px;
+        pointer-events: none;
+      }
+      .brand-bar {
+        position: absolute;
+        top: 60px;
+        left: 80px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .brand-icon {
+        width: 52px;
+        height: 52px;
+        background: #064e3b;
+        border: 2px solid #10b981;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+      }
+      .brand-name {
+        font-size: 34px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: #ffffff;
+      }
+      .hero-tag {
+        font-size: 20px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        color: #fde68a;
+        margin-bottom: 24px;
+      }
+      .hero-title {
+        font-size: 84px;
+        font-weight: 900;
+        line-height: 1.1;
+        text-align: center;
+        letter-spacing: -0.03em;
+        max-width: 1400px;
+        margin-bottom: 32px;
+        color: #ffffff;
+      }
+      .hero-title span {
+        color: #34d399;
+      }
+      .hero-desc {
+        font-size: 26px;
+        color: #d1fae5;
+        text-align: center;
+        max-width: 920px;
+        line-height: 1.5;
+        margin-bottom: 48px;
+      }
+      .pill-row {
+        display: flex;
+        gap: 24px;
+      }
+      .pill {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 32px;
+        background: #12281d;
+        border: 1px solid #2d6a4f;
+        border-radius: 9999px;
+        font-size: 20px;
+        font-weight: 700;
+        color: #ffffff;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="scene1" data-start="0" data-duration="5">
+      <div class="bg-glow" data-layout-allow-overflow></div>
+      <div class="brand-bar">
+        <div class="brand-icon">🌾</div>
+        <div class="brand-name">ShreeAnna</div>
+      </div>
+      <div id="s1-tag" class="hero-tag">The Digital Millet Value Chain</div>
+      <h1 id="s1-title" class="hero-title">
+        FARM GATE TO SETTLEMENT.<br />
+        <span>ZERO INTERMEDIARIES.</span>
+      </h1>
+      <p id="s1-desc" class="hero-desc">
+        Empowering smallholder farmers with verified land boundaries, automated quality grading, and direct transparent market access.
+      </p>
+      <div id="s1-pills" class="pill-row">
+        <div class="pill">🌱 Cadastral Geo-Tagging</div>
+        <div class="pill">🔍 100% Verifiable Lots</div>
+        <div class="pill">⚡ Real-Time Payouts</div>
+      </div>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo("#s1-tag", { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, 0.2);
+      tl.fromTo("#s1-title", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.7, ease: "power2.out" }, 0.5);
+      tl.fromTo("#s1-desc", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, 0.9);
+      tl.fromTo("#s1-pills .pill", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.15, ease: "back.out(1.5)" }, 1.3);
+      tl.to("#root", { opacity: 0, scale: 0.97, duration: 0.5, ease: "power2.in" }, 4.5);
+      window.__timelines["scene1"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>
