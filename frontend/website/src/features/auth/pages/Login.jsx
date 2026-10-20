@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import {
   Sprout,
@@ -20,15 +20,32 @@ import { Input } from "@/components/ui/input";
 export default function Login() {
   const { login, register } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectUrl = searchParams.get("redirect");
+  const intent = searchParams.get("intent");
 
   const [isRegistering, setIsRegistering] = useState(false);
-  const [email, setEmail] = useState("fpo@shreeanna.com");
+  const [email, setEmail] = useState(() => (intent === "buy" ? "customer@shreeanna.com" : "fpo@shreeanna.com"));
   const [password, setPassword] = useState("Password123!");
   const [fullName, setFullName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const getDestination = (loggedInUser) => {
+    if (redirectUrl) {
+      if (intent === "buy" && !redirectUrl.includes("intent=buy")) {
+        const separator = redirectUrl.includes("?") ? "&" : "?";
+        return `${redirectUrl}${separator}intent=buy`;
+      }
+      return redirectUrl;
+    }
+    if (loggedInUser?.role === "Customer") {
+      return "/store";
+    }
+    return "/dashboard";
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,11 +54,7 @@ export default function Login() {
 
     try {
       const user = await login(email, password);
-      if (user?.role === "Customer") {
-        navigate("/store");
-      } else {
-        navigate("/dashboard");
-      }
+      navigate(getDestination(user));
     } catch (err) {
       setError(err.message || "Failed to login. Check backend server.");
     } finally {
@@ -57,7 +70,7 @@ export default function Login() {
     try {
       // Self-registration strictly provisions Customer role only
       const user = await register(regEmail.trim(), regPassword, fullName.trim());
-      navigate("/store");
+      navigate(getDestination(user));
     } catch (err) {
       setError(err.message || "Failed to create account. Email may already be in use.");
     } finally {
@@ -73,11 +86,7 @@ export default function Login() {
 
     try {
       const user = await login(defaultEmail, "Password123!");
-      if (roleKey === "Customer" || user?.role === "Customer") {
-        navigate("/store");
-      } else {
-        navigate("/dashboard");
-      }
+      navigate(getDestination(user));
     } catch (err) {
       setError(err.message || "Login failed. Please check backend server.");
     } finally {
@@ -179,26 +188,41 @@ export default function Login() {
 
       {/* Main Card */}
       <div className="max-w-xl mx-auto w-full z-10 my-auto">
-        <div className="bg-white border border-[#E7ECE4] rounded-3xl p-6 sm:p-9 shadow-[0_20px_50px_rgba(27,67,36,0.06)]">
+        <div className="bg-white dark:bg-slate-900 border border-[#E7ECE4] dark:border-slate-800 rounded-3xl p-6 sm:p-9 shadow-[0_20px_50px_rgba(27,67,36,0.06)]">
           {/* Card Header */}
           <div className="text-center sm:text-left mb-6">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EBF3E8] border border-[#D1E2CD] text-[#225732] text-xs font-semibold mb-2.5">
-              <Sprout className="w-3.5 h-3.5 text-[#2E7D42]" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EBF3E8] dark:bg-emerald-950/60 border border-[#D1E2CD] dark:border-emerald-800 text-[#225732] dark:text-emerald-400 text-xs font-semibold mb-2.5">
+              <Sprout className="w-3.5 h-3.5 text-[#2E7D42] dark:text-emerald-400" />
               <span>{isRegistering ? "Customer Self-Registration" : "National Millet Value Chain Platform"}</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#142017] tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#142017] dark:text-slate-100 tracking-tight">
               {isRegistering ? (
-                <>Create <span className="text-[#266838]">Customer Account</span></>
+                <>Create <span className="text-[#266838] dark:text-emerald-400">Customer Account</span></>
               ) : (
-                <>Sign In to <span className="text-[#266838]">ShreeAnna</span></>
+                <>Sign In to <span className="text-[#266838] dark:text-emerald-400">ShreeAnna</span></>
               )}
             </h1>
-            <p className="text-xs sm:text-sm text-[#56655A] mt-1">
+            <p className="text-xs sm:text-sm text-[#56655A] dark:text-slate-400 mt-1">
               {isRegistering
                 ? "Register to buy certified millet products directly from farmers and SHGs with verified delivery tracking."
                 : "Access your role-based portal or pick a demo role below to test the end-to-end platform."}
             </p>
           </div>
+
+          {/* Context Notice for Buy Intent */}
+          {intent === "buy" && (
+            <div className="mb-5 p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/90 dark:border-amber-700/60 flex items-center gap-3 text-xs text-amber-900 dark:text-amber-200 font-medium">
+              <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-900/60 flex items-center justify-center shrink-0">
+                <ShoppingBag className="w-4 h-4 text-amber-800 dark:text-amber-300" />
+              </div>
+              <div>
+                <p className="font-bold text-amber-950 dark:text-amber-100">Sign In to Complete Purchase</p>
+                <p className="text-[11px] text-amber-800 dark:text-amber-300">
+                  Please sign in or click <strong>Customer / Retail Buyer</strong> below to continue your order.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Form */}
           {!isRegistering ? (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams, useLocation } from "react-router-dom";
 import {
   Sprout,
   Search,
@@ -36,9 +36,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { marketplaceApi, ordersApi, auth, getInMemoryToken } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
+import ProductDetails from "../components/ProductDetails";
 
 export default function CustomerMarketplace() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { id: routeProductId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user: authUser } = useAuth();
 
   // -------------------------------------------------------------
@@ -46,6 +50,7 @@ export default function CustomerMarketplace() {
   // -------------------------------------------------------------
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("All Products");
   const [selectedMilletType, setSelectedMilletType] = useState("all");
   const [selectedProducerType, setSelectedProducerType] = useState("all");
@@ -53,7 +58,7 @@ export default function CustomerMarketplace() {
   const [sortBy, setSortBy] = useState("featured");
   const [searchQuery, setSearchQuery] = useState("");
   const [wishlistCount, setWishlistCount] = useState(1);
-  const [currentView, setCurrentView] = useState("marketplace"); // "marketplace" | "my-orders"
+  const [currentView, setCurrentView] = useState("marketplace"); // "marketplace" | "product-details" | "my-orders"
 
   // User state (integrates with global AuthContext, fallback to local storage)
   const [localUser, setLocalUser] = useState(() => {
@@ -198,6 +203,38 @@ export default function CustomerMarketplace() {
     loadProducts();
   }, []);
 
+  // Sync route param or query param to select a product directly
+  useEffect(() => {
+    const targetId = routeProductId || searchParams.get("product");
+    if (targetId && products.length > 0) {
+      const found = products.find(
+        (p) =>
+          String(p.id).toLowerCase() === String(targetId).toLowerCase() ||
+          p.title?.toLowerCase().replace(/\s+/g, "-") === String(targetId).toLowerCase()
+      );
+      if (found) {
+        setSelectedProduct(found);
+        setCurrentView("product-details");
+      }
+    }
+  }, [routeProductId, searchParams, products]);
+
+  // Sync buy intent after login to immediately open checkout
+  useEffect(() => {
+    if (currentUser && searchParams.get("intent") === "buy") {
+      setCheckoutModalOpen(true);
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("intent");
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [currentUser, searchParams, setSearchParams]);
+
+  const handleProductClick = (product) => {
+    setSelectedProduct(product);
+    setCurrentView("product-details");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const customerEmail = currentUser?.email || "mukund@example.com";
 
   const loadCustomerOrders = useCallback(async () => {
@@ -261,24 +298,35 @@ export default function CustomerMarketplace() {
   // 4. CART & BUY ACTIONS
   // -------------------------------------------------------------
   const handleAddToCart = (product) => {
+    const packSize = product.selectedPackSize || "1 kg";
+    const qtyToAdd = product.quantity || 1;
+    const itemPrice = Number(product.pricePerKg) || 180;
+    const cartItemId = `${product.id}_${packSize}`;
+
     setCart((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
+      const existing = prev.find(
+        (item) => item.cartItemId === cartItemId || item.id === cartItemId || item.id === product.id
+      );
       if (existing) {
         return prev.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.cartItemId === cartItemId || item.id === cartItemId || item.id === product.id
+            ? { ...item, quantity: item.quantity + qtyToAdd }
+            : item
         );
       }
       return [
         ...prev,
         {
-          id: product.id,
+          id: cartItemId,
+          cartItemId,
+          productId: product.id,
           title: product.title,
           category: product.category || "Millet Food",
           brand: product.brand || product.farmerName || "SHG Verified",
-          price: Number(product.pricePerKg) || 150,
-          unit: product.category === "Cookies" ? "250g" : product.category === "Snacks" ? "pack" : "kg",
+          price: itemPrice,
+          unit: packSize,
           imageUrl: product.imageUrl || "/images/products/pearl_millet_flour.jpg",
-          quantity: 1,
+          quantity: qtyToAdd,
         },
       ];
     });
@@ -286,15 +334,20 @@ export default function CustomerMarketplace() {
   };
 
   const handleBuyNow = (product) => {
-    // Directly add to cart and open cart drawer (no login popup interception)
     handleAddToCart(product);
+    if (!currentUser) {
+      const returnUrl = location.pathname + location.search;
+      navigate(`/login?redirect=${encodeURIComponent(returnUrl)}&intent=buy`);
+      return;
+    }
+    setCheckoutModalOpen(true);
   };
 
   const updateQuantity = (id, delta) => {
     setCart((prev) =>
       prev
         .map((item) => {
-          if (item.id === id) {
+          if (item.id === id || item.cartItemId === id) {
             const newQty = item.quantity + delta;
             return newQty > 0 ? { ...item, quantity: newQty } : null;
           }
@@ -305,7 +358,7 @@ export default function CustomerMarketplace() {
   };
 
   const removeFromCart = (id) => {
-    setCart((prev) => prev.filter((item) => item.id !== id));
+    setCart((prev) => prev.filter((item) => item.id !== id && item.cartItemId !== id));
   };
 
   const totalCartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
@@ -364,6 +417,12 @@ export default function CustomerMarketplace() {
   // 6. ORDER CREATION & CHECKOUT
   // -------------------------------------------------------------
   const handleProceedToCheckout = () => {
+    if (!currentUser) {
+      setCartOpen(false);
+      const returnUrl = location.pathname + location.search;
+      navigate(`/login?redirect=${encodeURIComponent(returnUrl)}&intent=buy`);
+      return;
+    }
     setCartOpen(false);
     setCheckoutModalOpen(true);
   };
@@ -453,9 +512,12 @@ export default function CustomerMarketplace() {
                 Home
               </a>
               <button
-                onClick={() => setCurrentView("marketplace")}
+                onClick={() => {
+                  setSelectedProduct(null);
+                  setCurrentView("marketplace");
+                }}
                 className={`cursor-pointer py-1 font-semibold relative ${
-                  currentView === "marketplace"
+                  currentView === "marketplace" || currentView === "product-details"
                     ? "text-[#1B4324] after:absolute after:bottom-[-2px] after:left-0 after:right-0 after:h-[2px] after:bg-[#1B4324] after:rounded-full"
                     : "hover:text-[#1B4324]"
                 }`}
@@ -464,6 +526,7 @@ export default function CustomerMarketplace() {
               </button>
               <button
                 onClick={() => {
+                  setSelectedProduct(null);
                   setCurrentView("marketplace");
                   setSelectedCategory("All Products");
                 }}
@@ -474,7 +537,7 @@ export default function CustomerMarketplace() {
               <button
                 onClick={() => {
                   if (!currentUser) {
-                    setAuthModalOpen(true);
+                    navigate(`/login?redirect=${encodeURIComponent("/my-orders")}`);
                   } else {
                     setCurrentView("my-orders");
                   }
@@ -567,7 +630,10 @@ export default function CustomerMarketplace() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setAuthModalOpen(true)}
+                onClick={() => {
+                  const returnUrl = location.pathname + location.search;
+                  navigate(`/login?redirect=${encodeURIComponent(returnUrl)}`);
+                }}
                 className="h-9 px-4 rounded-full text-xs font-semibold border-[#C5D5C0] text-[#1B4324] hover:bg-[#EFF5EB] cursor-pointer flex items-center gap-1.5"
               >
                 <User className="w-3.5 h-3.5 text-[#1B4324]" />
@@ -579,9 +645,20 @@ export default function CustomerMarketplace() {
       </header>
 
       {/* ─────────────────────────────────────────────────────────────
-          2. MAIN BODY (Sidebar on Left + Product Catalog on Right)
+          2. MAIN BODY (Product Details OR Marketplace Catalog OR My Orders)
       ───────────────────────────────────────────────────────────── */}
-      {currentView === "marketplace" ? (
+      {currentView === "product-details" && selectedProduct ? (
+        <ProductDetails
+          product={selectedProduct}
+          onBack={() => {
+            setSelectedProduct(null);
+            setCurrentView("marketplace");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+          onAddToCart={handleAddToCart}
+          onBuyNow={handleBuyNow}
+        />
+      ) : currentView === "marketplace" ? (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* ─────────────────────────────────────────────────────────────
@@ -784,7 +861,8 @@ export default function CustomerMarketplace() {
                     return (
                       <div
                         key={product.id}
-                        className="bg-white rounded-2xl border border-[#E3ECE0] overflow-hidden shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between group"
+                        onClick={() => handleProductClick(product)}
+                        className="bg-white rounded-2xl border border-[#E3ECE0] overflow-hidden shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between group cursor-pointer"
                       >
                         {/* Real Image Container with Floating Badges (matching Image 5) */}
                         <div className="relative aspect-4/3 w-full bg-slate-50 overflow-hidden">
@@ -823,7 +901,7 @@ export default function CustomerMarketplace() {
                             <p className="text-[11px] font-semibold text-slate-500">
                               {product.brand || product.farmerName || "Verified Producer"}
                             </p>
-                            <h3 className="text-base font-bold text-[#142017] leading-snug line-clamp-1">
+                            <h3 className="text-base font-bold text-[#142017] leading-snug line-clamp-1 group-hover:text-[#1B4324] transition-colors">
                               {product.title}
                             </h3>
                             <p className="text-lg font-extrabold text-[#142017]">
@@ -831,9 +909,12 @@ export default function CustomerMarketplace() {
                             </p>
                           </div>
 
-                          {/* Action Button: View Product / Buy */}
+                          {/* Action Button: View Product Details */}
                           <Button
-                            onClick={() => handleBuyNow(product)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleProductClick(product);
+                            }}
                             className="w-full bg-[#1B4324] hover:bg-[#14341C] text-white font-semibold text-xs h-10 rounded-xl shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 transition-all hover:scale-[1.01]"
                           >
                             <span>Buy Product</span>
