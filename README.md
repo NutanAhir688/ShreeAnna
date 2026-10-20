@@ -15,6 +15,20 @@ These percentages reflect actual functional implementations across frontend, bac
 
 ---
 
+## 🎬 Platform Launch Demo
+
+<div align="center">
+  <a href="brag-output/brag.mp4">
+    <img src="brag-output/brag.jpg" alt="ShreeAnna Platform Launch Demo" width="100%" style="border-radius: 12px; max-width: 900px;" />
+  </a>
+  <p>
+    <em>🎥 <strong><a href="brag-output/brag.mp4">▶ Click to Watch the 20-Second Launch Walkthrough (`brag-output/brag.mp4`)</a></strong></em><br />
+    <em>Cadastral Geo-Tagging &bull; Real-Time Akka.NET Chat Support &bull; GPS Dispatch Telemetry &bull; Direct Bank Settlements</em>
+  </p>
+</div>
+
+---
+
 # 🚀 Getting Started & How to Run
 
 This project consists of three main sub-systems working end-to-end:
