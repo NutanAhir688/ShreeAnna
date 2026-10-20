@@ -19,7 +19,9 @@ public record CreateOrderRequest(
     string? State,
     string? Pincode,
     string? PaymentMethod,
-    List<CreateOrderItemRequest> Items
+    List<CreateOrderItemRequest> Items,
+    decimal? CustomerLatitude = null,
+    decimal? CustomerLongitude = null
 );
 
 public record ConfirmDeliveryOtpRequest(
@@ -65,5 +67,9 @@ public record OrderResponse(
     string? VehicleNumber,
     DateTime CreatedAt,
     DateTime? DeliveredAt,
-    List<OrderItemResponse> Items
+    List<OrderItemResponse> Items,
+    decimal? CustomerLatitude = null,
+    decimal? CustomerLongitude = null,
+    decimal? DriverLatitude = null,
+    decimal? DriverLongitude = null
 );

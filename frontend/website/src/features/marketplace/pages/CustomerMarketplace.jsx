@@ -29,6 +29,7 @@ import {
   PackageCheck,
   MapPin,
   Clock,
+  Navigation,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ import { Input } from "@/components/ui/input";
 import { marketplaceApi, ordersApi, auth, getInMemoryToken } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
 import ProductDetails from "../components/ProductDetails";
+import OrderLiveTrackingMap from "../components/OrderLiveTrackingMap";
 
 export default function CustomerMarketplace() {
   const navigate = useNavigate();
@@ -108,9 +110,57 @@ export default function CustomerMarketplace() {
 
   // Order Confirmation & Tracking state
   const [confirmedOrder, setConfirmedOrder] = useState(null);
+  const [activeTrackingOrder, setActiveTrackingOrder] = useState(null);
   const [otpVerificationInput, setOtpVerificationInput] = useState("");
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [otpMessage, setOtpMessage] = useState("");
+
+  // Location permission & Coordinates
+  const [deliveryCoordinates, setDeliveryCoordinates] = useState({
+    lat: 22.8398,
+    lng: 74.2536,
+    accuracy: null,
+    granted: false,
+    loading: false,
+    error: null,
+  });
+
+  const requestDeliveryLocation = useCallback(() => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      setDeliveryCoordinates((prev) => ({
+        ...prev,
+        error: "Geolocation not supported by browser. Using verified hub GPS.",
+      }));
+      return;
+    }
+
+    setDeliveryCoordinates((prev) => ({ ...prev, loading: true, error: null }));
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = Number(pos.coords.latitude.toFixed(6));
+        const lng = Number(pos.coords.longitude.toFixed(6));
+        const accuracy = Math.round(pos.coords.accuracy);
+        setDeliveryCoordinates({
+          lat,
+          lng,
+          accuracy,
+          granted: true,
+          loading: false,
+          error: null,
+        });
+      },
+      (err) => {
+        console.warn("Geolocation permission note:", err.message);
+        setDeliveryCoordinates((prev) => ({
+          ...prev,
+          granted: false,
+          loading: false,
+          error: "Location permission denied. Using verified default coordinates (Dahod Hub).",
+        }));
+      },
+      { enableHighAccuracy: true, timeout: 7000 }
+    );
+  }, []);
 
   // Customer Orders List state
   const [customerOrders, setCustomerOrders] = useState([]);
@@ -335,6 +385,7 @@ export default function CustomerMarketplace() {
 
   const handleBuyNow = (product) => {
     handleAddToCart(product);
+    requestDeliveryLocation();
     if (!currentUser) {
       const returnUrl = location.pathname + location.search;
       navigate(`/login?redirect=${encodeURIComponent(returnUrl)}&intent=buy`);
@@ -417,6 +468,7 @@ export default function CustomerMarketplace() {
   // 6. ORDER CREATION & CHECKOUT
   // -------------------------------------------------------------
   const handleProceedToCheckout = () => {
+    requestDeliveryLocation();
     if (!currentUser) {
       setCartOpen(false);
       const returnUrl = location.pathname + location.search;
@@ -433,30 +485,43 @@ export default function CustomerMarketplace() {
 
     setSubmittingOrder(true);
     try {
+      // Fix 400 error: Extract pure GUID for productId
+      const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       const orderPayload = {
         customerName: shippingDetails.name,
-        customerEmail: currentUser?.email || "mukund@example.com",
+        customerEmail: currentUser?.email || "customer@shreeanna.com",
         customerPhone: shippingDetails.phone,
         shippingAddress: shippingDetails.address,
         city: shippingDetails.city,
         state: shippingDetails.state,
         pincode: shippingDetails.pincode,
         paymentMethod: shippingDetails.paymentMethod,
-        items: cart.map((item) => ({
-          productId: item.id,
-          productTitle: item.title,
-          category: item.category,
-          producerName: item.brand,
-          imageUrl: item.imageUrl,
-          price: item.price,
-          quantity: item.quantity,
-        })),
+        customerLatitude: deliveryCoordinates.lat,
+        customerLongitude: deliveryCoordinates.lng,
+        items: cart.map((item) => {
+          let validProductId = null;
+          const rawId = item.productId || item.id || "";
+          const guidCandidate = typeof rawId === "string" ? rawId.split("_")[0] : null;
+          if (guidCandidate && guidRegex.test(guidCandidate)) {
+            validProductId = guidCandidate;
+          }
+          return {
+            productId: validProductId,
+            productTitle: item.title,
+            category: item.category,
+            producerName: item.brand,
+            imageUrl: item.imageUrl,
+            price: item.price,
+            quantity: item.quantity,
+          };
+        }),
       };
 
       const created = await ordersApi.create(orderPayload);
       setConfirmedOrder(created);
       setCart([]);
       setCheckoutModalOpen(false);
+      loadCustomerOrders();
     } catch (err) {
       alert("Order placement failed: " + (err.message || "Unknown error"));
     } finally {
@@ -478,6 +543,9 @@ export default function CustomerMarketplace() {
     try {
       const updated = await ordersApi.confirmDelivery(orderId, otpToVerify.trim());
       setConfirmedOrder(updated);
+      if (activeTrackingOrder && activeTrackingOrder.id === orderId) {
+        setActiveTrackingOrder(updated);
+      }
       setOtpMessage("Delivery verified successfully! Driver released back to available.");
       // Refresh customer orders list
       loadCustomerOrders();
@@ -1038,6 +1106,16 @@ export default function CustomerMarketplace() {
                         <p className="text-[11px] text-slate-500">
                           Destination: {order.shippingAddress}, {order.city}
                         </p>
+                        <div className="pt-2">
+                          <Button
+                            size="sm"
+                            onClick={() => setActiveTrackingOrder(order)}
+                            className="bg-[#1B4324] hover:bg-[#14341C] text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 h-8 cursor-pointer shadow-2xs"
+                          >
+                            <Navigation className="w-3.5 h-3.5 text-emerald-300" />
+                            <span>View Live Map & Driver Telemetry</span>
+                          </Button>
+                        </div>
                       </div>
 
                       {/* OTP & Delivery Action */}
@@ -1403,6 +1481,40 @@ export default function CustomerMarketplace() {
                     />
                   </div>
                 </div>
+
+                {/* GPS Location Relay Card */}
+                <div className="p-3 rounded-xl bg-[#EFF6ED] border border-[#CFE4CB] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-[#1B4324]">
+                      <Navigation className="w-3.5 h-3.5 text-[#2E7D42]" />
+                      <span>Delivery GPS Pin (Relayed to Driver)</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={requestDeliveryLocation}
+                      className="text-[11px] font-bold text-[#1B4324] hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <RotateCcw className={`w-3 h-3 ${deliveryCoordinates.loading ? "animate-spin" : ""}`} />
+                      <span>{deliveryCoordinates.loading ? "Locating..." : "Use Live GPS"}</span>
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-slate-700 font-mono bg-white px-3 py-1.5 rounded-lg border border-[#D5E3D2]">
+                    <span>
+                      📍 {deliveryCoordinates.lat.toFixed(4)}° N, {deliveryCoordinates.lng.toFixed(4)}° E
+                    </span>
+                    {deliveryCoordinates.granted ? (
+                      <span className="text-emerald-700 font-bold flex items-center gap-1">
+                        <Check className="w-3 h-3" />
+                        GPS Locked {deliveryCoordinates.accuracy ? `(±${deliveryCoordinates.accuracy}m)` : ""}
+                      </span>
+                    ) : (
+                      <span className="text-slate-500">Default Verified Hub</span>
+                    )}
+                  </div>
+                  {deliveryCoordinates.error && (
+                    <p className="text-[10px] text-amber-800">{deliveryCoordinates.error}</p>
+                  )}
+                </div>
               </div>
 
               {/* Payment Method */}
@@ -1449,107 +1561,38 @@ export default function CustomerMarketplace() {
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          7. ORDER SUCCESS & LIVE DRIVER / OTP MODAL
+          7. ORDER SUCCESS & LIVE DRIVER / MAP MODAL
       ───────────────────────────────────────────────────────────── */}
       {confirmedOrder && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-5 animate-in fade-in-50 zoom-in-95 duration-200">
-            {/* Header */}
-            <div className="text-center space-y-1">
-              <div className="w-12 h-12 rounded-full bg-emerald-100 text-[#1B4324] flex items-center justify-center mx-auto mb-2">
-                <CheckCircle2 className="w-7 h-7" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900">Order Confirmed!</h3>
-              <p className="text-xs text-slate-500">Order ID: {confirmedOrder.orderNumber}</p>
-            </div>
-
-            {/* OTP Banner */}
-            <div className="bg-gradient-to-r from-amber-50 to-emerald-50 p-4 rounded-2xl border border-amber-200/80 text-center space-y-1">
-              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
-                Your Delivery Verification OTP
-              </span>
-              <span className="text-3xl font-black tracking-widest text-[#1B4324] block">
-                {confirmedOrder.deliveryOtp}
-              </span>
-              <p className="text-[11px] text-slate-600">
-                Provide this 4-digit code to your delivery driver when your package arrives.
-              </p>
-            </div>
-
-            {/* Auto-Assigned Driver Card */}
-            <div className="p-4 rounded-xl bg-[#F8FAF7] border border-[#E3ECE0] space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Truck className="w-4 h-4 text-[#1B4324]" />
-                  <span className="text-xs font-bold text-slate-900">Assigned Driver</span>
-                </div>
-                <Badge className="bg-emerald-100 text-emerald-800 text-[10px]">On the way</Badge>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 text-xs pt-1">
-                <div>
-                  <span className="text-slate-400 block text-[10px]">Driver Name</span>
-                  <span className="font-bold text-slate-800">{confirmedOrder.driverName || "Ravi Kumar"}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px]">Vehicle Number</span>
-                  <span className="font-bold text-slate-800">{confirmedOrder.vehicleNumber || "KA-09-AB-4521"}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Live OTP Verification Action Form */}
-            {confirmedOrder.status !== "DELIVERED" ? (
-              <div className="space-y-3 pt-2 border-t border-slate-100">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-800">Verify Customer OTP for Handshake</span>
-                  <button
-                    onClick={() => setOtpVerificationInput(confirmedOrder.deliveryOtp)}
-                    className="text-[11px] text-emerald-700 hover:underline font-semibold"
-                  >
-                    Auto-fill OTP
-                  </button>
-                </div>
-
-                <div className="flex gap-2">
-                  <Input
-                    type="text"
-                    maxLength={4}
-                    value={otpVerificationInput}
-                    onChange={(e) => setOtpVerificationInput(e.target.value)}
-                    placeholder="Enter 4-digit OTP"
-                    className="h-10 text-center tracking-widest font-mono font-bold text-base rounded-xl"
-                  />
-                  <Button
-                    onClick={() => handleVerifyDeliveryOtp(confirmedOrder.id, otpVerificationInput)}
-                    disabled={otpVerifying}
-                    className="bg-[#1B4324] hover:bg-[#14341C] text-white text-xs px-5 rounded-xl cursor-pointer shrink-0"
-                  >
-                    {otpVerifying ? "Verifying..." : "Confirm Delivery"}
-                  </Button>
-                </div>
-
-                {otpMessage && (
-                  <p className="text-[11px] font-semibold text-emerald-700 text-center">{otpMessage}</p>
-                )}
-              </div>
-            ) : (
-              <div className="p-3 bg-emerald-100 text-emerald-800 rounded-xl text-center text-xs font-bold flex items-center justify-center gap-2">
-                <Check className="w-4 h-4" />
-                <span>Package Delivered & Verified! Driver Released.</span>
-              </div>
-            )}
-
-            <Button
-              variant="outline"
-              onClick={() => {
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+          <div className="max-w-4xl w-full animate-in fade-in-50 zoom-in-95 duration-200">
+            <OrderLiveTrackingMap
+              order={confirmedOrder}
+              onClose={() => {
                 setConfirmedOrder(null);
                 setCurrentView("my-orders");
               }}
-              className="w-full text-xs rounded-xl border-slate-200 cursor-pointer"
-            >
-              View in My Orders
-            </Button>
+              onVerifyOtp={handleVerifyDeliveryOtp}
+              isVerifyingOtp={otpVerifying}
+              otpMessage={otpMessage}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          8. ACTIVE TRACKING MODAL (From "My Orders" tab)
+      ───────────────────────────────────────────────────────────── */}
+      {activeTrackingOrder && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+          <div className="max-w-4xl w-full animate-in fade-in-50 zoom-in-95 duration-200">
+            <OrderLiveTrackingMap
+              order={activeTrackingOrder}
+              onClose={() => setActiveTrackingOrder(null)}
+              onVerifyOtp={handleVerifyDeliveryOtp}
+              isVerifyingOtp={otpVerifying}
+              otpMessage={otpMessage}
+            />
           </div>
         </div>
       )}

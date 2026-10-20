@@ -29,6 +29,11 @@ public class OrderService : IOrderService
         decimal deliveryFee = 40.00m;
         decimal totalAmount = subtotal + deliveryFee;
 
+        decimal custLat = request.CustomerLatitude ?? 22.8398m;
+        decimal custLng = request.CustomerLongitude ?? 74.2536m;
+        decimal driverLat = custLat + 0.0150m;
+        decimal driverLng = custLng - 0.0180m;
+
         var order = new Order
         {
             OrderNumber = orderNumber,
@@ -46,6 +51,10 @@ public class OrderService : IOrderService
             TotalAmount = totalAmount,
             Status = "CONFIRMED",
             DeliveryOtp = deliveryOtp,
+            CustomerLatitude = custLat,
+            CustomerLongitude = custLng,
+            DriverLatitude = driverLat,
+            DriverLongitude = driverLng,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -232,7 +241,11 @@ public class OrderService : IOrderService
                 i.UnitPrice,
                 i.Quantity,
                 i.TotalPrice
-            )).ToList()
+            )).ToList(),
+            order.CustomerLatitude,
+            order.CustomerLongitude,
+            order.DriverLatitude,
+            order.DriverLongitude
         );
     }
 }

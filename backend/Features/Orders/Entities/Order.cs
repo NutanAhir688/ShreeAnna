@@ -87,6 +87,18 @@ public class Order
     [Column("vehicle_number")]
     public string? VehicleNumber { get; set; }
 
+    [Column("customer_latitude", TypeName = "decimal(10,6)")]
+    public decimal? CustomerLatitude { get; set; }
+
+    [Column("customer_longitude", TypeName = "decimal(10,6)")]
+    public decimal? CustomerLongitude { get; set; }
+
+    [Column("driver_latitude", TypeName = "decimal(10,6)")]
+    public decimal? DriverLatitude { get; set; }
+
+    [Column("driver_longitude", TypeName = "decimal(10,6)")]
+    public decimal? DriverLongitude { get; set; }
+
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

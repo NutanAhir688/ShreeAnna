@@ -385,14 +385,17 @@ export default function ProductDetails({
 
               <Button
                 variant="outline"
-                onClick={() =>
+                onClick={() => {
+                  if (typeof window !== "undefined" && navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(() => {}, () => {}, { timeout: 4000 });
+                  }
                   onBuyNow({
                     ...p,
                     pricePerKg: calculatedUnitPrice,
                     selectedPackSize,
                     quantity,
-                  })
-                }
+                  });
+                }}
                 className="flex-1 border-2 border-[#1B4324] text-[#1B4324] hover:bg-emerald-50/50 font-bold text-xs sm:text-sm h-12 rounded-xl flex items-center justify-center cursor-pointer transition-all"
               >
                 <span>Buy Now</span>
