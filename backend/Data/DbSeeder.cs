@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using backend.Features.Fpo.Entities;
 using backend.Features.Auth.Entities;
 using backend.Features.Auth;
+using backend.Features.Marketplace.Entities;
 
 namespace backend.Data;
 
@@ -134,6 +135,24 @@ public static class DbSeeder
                     ""CreatedAt"" timestamp with time zone NOT NULL,
                     ""UpdatedAt"" timestamp with time zone NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS ""marketplace_products"" (
+                    ""id"" uuid NOT NULL PRIMARY KEY,
+                    ""title"" character varying(200) NOT NULL,
+                    ""category"" character varying(100),
+                    ""brand"" character varying(100),
+                    ""description"" text,
+                    ""lot_id"" character varying(50),
+                    ""millet_type"" character varying(100),
+                    ""farmer_name"" character varying(150),
+                    ""quantity_kg"" numeric(18,2),
+                    ""price_per_kg"" numeric(18,2),
+                    ""status"" character varying(50) NOT NULL DEFAULT 'Active',
+                    ""image_url"" text,
+                    ""created_by_user_id"" uuid,
+                    ""created_at"" timestamp with time zone NOT NULL,
+                    ""updated_at"" timestamp with time zone,
+                    ""is_deleted"" boolean NOT NULL DEFAULT FALSE
+                );
             ");
         }
         catch { }
@@ -147,6 +166,7 @@ public static class DbSeeder
         await SeedDriversAsync(context);
         await SeedPurchaseRequestsAsync(context);
         await SeedInventoryBatchesAsync(context);
+        await SeedMarketplaceProductsAsync(context);
     }
 
     private static async Task SeedFarmCropsAsync(AppDbContext context)
@@ -853,6 +873,69 @@ public static class DbSeeder
         };
 
         await context.StockMovements.AddRangeAsync(movements);
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task SeedMarketplaceProductsAsync(AppDbContext context)
+    {
+        if (await context.MarketplaceProducts.AnyAsync())
+        {
+            return;
+        }
+
+        var products = new List<MarketplaceProduct>
+        {
+            new MarketplaceProduct
+            {
+                Id = Guid.Parse("aa11bb22-3344-5566-7788-9900aabbccdd"),
+                Title = "Premium Pearl Millet Flour",
+                Category = "Flours & Grains",
+                Brand = "ShreeAnna Organics",
+                Description = "Finely milled pearl millet flour, stone-ground to preserve nutrients. Ideal for baking and traditional flatbreads. Sourced from sustainable SHG farms.",
+                LotId = "LOT-2026-004",
+                MilletType = "Pearl Millet",
+                FarmerName = "Lokesh M.",
+                QuantityKg = 1500,
+                PricePerKg = 48.00m,
+                Status = "Active",
+                CreatedAt = DateTime.UtcNow.AddDays(-5),
+                IsDeleted = false
+            },
+            new MarketplaceProduct
+            {
+                Id = Guid.Parse("bb22cc33-4455-6677-8899-0011bbccddee"),
+                Title = "Organic Foxtail Millet Rava",
+                Category = "Ready-to-Cook (RTC)",
+                Brand = "ShreeAnna Organics",
+                Description = "Unpolished, nutrient-dense foxtail millet semolina/rava. Perfect for diabetes-friendly upma, idlis, and porridge.",
+                LotId = "LOT-2026-002",
+                MilletType = "Foxtail Millet",
+                FarmerName = "Ramesh Kumar",
+                QuantityKg = 800,
+                PricePerKg = 62.50m,
+                Status = "Draft",
+                CreatedAt = DateTime.UtcNow.AddDays(-2),
+                IsDeleted = false
+            },
+            new MarketplaceProduct
+            {
+                Id = Guid.Parse("cc33dd44-5566-7788-9900-1122ccddeeff"),
+                Title = "Sprouted Finger Millet Malt Mix",
+                Category = "Beverages & Health Mixes",
+                Brand = "ShreeAnna Value SHG",
+                Description = "Traditional malted ragi mix enhanced with cardamom. High in bioavailable calcium and iron for growing children.",
+                LotId = "LOT-2026-001",
+                MilletType = "Finger Millet (Ragi)",
+                FarmerName = "Mukund Sharma",
+                QuantityKg = 500,
+                PricePerKg = 95.00m,
+                Status = "Unpublished",
+                CreatedAt = DateTime.UtcNow.AddDays(-7),
+                IsDeleted = false
+            }
+        };
+
+        await context.MarketplaceProducts.AddRangeAsync(products);
         await context.SaveChangesAsync();
     }
 }

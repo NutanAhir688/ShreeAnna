@@ -24,6 +24,7 @@ import PaymentProcessing from "../features/payments/pages/PaymentProcessing";
 import Marketplace from "../features/marketplace/pages/Marketplace";
 import MarketplaceListingDetails from "../features/marketplace/pages/MarketplaceListingDetails";
 import CreateMarketplaceListing from "../features/marketplace/pages/CreateMarketplaceListing";
+import EditMarketplaceProduct from "../features/marketplace/pages/EditMarketplaceProduct";
 import Orders from "../features/orders/pages/Orders";
 import OrderDetails from "../features/orders/pages/OrderDetails";
 import Logistics from "@/features/logistics/pages/Logistics";
@@ -93,6 +94,8 @@ function AppRoutes() {
 
           <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/marketplace/new" element={<CreateMarketplaceListing />} />
+          <Route path="/marketplace/:id/edit" element={<EditMarketplaceProduct />} />
+          <Route path="/marketplace/edit/:id" element={<EditMarketplaceProduct />} />
           <Route path="/marketplace/:id" element={<MarketplaceListingDetails />} />
 
           <Route path="/orders" element={<Orders />} />
