@@ -77,6 +77,17 @@ export const auth = {
     return data;
   },
 
+  register: async (email, password, fullName = "") => {
+    const data = await request("/api/auth/register", {
+      method: "POST",
+      body: { email, password, fullName },
+    });
+    if (data?.accessToken) {
+      setInMemoryToken(data.accessToken);
+    }
+    return data;
+  },
+
   refresh: async () => {
     try {
       const data = await request("/api/auth/refresh", {
@@ -246,11 +257,16 @@ export const marketplaceApi = {
 // ORDERS
 // ─────────────────────────────────────────────────────────────
 export const ordersApi = {
-  getAll: () => request("/api/orders").catch(() => []),
+  getAll: (customerEmail) =>
+    request(`/api/orders${customerEmail ? `?customerEmail=${encodeURIComponent(customerEmail)}` : ""}`).catch(() => []),
   getById: (id) => request(`/api/orders/${id}`).catch(() => null),
   create: (data) => request("/api/orders", { method: "POST", body: data }),
   updateStatus: (id, status) =>
     request(`/api/orders/${id}/status`, { method: "PATCH", body: { status } }),
+  confirmDelivery: (id, otp) =>
+    request(`/api/orders/${id}/confirm-delivery`, { method: "POST", body: { otp } }),
+  assignDriver: (id, driverId) =>
+    request(`/api/orders/${id}/assign-driver`, { method: "POST", body: { driverId } }),
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -383,4 +399,6 @@ export const purchaseRequestsApi = {
   pay: (id, data) => request(`/api/purchase-requests/${id}/pay`, { method: "POST", body: data }),
   confirmDelivery: (id, data) => request(`/api/purchase-requests/${id}/confirm-delivery`, { method: "POST", body: data }),
 };
+
+
 

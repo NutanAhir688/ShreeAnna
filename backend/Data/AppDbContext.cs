@@ -10,6 +10,7 @@ using backend.Features.Logistics.Entities;
 using backend.Features.Notifications.Entities;
 using backend.Features.Settlements.Entities;
 using backend.Features.Marketplace.Entities;
+using backend.Features.Orders.Entities;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -66,6 +67,8 @@ public class AppDbContext : DbContext
     public DbSet<Settlement> Settlements => Set<Settlement>();
     public DbSet<PurchaseRequest> PurchaseRequests => Set<PurchaseRequest>();
     public DbSet<MarketplaceProduct> MarketplaceProducts => Set<MarketplaceProduct>();
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<OrderItem> OrderItems => Set<OrderItem>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {

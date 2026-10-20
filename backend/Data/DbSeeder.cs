@@ -15,11 +15,70 @@ public static class DbSeeder
 {
     public static async Task SeedAsync(AppDbContext context)
     {
-        await context.Database.MigrateAsync();
+        try
+        {
+            await context.Database.MigrateAsync();
+        }
+        catch { }
 
+        // Create marketplace and orders tables first
         try
         {
             await context.Database.ExecuteSqlRawAsync(@"
+                CREATE TABLE IF NOT EXISTS ""marketplace_products"" (
+                    ""id"" uuid NOT NULL PRIMARY KEY,
+                    ""title"" character varying(200) NOT NULL,
+                    ""category"" character varying(100),
+                    ""brand"" character varying(100),
+                    ""description"" text,
+                    ""lot_id"" character varying(50),
+                    ""millet_type"" character varying(100),
+                    ""farmer_name"" character varying(150),
+                    ""quantity_kg"" numeric(18,2),
+                    ""price_per_kg"" numeric(18,2),
+                    ""status"" character varying(50) NOT NULL DEFAULT 'Active',
+                    ""image_url"" text,
+                    ""created_by_user_id"" uuid,
+                    ""created_at"" timestamp with time zone NOT NULL,
+                    ""updated_at"" timestamp with time zone,
+                    ""is_deleted"" boolean NOT NULL DEFAULT FALSE
+                );
+                CREATE TABLE IF NOT EXISTS ""orders"" (
+                    ""id"" uuid NOT NULL PRIMARY KEY,
+                    ""order_number"" character varying(50) NOT NULL,
+                    ""customer_name"" character varying(150) NOT NULL,
+                    ""customer_email"" character varying(150) NOT NULL,
+                    ""customer_phone"" character varying(20),
+                    ""shipping_address"" character varying(300) NOT NULL,
+                    ""city"" character varying(100),
+                    ""state"" character varying(100),
+                    ""pincode"" character varying(20),
+                    ""payment_method"" character varying(50),
+                    ""payment_status"" character varying(50),
+                    ""subtotal"" numeric(18,2) NOT NULL,
+                    ""delivery_fee"" numeric(18,2) NOT NULL,
+                    ""total_amount"" numeric(18,2) NOT NULL,
+                    ""status"" character varying(50) NOT NULL,
+                    ""delivery_otp"" character varying(10) NOT NULL,
+                    ""assigned_driver_id"" uuid,
+                    ""driver_name"" character varying(150),
+                    ""driver_phone"" character varying(30),
+                    ""vehicle_number"" character varying(50),
+                    ""created_at"" timestamp with time zone NOT NULL,
+                    ""delivered_at"" timestamp with time zone
+                );
+                CREATE TABLE IF NOT EXISTS ""order_items"" (
+                    ""id"" uuid NOT NULL PRIMARY KEY,
+                    ""order_id"" uuid NOT NULL,
+                    ""product_id"" uuid,
+                    ""product_title"" character varying(200) NOT NULL,
+                    ""category"" character varying(100),
+                    ""producer_name"" character varying(100),
+                    ""image_url"" text,
+                    ""unit_price"" numeric(18,2) NOT NULL,
+                    ""quantity"" integer NOT NULL,
+                    ""total_price"" numeric(18,2) NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS ""Drivers"" (
                     ""Id"" uuid NOT NULL PRIMARY KEY,
                     ""DriverCode"" text NOT NULL,
@@ -31,6 +90,13 @@ public static class DbSeeder
                     ""Status"" text NOT NULL,
                     ""CreatedAt"" timestamp with time zone NOT NULL
                 );
+            ");
+        }
+        catch { }
+
+        try
+        {
+            await context.Database.ExecuteSqlRawAsync(@"
                 ALTER TABLE ""Dispatches"" ADD COLUMN IF NOT EXISTS ""VerificationCode"" text NOT NULL DEFAULT '4829';
                 ALTER TABLE ""Dispatches"" ADD COLUMN IF NOT EXISTS ""DriverLatitude"" numeric(10,7);
                 ALTER TABLE ""Dispatches"" ADD COLUMN IF NOT EXISTS ""DriverLongitude"" numeric(10,7);
@@ -152,6 +218,42 @@ public static class DbSeeder
                     ""created_at"" timestamp with time zone NOT NULL,
                     ""updated_at"" timestamp with time zone,
                     ""is_deleted"" boolean NOT NULL DEFAULT FALSE
+                );
+                CREATE TABLE IF NOT EXISTS ""orders"" (
+                    ""id"" uuid NOT NULL PRIMARY KEY,
+                    ""order_number"" character varying(50) NOT NULL,
+                    ""customer_name"" character varying(150) NOT NULL,
+                    ""customer_email"" character varying(150) NOT NULL,
+                    ""customer_phone"" character varying(20),
+                    ""shipping_address"" character varying(300) NOT NULL,
+                    ""city"" character varying(100),
+                    ""state"" character varying(100),
+                    ""pincode"" character varying(20),
+                    ""payment_method"" character varying(50),
+                    ""payment_status"" character varying(50),
+                    ""subtotal"" numeric(18,2) NOT NULL,
+                    ""delivery_fee"" numeric(18,2) NOT NULL,
+                    ""total_amount"" numeric(18,2) NOT NULL,
+                    ""status"" character varying(50) NOT NULL,
+                    ""delivery_otp"" character varying(10) NOT NULL,
+                    ""assigned_driver_id"" uuid,
+                    ""driver_name"" character varying(150),
+                    ""driver_phone"" character varying(30),
+                    ""vehicle_number"" character varying(50),
+                    ""created_at"" timestamp with time zone NOT NULL,
+                    ""delivered_at"" timestamp with time zone
+                );
+                CREATE TABLE IF NOT EXISTS ""order_items"" (
+                    ""id"" uuid NOT NULL PRIMARY KEY,
+                    ""order_id"" uuid NOT NULL,
+                    ""product_id"" uuid,
+                    ""product_title"" character varying(200) NOT NULL,
+                    ""category"" character varying(100),
+                    ""producer_name"" character varying(100),
+                    ""image_url"" text,
+                    ""unit_price"" numeric(18,2) NOT NULL,
+                    ""quantity"" integer NOT NULL,
+                    ""total_price"" numeric(18,2) NOT NULL
                 );
             ");
         }
@@ -878,8 +980,65 @@ public static class DbSeeder
 
     private static async Task SeedMarketplaceProductsAsync(AppDbContext context)
     {
-        if (await context.MarketplaceProducts.AnyAsync())
+        var existingProducts = await context.MarketplaceProducts.ToListAsync();
+        if (existingProducts.Count > 0)
         {
+            // Ensure real images and processor brands are populated
+            foreach (var p in existingProducts)
+            {
+                if (p.Title.Contains("Pearl") && string.IsNullOrEmpty(p.ImageUrl))
+                {
+                    p.ImageUrl = "/images/products/pearl_millet_flour.jpg";
+                    p.Brand = "Millet Shakti SHG";
+                    p.FarmerName = "Millet Shakti SHG (Processor)";
+                    p.PricePerKg = 180.00m;
+                    p.Status = "Active";
+                }
+                else if (p.Title.Contains("Foxtail") && string.IsNullOrEmpty(p.ImageUrl))
+                {
+                    p.ImageUrl = "/images/products/foxtail_upma_mix.jpg";
+                    p.Title = "Organic Foxtail Millet Upma Mix";
+                    p.Brand = "Dahod Women SHG";
+                    p.FarmerName = "Dahod Women SHG (Processor)";
+                    p.Category = "Ready-to-Eat";
+                    p.PricePerKg = 95.00m;
+                    p.Status = "Active";
+                }
+                else if (p.Title.Contains("Malt") && string.IsNullOrEmpty(p.ImageUrl))
+                {
+                    p.ImageUrl = "/images/products/ragi_cookies.jpg";
+                    p.Title = "Ragi Cookies";
+                    p.Brand = "Green Harvest SHG";
+                    p.FarmerName = "Green Harvest SHG (Processor)";
+                    p.Category = "Cookies";
+                    p.PricePerKg = 120.00m;
+                    p.Status = "Active";
+                }
+            }
+
+            // Check if energy bars product exists, if not add it
+            if (!existingProducts.Any(p => p.Title.Contains("Energy Bars")))
+            {
+                context.MarketplaceProducts.Add(new MarketplaceProduct
+                {
+                    Id = Guid.Parse("dd44ee55-6677-8899-0011-2233ddeeff00"),
+                    Title = "Multi-Millet Energy Bars",
+                    Category = "Snacks",
+                    Brand = "Gramin Vikas FPO",
+                    Description = "Nutrient-packed multi-millet snack bars with jaggery, chia seeds, and roasted almonds. 100% natural energy without refined sugars.",
+                    LotId = "LOT-2026-003",
+                    MilletType = "Multi-Millet",
+                    FarmerName = "Gramin Vikas FPO (Processor)",
+                    QuantityKg = 600,
+                    PricePerKg = 160.00m,
+                    Status = "Active",
+                    ImageUrl = "/images/products/millet_energy_bars.jpg",
+                    CreatedAt = DateTime.UtcNow.AddDays(-1),
+                    IsDeleted = false
+                });
+            }
+
+            await context.SaveChangesAsync();
             return;
         }
 
@@ -888,49 +1047,69 @@ public static class DbSeeder
             new MarketplaceProduct
             {
                 Id = Guid.Parse("aa11bb22-3344-5566-7788-9900aabbccdd"),
-                Title = "Premium Pearl Millet Flour",
-                Category = "Flours & Grains",
-                Brand = "ShreeAnna Organics",
-                Description = "Finely milled pearl millet flour, stone-ground to preserve nutrients. Ideal for baking and traditional flatbreads. Sourced from sustainable SHG farms.",
+                Title = "Pearl Millet Flour",
+                Category = "Flours",
+                Brand = "Millet Shakti SHG",
+                Description = "Finely milled pearl millet (bajra) flour, stone-ground to preserve nutrients. Ideal for rotis, baking, and traditional flatbreads. Sourced from sustainable SHG processors.",
                 LotId = "LOT-2026-004",
                 MilletType = "Pearl Millet",
-                FarmerName = "Lokesh M.",
+                FarmerName = "Millet Shakti SHG (Processor)",
                 QuantityKg = 1500,
-                PricePerKg = 48.00m,
+                PricePerKg = 180.00m,
                 Status = "Active",
+                ImageUrl = "/images/products/pearl_millet_flour.jpg",
                 CreatedAt = DateTime.UtcNow.AddDays(-5),
                 IsDeleted = false
             },
             new MarketplaceProduct
             {
                 Id = Guid.Parse("bb22cc33-4455-6677-8899-0011bbccddee"),
-                Title = "Organic Foxtail Millet Rava",
-                Category = "Ready-to-Cook (RTC)",
-                Brand = "ShreeAnna Organics",
-                Description = "Unpolished, nutrient-dense foxtail millet semolina/rava. Perfect for diabetes-friendly upma, idlis, and porridge.",
-                LotId = "LOT-2026-002",
-                MilletType = "Foxtail Millet",
-                FarmerName = "Ramesh Kumar",
+                Title = "Ragi Cookies",
+                Category = "Cookies",
+                Brand = "Green Harvest SHG",
+                Description = "Handcrafted artisan chocolate finger millet (ragi) cookies studded with roasted almonds and pistachios. High in calcium and 100% gluten-free.",
+                LotId = "LOT-2026-001",
+                MilletType = "Finger Millet (Ragi)",
+                FarmerName = "Green Harvest SHG (Processor)",
                 QuantityKg = 800,
-                PricePerKg = 62.50m,
-                Status = "Draft",
+                PricePerKg = 120.00m,
+                Status = "Active",
+                ImageUrl = "/images/products/ragi_cookies.jpg",
                 CreatedAt = DateTime.UtcNow.AddDays(-2),
                 IsDeleted = false
             },
             new MarketplaceProduct
             {
                 Id = Guid.Parse("cc33dd44-5566-7788-9900-1122ccddeeff"),
-                Title = "Sprouted Finger Millet Malt Mix",
-                Category = "Beverages & Health Mixes",
-                Brand = "ShreeAnna Value SHG",
-                Description = "Traditional malted ragi mix enhanced with cardamom. High in bioavailable calcium and iron for growing children.",
-                LotId = "LOT-2026-001",
-                MilletType = "Finger Millet (Ragi)",
-                FarmerName = "Mukund Sharma",
+                Title = "Organic Foxtail Millet Upma Mix",
+                Category = "Ready-to-Eat",
+                Brand = "Dahod Women SHG",
+                Description = "Instant wholesome breakfast upma mix made from unpolished foxtail millet, curry leaves, mustard seeds, and roasted cashews. Low GI superfood.",
+                LotId = "LOT-2026-002",
+                MilletType = "Foxtail Millet",
+                FarmerName = "Dahod Women SHG (Processor)",
                 QuantityKg = 500,
                 PricePerKg = 95.00m,
-                Status = "Unpublished",
+                Status = "Active",
+                ImageUrl = "/images/products/foxtail_upma_mix.jpg",
                 CreatedAt = DateTime.UtcNow.AddDays(-7),
+                IsDeleted = false
+            },
+            new MarketplaceProduct
+            {
+                Id = Guid.Parse("dd44ee55-6677-8899-0011-2233ddeeff00"),
+                Title = "Multi-Millet Energy Bars",
+                Category = "Snacks",
+                Brand = "Gramin Vikas FPO",
+                Description = "Nutrient-packed multi-millet snack bars with jaggery, chia seeds, and roasted almonds. 100% natural energy without refined sugars.",
+                LotId = "LOT-2026-003",
+                MilletType = "Multi-Millet",
+                FarmerName = "Gramin Vikas FPO (Processor)",
+                QuantityKg = 600,
+                PricePerKg = 160.00m,
+                Status = "Active",
+                ImageUrl = "/images/products/millet_energy_bars.jpg",
+                CreatedAt = DateTime.UtcNow.AddDays(-1),
                 IsDeleted = false
             }
         };

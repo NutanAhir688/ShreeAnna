@@ -224,7 +224,7 @@ export default function LandingPage() {
 
             {/* Direct Marketplace Link for Customers */}
             <a
-              href="#marketplace"
+              href="/store"
               className="text-[#1B4324] hover:text-[#14341C] font-semibold py-1 flex items-center gap-1.5 transition-colors"
             >
               <Store className="w-4 h-4 text-[#266838]" />
@@ -583,195 +583,198 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 5. "HAR KISAN KA DIGITAL SATHI" (Mobile showcase exactly like the reference image 3) */}
-      <section id="digital-sathi" className="py-20 lg:py-28 bg-[#FBFBFA] border-b border-[#E5EDE2]">
+      {/* 5. "Technology that grows with you" (Mobile & Farm Overview Showcase matching Image 1) */}
+      <section id="technology" className="py-20 lg:py-28 bg-[#FBFBFA] border-b border-[#E5EDE2]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 items-center">
-            {/* Left Column: Har Kisan Ka Digital Sathi Highlights */}
-            <div className="lg:col-span-4 space-y-6 text-left">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-[#1B4324] flex items-center justify-center text-white">
-                  <Sprout className="w-4 h-4 text-emerald-300" />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
+            {/* Left Column: Headlines & Benefits */}
+            <div className="lg:col-span-5 space-y-6 text-left">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EBF3E8] text-[#225732] text-xs font-bold border border-[#D1E2CD]">
+                <Sprout className="w-3.5 h-3.5 text-[#2E7D42]" />
+                <span>SMART. SIMPLE. POWERFUL.</span>
+              </div>
+
+              <h2 className="text-3xl sm:text-4xl lg:text-[44px] font-serif font-bold text-[#142017] leading-[1.15]">
+                Technology that <br />
+                <span className="text-[#266838]">grows with you</span>
+              </h2>
+
+              <p className="text-sm sm:text-base text-[#56655A] leading-relaxed">
+                ShreeAnna is your digital farming partner. Access real-time data, verified crop provenance, and smart tools — all in one place.
+              </p>
+
+              {/* 3 Bullet Points with green checkmarks */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-full bg-[#1B4324] text-white flex items-center justify-center shrink-0">
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-800">Real-time field monitoring</span>
                 </div>
-                <div>
-                  <h3 className="text-base font-bold text-[#142017] tracking-tight">SHREEANNA SATHI</h3>
-                  <p className="text-[10px] text-[#2E7D42] font-semibold uppercase tracking-wider">
-                    Sathi Har Kisan Ka
-                  </p>
+
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-full bg-[#1B4324] text-white flex items-center justify-center shrink-0">
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-800">AI-powered recommendations</span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-full bg-[#1B4324] text-white flex items-center justify-center shrink-0">
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-800">Easy to use on mobile & web</span>
                 </div>
               </div>
 
-              <div>
-                <p className="text-xs font-bold text-[#56655A] uppercase tracking-wider mb-1">
-                  HAR KISAN KA
-                </p>
-                <h2 className="text-3xl sm:text-4xl font-serif font-extrabold text-[#1B4324] leading-tight">
-                  DIGITAL SATHI
-                </h2>
-                <p className="text-xs sm:text-sm text-[#56655A] mt-2">
-                  Smart Information, Better Farming, Bright Future.
-                </p>
-              </div>
-
-              {/* 5 Feature Bullets matching Image 3 */}
-              <div className="space-y-3 pt-1">
-                <div className="flex items-start gap-3 p-2.5 rounded-xl bg-white border border-[#E5EDE2] shadow-2xs">
-                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 text-emerald-700">
-                    <Sprout className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-[#142017]">CROP GUIDE</h4>
-                    <p className="text-[11px] text-[#56655A]">Puri jankari faslon ki aur kheti ke tarikon ki.</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 p-2.5 rounded-xl bg-white border border-[#E5EDE2] shadow-2xs">
-                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0 text-blue-700">
-                    <CloudSun className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-[#142017]">WEATHER UPDATE</h4>
-                    <p className="text-[11px] text-[#56655A]">Sahi mausam ki jankari, sahi faisla aapka.</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 p-2.5 rounded-xl bg-white border border-[#E5EDE2] shadow-2xs">
-                  <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0 text-amber-700">
-                    <IndianRupee className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-[#142017]">MARKET PRICES</h4>
-                    <p className="text-[11px] text-[#56655A]">Mandi ke taza bhav, becho apni fasal sahi daam.</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 p-2.5 rounded-xl bg-white border border-[#E5EDE2] shadow-2xs">
-                  <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center shrink-0 text-teal-700">
-                    <Headphones className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-[#142017]">EXPERT ADVICE</h4>
-                    <p className="text-[11px] text-[#56655A]">Visheshagyon se salah aur samadhan.</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 p-2.5 rounded-xl bg-white border border-[#E5EDE2] shadow-2xs">
-                  <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center shrink-0 text-purple-700">
-                    <Newspaper className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-[#142017]">KISAN NEWS & YOJANA</h4>
-                    <p className="text-[11px] text-[#56655A]">Sarkari yojana, samachar aur zaruri updates.</p>
-                  </div>
-                </div>
+              <div className="pt-2">
+                <Button
+                  onClick={() => navigate("/login")}
+                  className="bg-[#1B4324] hover:bg-[#14341C] text-white font-semibold text-xs sm:text-sm h-11 px-6 rounded-full shadow-md cursor-pointer flex items-center gap-2"
+                >
+                  <span>Learn More</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
               </div>
             </div>
 
-            {/* Center Column: Detailed Mobile Smartphone Mockup (matching Image 3) */}
-            <div className="lg:col-span-4 flex justify-center">
-              <div className="w-[280px] sm:w-[310px] bg-slate-950 rounded-[44px] p-3.5 shadow-2xl border-4 border-slate-800 text-slate-800 shrink-0">
-                <div className="bg-white rounded-[34px] overflow-hidden p-3.5 space-y-3.5 border border-slate-100">
-                  {/* Phone Header */}
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <div className="flex items-center gap-1.5">
-                      <Sprout className="w-4 h-4 text-[#2E7D42]" />
-                      <span className="text-xs font-bold text-[#142017]">SHREEANNA SATHI</span>
+            {/* Right Column: Smartphone Mockup + Farm Overview Card Side-by-Side (Matching Image 1) */}
+            <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-12 gap-5 items-center">
+              {/* Phone Mockup (5 cols) */}
+              <div className="sm:col-span-5 flex justify-center">
+                <div className="w-[260px] bg-slate-950 rounded-[40px] p-3 shadow-2xl border-4 border-slate-800 text-slate-800">
+                  <div className="bg-white rounded-[32px] overflow-hidden p-3.5 space-y-3 border border-slate-100">
+                    {/* Header */}
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1">
+                        <span>Hello, Farmer</span>
+                        <span>🌾</span>
+                      </h4>
+                      <p className="text-[10px] text-slate-500">Here's your farm summary</p>
                     </div>
-                    <Menu className="w-4 h-4 text-slate-600" />
-                  </div>
 
-                  {/* Inside Mini Banner */}
-                  <div className="relative rounded-xl overflow-hidden bg-gradient-to-r from-[#1B4324] to-[#2E7D42] p-3 text-white">
-                    <p className="text-[10px] text-emerald-200 font-bold uppercase">Smart Farming</p>
-                    <p className="text-xs font-extrabold">Better Tomorrow</p>
-                  </div>
+                    {/* Metric 1: Crop Health */}
+                    <div className="p-2.5 rounded-xl bg-[#F8FAF7] border border-[#E5EDE2] flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] text-slate-500 font-medium">Crop Health</p>
+                        <p className="text-xs font-bold text-slate-900">Good</p>
+                      </div>
+                      <span className="w-7 h-7 rounded-full bg-emerald-100 text-[#1B4324] text-[10px] font-black flex items-center justify-center">
+                        78%
+                      </span>
+                    </div>
 
-                  {/* 6 Quick Action Grid */}
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    <div className="p-2 rounded-xl bg-[#F4F8F2] border border-[#E5EDE2]">
-                      <Sprout className="w-4 h-4 text-[#2E7D42] mx-auto mb-1" />
-                      <span className="text-[9px] font-bold text-slate-800 block leading-tight">Crop Guide</span>
+                    {/* Metric 2: Soil Moisture */}
+                    <div className="p-2.5 rounded-xl bg-teal-50/60 border border-teal-100 flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] text-teal-800 font-medium">Soil Moisture</p>
+                        <p className="text-xs font-bold text-teal-950">Optimal</p>
+                      </div>
+                      <span className="w-7 h-7 rounded-full bg-teal-100 text-teal-800 text-[10px] font-black flex items-center justify-center">
+                        65%
+                      </span>
                     </div>
-                    <div className="p-2 rounded-xl bg-blue-50 border border-blue-100">
-                      <CloudSun className="w-4 h-4 text-blue-600 mx-auto mb-1" />
-                      <span className="text-[9px] font-bold text-slate-800 block leading-tight">Weather</span>
-                    </div>
-                    <div className="p-2 rounded-xl bg-amber-50 border border-amber-100">
-                      <IndianRupee className="w-4 h-4 text-amber-600 mx-auto mb-1" />
-                      <span className="text-[9px] font-bold text-slate-800 block leading-tight">Mandi Rates</span>
-                    </div>
-                    <div className="p-2 rounded-xl bg-teal-50 border border-teal-100">
-                      <Headphones className="w-4 h-4 text-teal-600 mx-auto mb-1" />
-                      <span className="text-[9px] font-bold text-slate-800 block leading-tight">Advice</span>
-                    </div>
-                    <div className="p-2 rounded-xl bg-purple-50 border border-purple-100">
-                      <Newspaper className="w-4 h-4 text-purple-600 mx-auto mb-1" />
-                      <span className="text-[9px] font-bold text-slate-800 block leading-tight">News</span>
-                    </div>
-                    <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-100">
-                      <Building2 className="w-4 h-4 text-[#2E7D42] mx-auto mb-1" />
-                      <span className="text-[9px] font-bold text-slate-800 block leading-tight">Schemes</span>
-                    </div>
-                  </div>
 
-                  {/* Today's Market Prices Card inside Phone */}
-                  <div className="p-2.5 rounded-xl bg-[#FBFBFA] border border-slate-200/80 space-y-2">
-                    <p className="text-[10px] font-bold text-slate-800 border-b border-slate-100 pb-1">
-                      Today's Market Prices (MSP)
-                    </p>
-                    <div className="space-y-1 text-[10px]">
-                      <div className="flex justify-between text-slate-600">
-                        <span>Finger Millet (Ragi)</span>
-                        <span className="font-bold text-[#1B4324]">₹4,290 / Qtl</span>
+                    {/* Metric 3: Weather */}
+                    <div className="p-2.5 rounded-xl bg-blue-50/60 border border-blue-100 flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] text-blue-800 font-medium">Weather</p>
+                        <p className="text-xs font-bold text-blue-950">24°C Partly Cloudy</p>
                       </div>
-                      <div className="flex justify-between text-slate-600">
-                        <span>Pearl Millet (Bajra)</span>
-                        <span className="font-bold text-[#1B4324]">₹2,625 / Qtl</span>
-                      </div>
-                      <div className="flex justify-between text-slate-600">
-                        <span>Foxtail Millet (Kangni)</span>
-                        <span className="font-bold text-[#1B4324]">₹3,850 / Qtl</span>
-                      </div>
-                      <div className="flex justify-between text-slate-600">
-                        <span>Sorghum (Jowar)</span>
-                        <span className="font-bold text-[#1B4324]">₹3,180 / Qtl</span>
-                      </div>
+                      <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">
+                        24%
+                      </span>
                     </div>
-                    <a
-                      href="#marketplace"
-                      className="block text-center py-1 bg-[#1B4324] text-white rounded-lg text-[10px] font-bold mt-2"
-                    >
-                      View Marketplace
-                    </a>
+
+                    {/* Metric 4: Upcoming Task */}
+                    <div className="p-2 rounded-xl bg-amber-50/70 border border-amber-200/80">
+                      <p className="text-[9px] font-bold uppercase tracking-wider text-amber-800">Upcoming Task</p>
+                      <p className="text-[11px] font-bold text-slate-800 mt-0.5">Irrigation Scheduled</p>
+                      <p className="text-[9px] text-slate-500">Today, 6:00 AM</p>
+                    </div>
+
+                    {/* Bottom nav tabs inside phone */}
+                    <div className="pt-2 border-t border-slate-100 flex justify-around text-[9px] font-bold text-slate-400">
+                      <span className="text-[#1B4324]">Home</span>
+                      <span>Crops</span>
+                      <span>Market</span>
+                      <span>Profile</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Right Column: Smiling Farmer with Phone + 24/7 Farmer Support */}
-            <div className="lg:col-span-4 space-y-5">
-              <div className="relative rounded-3xl overflow-hidden shadow-xl border border-[#DDE7DA]">
-                <img
-                  src="/images/farmer_holding_phone.jpg"
-                  alt="Smiling Indian farmer holding smartphone in agricultural crop field"
-                  className="w-full h-auto object-cover aspect-4/3 sm:aspect-1/1"
-                />
-                {/* Circular Badge on top of image */}
-                <div className="absolute top-4 right-4 bg-[#1B4324]/90 backdrop-blur-md px-3 py-2 rounded-2xl text-white text-center shadow-lg border border-white/20">
-                  <p className="text-[9px] font-bold tracking-wider uppercase text-emerald-300">EMPOWERING</p>
-                  <p className="text-xs font-black">FARMERS</p>
+              {/* Farm Overview Card (7 cols) */}
+              <div className="sm:col-span-7 bg-white rounded-2xl border border-[#E3ECE0] p-4 shadow-xl space-y-3.5">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <h4 className="text-xs font-bold text-slate-900">Farm Overview</h4>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    Live Telemetry
+                  </span>
                 </div>
-              </div>
 
-              {/* 24/7 Farmer Support Strip matching Image 3 */}
-              <div className="p-4 rounded-2xl bg-[#183E26] text-white flex items-center gap-3.5 shadow-md">
-                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0 text-emerald-300">
-                  <Headphones className="w-5 h-5" />
+                {/* Satellite image with field tags */}
+                <div className="relative rounded-xl overflow-hidden aspect-16/9 bg-slate-100 border border-slate-200">
+                  <img
+                    src="/images/farm_satellite_overview.jpg"
+                    alt="Satellite farm overview with crop fields"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  <div className="absolute bottom-2 left-2 right-2 flex flex-wrap gap-1.5">
+                    <span className="bg-black/60 backdrop-blur-xs text-white text-[9px] font-bold px-2 py-0.5 rounded border border-white/20">
+                      Field A: 12.5 Ac Ragi
+                    </span>
+                    <span className="bg-black/60 backdrop-blur-xs text-white text-[9px] font-bold px-2 py-0.5 rounded border border-white/20">
+                      Field B: 8.5 Ac Bajra
+                    </span>
+                    <span className="bg-black/60 backdrop-blur-xs text-white text-[9px] font-bold px-2 py-0.5 rounded border border-white/20">
+                      Field C: 15.2 Ac Foxtail
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold tracking-tight">24/7 FARMER SUPPORT</h4>
-                  <p className="text-[11px] text-[#A8C7B0]">Hum hamesha aapke saath hain.</p>
-                  <p className="text-xs font-extrabold text-white mt-0.5">Toll-Free Helpline: 1800-123-4567</p>
+
+                {/* Recent Activity */}
+                <div className="space-y-1.5 pt-1">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Recent Activity</p>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between items-center text-slate-700">
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        <span>Irrigation Completed</span>
+                      </span>
+                      <span className="text-[10px] text-slate-400">Today, 6:00 AM</span>
+                    </div>
+                    <div className="flex justify-between items-center text-slate-700">
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                        <span>Soil Nutrition Monitored</span>
+                      </span>
+                      <span className="text-[10px] text-slate-400">Yesterday, 4:30 PM</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Market Price MSP */}
+                <div className="pt-2 border-t border-slate-100">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase">Market Price (MSP)</span>
+                    <span className="text-[9px] text-[#2E7D42] font-semibold">Government Verified</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
+                    <div className="p-1.5 rounded-lg bg-[#F8FAF7] border border-[#E5EDE2]">
+                      <span className="text-slate-500 block">Ragi</span>
+                      <span className="font-bold text-[#1B4324]">₹4,290 / Qtl</span>
+                    </div>
+                    <div className="p-1.5 rounded-lg bg-[#F8FAF7] border border-[#E5EDE2]">
+                      <span className="text-slate-500 block">Bajra</span>
+                      <span className="font-bold text-[#1B4324]">₹2,625 / Qtl</span>
+                    </div>
+                    <div className="p-1.5 rounded-lg bg-[#F8FAF7] border border-[#E5EDE2]">
+                      <span className="text-slate-500 block">Kangni</span>
+                      <span className="font-bold text-[#1B4324]">₹3,850 / Qtl</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -779,7 +782,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 6. Customer Marketplace Section (Directly browsable published products) */}
+      {/* 6. Customer Marketplace Section (Directly browsable published processor products matching Image 5) */}
       <section id="marketplace" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
@@ -793,150 +796,119 @@ export default function LandingPage() {
                 Buy Published Millet Products
               </h2>
               <p className="text-sm text-[#56655A]">
-                Explore certified batches and value-added millet flours published directly by smallholder farmers and verified FPO collectives.
+                Explore certified value-added millet flours and healthy snacks published directly by verified SHGs and processing units.
               </p>
             </div>
 
-            {/* Filter Pills */}
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={productCategoryFilter === "all" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setProductCategoryFilter("all")}
-                className={
-                  productCategoryFilter === "all"
-                    ? "bg-[#1B4324] hover:bg-[#14341C] text-white rounded-full text-xs"
-                    : "rounded-full text-xs border-[#D4DED1] text-[#1B4324]"
-                }
-              >
-                All Products
-              </Button>
-              <Button
-                variant={productCategoryFilter === "flours" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setProductCategoryFilter("flours")}
-                className={
-                  productCategoryFilter === "flours"
-                    ? "bg-[#1B4324] hover:bg-[#14341C] text-white rounded-full text-xs"
-                    : "rounded-full text-xs border-[#D4DED1] text-[#1B4324]"
-                }
-              >
-                Flours & Grains
-              </Button>
-              <Button
-                variant={productCategoryFilter === "organic" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setProductCategoryFilter("organic")}
-                className={
-                  productCategoryFilter === "organic"
-                    ? "bg-[#1B4324] hover:bg-[#14341C] text-white rounded-full text-xs"
-                    : "rounded-full text-xs border-[#D4DED1] text-[#1B4324]"
-                }
-              >
-                Organic Raw Millets
-              </Button>
-            </div>
+            {/* Link to full Marketplace */}
+            <Button
+              onClick={() => navigate("/store")}
+              className="bg-[#1B4324] hover:bg-[#14341C] text-white text-xs font-bold rounded-full px-5 h-10 shadow-xs cursor-pointer flex items-center gap-1.5 self-start md:self-auto"
+            >
+              <Store className="w-3.5 h-3.5" />
+              <span>Open Customer Marketplace</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Button>
           </div>
 
-          {/* Product Grid */}
-          {productsLoading ? (
-            <div className="py-16 text-center text-slate-500 text-sm">
-              <div className="w-8 h-8 rounded-full border-2 border-[#1B4324] border-t-transparent animate-spin mx-auto mb-2" />
-              <span>Loading published marketplace inventory...</span>
-            </div>
-          ) : filteredProducts.length === 0 ? (
-            <div className="bg-[#FBFBFA] rounded-3xl p-12 text-center border border-[#E5EDE2] max-w-xl mx-auto space-y-3">
-              <Store className="w-12 h-12 text-[#2E7D42] mx-auto" />
-              <h3 className="text-lg font-bold text-[#142017]">Inventory Synchronizing</h3>
-              <p className="text-xs text-[#56655A]">
-                Farmers and FPOs publish active lots continuously. Check back or visit the trade portal.
-              </p>
-              <Button
-                onClick={() => navigate("/login")}
-                className="bg-[#1B4324] hover:bg-[#14341C] text-white text-xs rounded-full mt-2"
+          {/* Product Grid (Real processor products with real packaging photos) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                id: "aa11bb22-3344-5566-7788-9900aabbccdd",
+                title: "Pearl Millet Flour",
+                category: "Flours",
+                brand: "Millet Shakti SHG",
+                price: 180,
+                unit: "/ kg",
+                imageUrl: "/images/products/pearl_millet_flour.jpg",
+                badges: ["Quality Certified", "Traceable"],
+              },
+              {
+                id: "bb22cc33-4455-6677-8899-0011bbccddee",
+                title: "Ragi Cookies",
+                category: "Cookies",
+                brand: "Green Harvest SHG",
+                price: 120,
+                unit: "/ 250g",
+                imageUrl: "/images/products/ragi_cookies.jpg",
+                badges: ["Traceable", "SHG Made"],
+              },
+              {
+                id: "cc33dd44-5566-7788-9900-1122ccddeeff",
+                title: "Organic Foxtail Upma Mix",
+                category: "Ready-to-Eat",
+                brand: "Dahod Women SHG",
+                price: 95,
+                unit: "/ 500g",
+                imageUrl: "/images/products/foxtail_upma_mix.jpg",
+                badges: ["Quality Certified", "Low GI"],
+              },
+              {
+                id: "dd44ee55-6677-8899-0011-2233ddeeff00",
+                title: "Multi-Millet Energy Bars",
+                category: "Snacks",
+                brand: "Gramin Vikas FPO",
+                price: 160,
+                unit: "/ pack",
+                imageUrl: "/images/products/millet_energy_bars.jpg",
+                badges: ["Traceable", "100% Natural"],
+              },
+            ].map((product) => (
+              <div
+                key={product.id}
+                className="bg-white rounded-2xl border border-[#E3ECE0] overflow-hidden shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between group"
               >
-                Access Buyer Portal
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredProducts.map((product) => (
-                <div
-                  key={product.id}
-                  className="bg-white rounded-2xl border border-[#E5EDE2] p-5 shadow-[0_4px_24px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-300 flex flex-col justify-between group"
-                >
-                  <div className="space-y-3">
-                    {/* Image / Thumbnail */}
-                    <div className="relative rounded-xl overflow-hidden aspect-4/3 bg-slate-100 border border-slate-100">
-                      <img
-                        src={product.imageUrl || "/images/farm_satellite_overview.jpg"}
-                        alt={product.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      <Badge className="absolute top-2.5 left-2.5 bg-[#1B4324] text-white text-[10px] font-bold">
-                        {product.status || "Active"}
-                      </Badge>
-                      <span className="absolute bottom-2.5 right-2.5 bg-white/95 backdrop-blur-md px-2 py-0.5 rounded text-[10px] font-bold text-slate-800">
-                        {product.lotId || "Verified Lot"}
+                {/* Real Image Container with Floating Badges */}
+                <div className="relative aspect-4/3 w-full bg-slate-50 overflow-hidden">
+                  <img
+                    src={product.imageUrl}
+                    alt={product.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute top-2.5 right-2.5 flex flex-col items-end gap-1">
+                    {product.badges.map((b) => (
+                      <span
+                        key={b}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white/95 backdrop-blur-xs text-[9px] font-bold text-[#1B4324] border border-emerald-200 shadow-2xs"
+                      >
+                        <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" />
+                        {b}
                       </span>
-                    </div>
-
-                    {/* Category & Title */}
-                    <div>
-                      <p className="text-[10px] font-bold text-[#2E7D42] uppercase tracking-wider">
-                        {product.category || "Flours & Grains"}
-                      </p>
-                      <h4 className="text-base font-bold text-[#142017] line-clamp-1">{product.title}</h4>
-                      <p className="text-xs text-[#56655A] line-clamp-2 mt-1">
-                        {product.description || "Farm-fresh certified pure millet grain, graded for moisture and purity."}
-                      </p>
-                    </div>
-
-                    {/* Origin & Specs */}
-                    <div className="pt-2 border-t border-slate-100 space-y-1 text-[11px] text-[#56655A]">
-                      <div className="flex justify-between">
-                        <span>Farmer / FPO:</span>
-                        <span className="font-semibold text-slate-800">{product.farmerName || "Dahod FPO"}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Available Stock:</span>
-                        <span className="font-semibold text-slate-800">
-                          {product.quantityKg?.toLocaleString() || 1500} kg
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Price & Action */}
-                  <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] text-slate-400 font-semibold uppercase">Price</p>
-                      <p className="text-base font-bold text-[#1B4324]">
-                        ₹{product.pricePerKg || 48} <span className="text-xs font-normal text-slate-500">/ kg</span>
-                      </p>
-                    </div>
-
-                    <Button
-                      size="sm"
-                      onClick={() => navigate(`/marketplace/${product.id}`)}
-                      className="bg-[#1B4324] hover:bg-[#14341C] text-white text-xs font-semibold rounded-full px-4"
-                    >
-                      <span>View Lot</span>
-                      <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                    </Button>
+                    ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
 
-          {/* Full Catalog Button */}
-          <div className="mt-12 text-center">
+                {/* Body */}
+                <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase">{product.brand}</p>
+                    <h3 className="text-sm font-bold text-slate-900 line-clamp-1">{product.title}</h3>
+                    <p className="text-base font-extrabold text-[#142017]">
+                      ₹{product.price} <span className="text-xs font-normal text-slate-500">{product.unit}</span>
+                    </p>
+                  </div>
+
+                  <Button
+                    size="sm"
+                    onClick={() => navigate("/store")}
+                    className="w-full bg-[#1B4324] hover:bg-[#14341C] text-white text-xs font-semibold rounded-xl h-9 cursor-pointer flex items-center justify-center gap-1"
+                  >
+                    <span>Buy Product</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-10 text-center">
             <Button
-              onClick={() => navigate("/marketplace")}
-              className="bg-[#1B4324] hover:bg-[#14341C] text-white font-semibold text-xs sm:text-sm h-11 px-7 rounded-full shadow-xs cursor-pointer"
+              variant="outline"
+              onClick={() => navigate("/store")}
+              className="rounded-full border-[#C5D5C0] text-[#1B4324] hover:bg-[#EFF5EB] text-xs font-bold h-10 px-6 cursor-pointer"
             >
-              <span>Explore All Trade Lots in B2B Portal</span>
+              <span>Explore All Verified Millet Products on Customer Store</span>
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>

@@ -70,6 +70,48 @@ public class AuthService : IAuthService
         return (response, refreshToken);
     }
 
+    public async Task<(LoginResponse? Response, string? RefreshToken, string? Error)> RegisterCustomerAsync(RegisterRequest request)
+    {
+        var existing = await _db.Users.FirstOrDefaultAsync(x => x.Email.ToLower() == request.Email.ToLower());
+        if (existing != null)
+        {
+            return (null, null, "An account with this email already exists.");
+        }
+
+        var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+        var newUser = new backend.Features.Auth.Entities.User
+        {
+            Id = Guid.NewGuid(),
+            Email = request.Email.Trim().ToLower(),
+            PasswordHash = passwordHash,
+            Role = Roles.Customer,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var expiresAt = DateTime.UtcNow.AddMinutes(_jwtOptions.ExpirationMinutes);
+        var accessToken = GenerateToken(newUser, expiresAt);
+        var refreshToken = GenerateRefreshTokenString();
+
+        newUser.RefreshToken = refreshToken;
+        newUser.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+
+        await _db.Users.AddAsync(newUser);
+        await _db.SaveChangesAsync();
+
+        var response = new LoginResponse
+        {
+            AccessToken = accessToken,
+            ExpiresAt = expiresAt,
+            UserId = newUser.Id,
+            Email = newUser.Email,
+            Role = newUser.Role,
+            MemberName = !string.IsNullOrWhiteSpace(request.FullName) ? request.FullName : "Customer"
+        };
+
+        return (response, refreshToken, null);
+    }
+
     public async Task<(LoginResponse? Response, string? RefreshToken)> RefreshAsync(string refreshToken)
     {
         if (string.IsNullOrWhiteSpace(refreshToken))

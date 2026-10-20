@@ -49,12 +49,16 @@ import Reports from "@/features/reports/pages/Reports";
 
 import VerifyCertificate from "../features/quality/pages/VerifyCertificate";
 import LandingPage from "../features/landing/pages/LandingPage";
+import CustomerMarketplace from "../features/marketplace/pages/CustomerMarketplace";
 
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public Landing, Login & Verification Routes */}
+      {/* Public Landing, Customer Store, Login & Verification Routes */}
       <Route path="/" element={<LandingPage />} />
+      <Route path="/store" element={<CustomerMarketplace />} />
+      <Route path="/marketplace/products" element={<CustomerMarketplace />} />
+      <Route path="/my-orders" element={<CustomerMarketplace />} />
       <Route path="/login" element={<Login />} />
       <Route path="/verify-certificate" element={<VerifyCertificate />} />
       <Route path="/verify" element={<VerifyCertificate />} />
