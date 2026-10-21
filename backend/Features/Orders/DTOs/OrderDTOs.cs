@@ -21,7 +21,25 @@ public record CreateOrderRequest(
     string? PaymentMethod,
     List<CreateOrderItemRequest> Items,
     decimal? CustomerLatitude = null,
-    decimal? CustomerLongitude = null
+    decimal? CustomerLongitude = null,
+    string? PaymentStatus = null
+);
+
+public record CreateOrderPaymentLinkResponse(
+    string PaymentLinkId,
+    string ShortUrl,
+    string Status,
+    decimal Amount
+);
+
+public record ProcessOrderPaymentRequest(
+    string? PaymentMethod = null,
+    string? CardNumber = null,
+    string? CardholderName = null,
+    string? ExpiryDate = null,
+    string? Cvv = null,
+    string? UpiId = null,
+    bool SimulateSuccess = true
 );
 
 public record ConfirmDeliveryOtpRequest(
@@ -71,5 +89,8 @@ public record OrderResponse(
     decimal? CustomerLatitude = null,
     decimal? CustomerLongitude = null,
     decimal? DriverLatitude = null,
-    decimal? DriverLongitude = null
+    decimal? DriverLongitude = null,
+    string? RazorpayPaymentLinkId = null,
+    string? RazorpayShortUrl = null,
+    string? TransactionId = null
 );

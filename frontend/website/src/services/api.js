@@ -287,6 +287,10 @@ export const ordersApi = {
     request(`/api/orders/${id}/confirm-delivery`, { method: "POST", body: { otp } }),
   assignDriver: (id, driverId) =>
     request(`/api/orders/${id}/assign-driver`, { method: "POST", body: { driverId } }),
+  createPaymentLink: (id) =>
+    request(`/api/orders/${id}/create-payment-link`, { method: "POST" }),
+  processPayment: (id, data) =>
+    request(`/api/orders/${id}/pay`, { method: "POST", body: data }),
 };
 
 // ─────────────────────────────────────────────────────────────

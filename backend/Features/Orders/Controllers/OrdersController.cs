@@ -96,4 +96,42 @@ public class OrdersController : ControllerBase
             return StatusCode(500, new { message = ex.Message });
         }
     }
+
+    [HttpPost("{id:guid}/create-payment-link")]
+    [AllowAnonymous]
+    public async Task<ActionResult<CreateOrderPaymentLinkResponse>> CreatePaymentLink(Guid id)
+    {
+        try
+        {
+            var result = await _orderService.CreatePaymentLinkAsync(id);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("{id:guid}/pay")]
+    [AllowAnonymous]
+    public async Task<ActionResult<OrderResponse>> ProcessPayment(Guid id, [FromBody] ProcessOrderPaymentRequest? request)
+    {
+        try
+        {
+            var result = await _orderService.ProcessOrderPaymentAsync(id, request ?? new ProcessOrderPaymentRequest());
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
 }
