@@ -1289,8 +1289,10 @@ function InspectorTrackingCard({ lot, onAssignClick, onLocationUpdate }) {
                     <Badge className="bg-emerald-600 text-white font-semibold">
                         {trackingStatus === "IN_TRANSIT" && "🚗 In Transit to Farmer"}
                         {trackingStatus === "ARRIVED_AT_FARM" && "📍 Arrived at Farm"}
+                        {trackingStatus === "SAMPLE_COLLECTED" && "🧪 Sample Collected"}
                         {trackingStatus === "COMPLETED" && "✓ Inspection Complete"}
                         {trackingStatus === "ASSIGNED" && "📋 Inspector Assigned"}
+                        {trackingStatus !== "IN_TRANSIT" && trackingStatus !== "ARRIVED_AT_FARM" && trackingStatus !== "SAMPLE_COLLECTED" && trackingStatus !== "COMPLETED" && trackingStatus !== "ASSIGNED" && `📋 ${trackingStatus.replace(/_/g, " ")}`}
                     </Badge>
                 ) : (
                     <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50">

@@ -6,7 +6,6 @@ import {
   Award,
   Search,
   RotateCcw,
-  Plus,
   Loader2,
   AlertCircle,
   FileCheck2,
@@ -14,13 +13,8 @@ import {
   XCircle,
   Clock,
   Printer,
-  X,
   ExternalLink,
   UserCheck,
-  Car,
-  MapPin,
-  Phone,
-  Calendar,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -61,6 +55,8 @@ function QualityManagement({ defaultTab = "assigned" }) {
   const { user } = useAuth();
 
   const userRole = user?.role || "FpoManager";
+  const normalizedRole = userRole.toLowerCase();
+  const isQualityInspector = normalizedRole.includes("quality") || normalizedRole.includes("inspector");
   const isProcurementOfficer = userRole === "ProcurementOfficer";
   const isWarehouseOfficer = userRole === "WarehouseManager" || userRole === "WarehouseOfficer";
   const isHideInspectionTabs = isProcurementOfficer || isWarehouseOfficer;
@@ -450,12 +446,27 @@ function QualityManagement({ defaultTab = "assigned" }) {
                       </TableCell>
                       <TableCell>
                         {isAssigned ? (
-                          <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 font-semibold text-xs">
-                            {trackingStatus === "IN_TRANSIT" && "🚗 In Transit"}
-                            {trackingStatus === "ARRIVED_AT_FARM" && "📍 Arrived at Farm"}
-                            {trackingStatus === "COMPLETED" && "✓ Completed"}
-                            {trackingStatus === "ASSIGNED" && "📋 Assigned"}
-                          </Badge>
+                          trackingStatus === "SAMPLE_COLLECTED" ? (
+                            <Badge className="bg-purple-100 text-purple-800 border-purple-300 font-semibold text-xs">
+                              🧪 Sample Collected
+                            </Badge>
+                          ) : trackingStatus === "ARRIVED_AT_FARM" ? (
+                            <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 font-semibold text-xs">
+                              📍 Arrived at Farm
+                            </Badge>
+                          ) : trackingStatus === "IN_TRANSIT" ? (
+                            <Badge className="bg-blue-100 text-blue-800 border-blue-300 font-semibold text-xs">
+                              🚗 In Transit
+                            </Badge>
+                          ) : trackingStatus === "COMPLETED" ? (
+                            <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 font-semibold text-xs">
+                              ✓ Completed
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-slate-100 text-slate-800 border-slate-300 font-semibold text-xs">
+                              📋 {trackingStatus ? trackingStatus.replace(/_/g, " ") : "Assigned"}
+                            </Badge>
+                          )
                         ) : (
                           <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800 text-xs">
                             Pending Assignment
@@ -464,14 +475,27 @@ function QualityManagement({ defaultTab = "assigned" }) {
                       </TableCell>
                       <TableCell className="pr-6 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <Button
-                            size="sm"
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs"
-                            onClick={() => setSelectedLotForAssign(lot)}
-                          >
-                            <UserCheck className="mr-1 h-3.5 w-3.5" />
-                            {isAssigned ? "Re-Assign" : "Assign Inspector"}
-                          </Button>
+                          {isQualityInspector ? (
+                            isAssigned && (
+                              <Button
+                                size="sm"
+                                className="bg-purple-600 hover:bg-purple-700 text-white font-medium text-xs shadow-xs"
+                                onClick={() => navigate(`/procurement-lots/${lot.id}/inspection`)}
+                              >
+                                <ClipboardCheck className="mr-1 h-3.5 w-3.5" />
+                                Inspect Lot
+                              </Button>
+                            )
+                          ) : (
+                            <Button
+                              size="sm"
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs"
+                              onClick={() => setSelectedLotForAssign(lot)}
+                            >
+                              <UserCheck className="mr-1 h-3.5 w-3.5" />
+                              {isAssigned ? "Re-Assign" : "Assign Inspector"}
+                            </Button>
+                          )}
 
                           <Button
                             size="sm"
@@ -722,7 +746,7 @@ function AssignInspectorModal({ isOpen, onClose, onSubmit }) {
   const [selectedInspectorId, setSelectedInspectorId] = useState("");
   const [inspectorName, setInspectorName] = useState("");
   const [inspectorPhone, setInspectorPhone] = useState("");
-  const [scheduledDate, setScheduledDate] = useState(
+  const [scheduledDate, setScheduledDate] = useState(() =>
     new Date(Date.now() + 86400000).toISOString().slice(0, 16)
   );
   const [isLoadingInspectors, setIsLoadingInspectors] = useState(false);
