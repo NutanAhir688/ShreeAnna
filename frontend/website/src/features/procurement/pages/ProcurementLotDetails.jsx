@@ -8,10 +8,8 @@ import {
     IndianRupee,
     Loader2,
     MapPin,
-    Navigation,
     Package,
     Phone,
-    Send,
     ShieldCheck,
     User,
     UserCheck,
@@ -23,6 +21,7 @@ import {
 } from "react-router-dom";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,6 +43,10 @@ import {
 function ProcurementLotDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
+
+    const userRole = (user?.role || "FpoManager").toLowerCase();
+    const isFpoManager = userRole.includes("fpo");
 
     const [lot, setLot] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -314,7 +317,7 @@ function ProcurementLotDetails() {
 
 
                 <div className="flex flex-wrap items-center gap-2">
-                    {(lot.status === "SUBMITTED" ||
+                    {!isFpoManager && (lot.status === "SUBMITTED" ||
                         lot.status === "QUALITY_INSPECTION" ||
                         lot.assignedInspectorName ||
                         lot.inspectionTrackingStatus === "SAMPLE_COLLECTED" ||
@@ -511,7 +514,7 @@ function ProcurementLotDetails() {
 
                 <CardContent className="flex flex-col gap-3 p-6 sm:flex-row sm:justify-end">
 
-                    {(lot.status === "SUBMITTED" ||
+                    {!isFpoManager && (lot.status === "SUBMITTED" ||
                         lot.status === "QUALITY_INSPECTION") && (
 
                             <Button
@@ -1027,6 +1030,7 @@ function QualityCard({ lot }) {
 /* ---------------- Agreement Card ---------------- */
 
 function AgreementCard({ lot }) {
+    const navigate = useNavigate();
     const hasAgreement =
         lot.agreementId &&
         lot.agreementId !== "—";
@@ -1418,7 +1422,7 @@ function AssignInspectorModal({ isOpen, onClose, onSubmit }) {
     const [selectedInspectorId, setSelectedInspectorId] = useState("");
     const [inspectorName, setInspectorName] = useState("");
     const [inspectorPhone, setInspectorPhone] = useState("");
-    const [scheduledDate, setScheduledDate] = useState(
+    const [scheduledDate, setScheduledDate] = useState(() =>
         new Date(Date.now() + 86400000).toISOString().slice(0, 16)
     );
     const [isLoadingInspectors, setIsLoadingInspectors] = useState(false);
