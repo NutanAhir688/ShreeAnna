@@ -39,6 +39,7 @@ import { marketplaceApi, ordersApi, auth, getInMemoryToken } from "@/services/ap
 import { useAuth } from "@/context/AuthContext";
 import ProductDetails from "../components/ProductDetails";
 import OrderLiveTrackingMap from "../components/OrderLiveTrackingMap";
+import OrderRazorpayPaymentDialog from "../components/OrderRazorpayPaymentDialog";
 
 export default function CustomerMarketplace() {
   const navigate = useNavigate();
@@ -110,6 +111,7 @@ export default function CustomerMarketplace() {
 
   // Order Confirmation & Tracking state
   const [confirmedOrder, setConfirmedOrder] = useState(null);
+  const [paymentModalOrder, setPaymentModalOrder] = useState(null);
   const [activeTrackingOrder, setActiveTrackingOrder] = useState(null);
   const [otpVerificationInput, setOtpVerificationInput] = useState("");
   const [otpVerifying, setOtpVerifying] = useState(false);
@@ -518,15 +520,26 @@ export default function CustomerMarketplace() {
       };
 
       const created = await ordersApi.create(orderPayload);
-      setConfirmedOrder(created);
       setCart([]);
       setCheckoutModalOpen(false);
       loadCustomerOrders();
+
+      if (shippingDetails.paymentMethod === "COD") {
+        setConfirmedOrder(created);
+      } else {
+        setPaymentModalOrder(created);
+      }
     } catch (err) {
       alert("Order placement failed: " + (err.message || "Unknown error"));
     } finally {
       setSubmittingOrder(false);
     }
+  };
+
+  const handleOrderPaymentSuccess = (paidOrder) => {
+    setPaymentModalOrder(null);
+    setConfirmedOrder(paidOrder);
+    loadCustomerOrders();
   };
 
   // -------------------------------------------------------------
@@ -1053,7 +1066,27 @@ export default function CustomerMarketplace() {
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {order.paymentStatus === "PENDING" && (
+                          <Button
+                            size="sm"
+                            onClick={() => setPaymentModalOrder(order)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold rounded-lg h-7 px-2.5 flex items-center gap-1 cursor-pointer shadow-2xs"
+                          >
+                            <CreditCard className="w-3 h-3" />
+                            <span>Pay via MockGateway</span>
+                          </Button>
+                        )}
+                        <Badge
+                          variant="outline"
+                          className={
+                            order.paymentStatus === "PAID"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]"
+                              : "bg-amber-50 text-amber-700 border-amber-200 text-[10px]"
+                          }
+                        >
+                          {order.paymentStatus === "PAID" ? "Paid" : "Payment Pending"} • {order.paymentMethod || "Online"}
+                        </Badge>
                         <Badge
                           className={
                             isDelivered
@@ -1549,12 +1582,32 @@ export default function CustomerMarketplace() {
                   className="w-full bg-[#1B4324] hover:bg-[#14341C] text-white font-semibold text-xs h-11 rounded-xl shadow-xs cursor-pointer flex items-center justify-center gap-2"
                 >
                   <PackageCheck className="w-4 h-4" />
-                  <span>{submittingOrder ? "Confirming Order & Assigning Driver..." : `Confirm Order (₹${cartGrandTotal})`}</span>
+                  <span>
+                    {submittingOrder
+                      ? "Processing Order & Gateway..."
+                      : shippingDetails.paymentMethod === "COD"
+                      ? `Confirm COD Order (₹${cartGrandTotal})`
+                      : `Proceed to Pay via MockGateway (₹${cartGrandTotal})`}
+                  </span>
                 </Button>
               </div>
             </form>
           </div>
         </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          6.5 MOCKGATEWAY PAYMENT DIALOG
+      ───────────────────────────────────────────────────────────── */}
+      {paymentModalOrder && (
+        <OrderRazorpayPaymentDialog
+          order={paymentModalOrder}
+          open={!!paymentModalOrder}
+          onOpenChange={(isOpen) => {
+            if (!isOpen) setPaymentModalOrder(null);
+          }}
+          onPaymentSuccess={handleOrderPaymentSuccess}
+        />
       )}
 
       {/* ─────────────────────────────────────────────────────────────

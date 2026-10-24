@@ -2,6 +2,7 @@ using backend.Data;
 using backend.Features.Orders.DTOs;
 using backend.Features.Orders.Entities;
 using backend.Features.Logistics.Entities;
+using backend.Features.Settlements.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Features.Orders.Services;
@@ -9,10 +10,17 @@ namespace backend.Features.Orders.Services;
 public class OrderService : IOrderService
 {
     private readonly AppDbContext _context;
+    private readonly IRazorpayMockGatewayService _razorpayMockGateway;
+    private readonly ILogger<OrderService> _logger;
 
-    public OrderService(AppDbContext context)
+    public OrderService(
+        AppDbContext context,
+        IRazorpayMockGatewayService razorpayMockGateway,
+        ILogger<OrderService> logger)
     {
         _context = context;
+        _razorpayMockGateway = razorpayMockGateway;
+        _logger = logger;
     }
 
     public async Task<OrderResponse> CreateOrderAsync(CreateOrderRequest request)
@@ -55,6 +63,37 @@ public class OrderService : IOrderService
             driverLng = 72.5855m;
         }
 
+        string paymentMethod = string.IsNullOrWhiteSpace(request.PaymentMethod) ? "UPI" : request.PaymentMethod;
+        string paymentStatus = !string.IsNullOrWhiteSpace(request.PaymentStatus)
+            ? request.PaymentStatus
+            : (paymentMethod.Equals("COD", StringComparison.OrdinalIgnoreCase) ? "PENDING (COD)" : "PENDING");
+
+        string? paymentLinkId = null;
+        string? shortUrl = null;
+
+        if (!paymentMethod.Equals("COD", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                var linkResult = await _razorpayMockGateway.CreatePaymentLinkAsync(
+                    amountInRupees: totalAmount,
+                    description: $"ShreeAnna Store Order {orderNumber}",
+                    referenceId: orderNumber,
+                    customerName: request.CustomerName,
+                    customerPhone: request.CustomerPhone);
+
+                paymentLinkId = linkResult.Id;
+                shortUrl = linkResult.ShortUrl;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to create Razorpay MockGateway link for order {OrderNumber}", orderNumber);
+                var fallbackId = $"plink_{Guid.NewGuid().ToString("N")[..14]}";
+                paymentLinkId = fallbackId;
+                shortUrl = $"https://mockgateway.com/pg/pay/{fallbackId}";
+            }
+        }
+
         var order = new Order
         {
             OrderNumber = orderNumber,
@@ -65,8 +104,10 @@ public class OrderService : IOrderService
             City = string.IsNullOrWhiteSpace(request.City) ? "Dahod" : request.City,
             State = string.IsNullOrWhiteSpace(request.State) ? "Gujarat" : request.State,
             Pincode = string.IsNullOrWhiteSpace(request.Pincode) ? "389151" : request.Pincode,
-            PaymentMethod = string.IsNullOrWhiteSpace(request.PaymentMethod) ? "UPI" : request.PaymentMethod,
-            PaymentStatus = "PAID",
+            PaymentMethod = paymentMethod,
+            PaymentStatus = paymentStatus,
+            RazorpayPaymentLinkId = paymentLinkId,
+            RazorpayShortUrl = shortUrl,
             Subtotal = subtotal,
             DeliveryFee = deliveryFee,
             TotalAmount = totalAmount,
@@ -227,6 +268,120 @@ public class OrderService : IOrderService
         return MapToResponse(order);
     }
 
+    public async Task<CreateOrderPaymentLinkResponse> CreatePaymentLinkAsync(Guid orderId)
+    {
+        var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == orderId)
+            ?? throw new KeyNotFoundException($"Order with ID {orderId} not found");
+
+        if (string.IsNullOrEmpty(order.RazorpayPaymentLinkId) || string.IsNullOrEmpty(order.RazorpayShortUrl))
+        {
+            var linkResult = await _razorpayMockGateway.CreatePaymentLinkAsync(
+                amountInRupees: order.TotalAmount,
+                description: $"ShreeAnna Store Order {order.OrderNumber}",
+                referenceId: order.OrderNumber,
+                customerName: order.CustomerName,
+                customerPhone: order.CustomerPhone);
+
+            order.RazorpayPaymentLinkId = linkResult.Id;
+            order.RazorpayShortUrl = linkResult.ShortUrl;
+            await _context.SaveChangesAsync();
+        }
+
+        return new CreateOrderPaymentLinkResponse(
+            order.RazorpayPaymentLinkId ?? string.Empty,
+            order.RazorpayShortUrl ?? string.Empty,
+            order.PaymentStatus,
+            order.TotalAmount
+        );
+    }
+
+    public async Task<OrderResponse> ProcessOrderPaymentAsync(Guid orderId, ProcessOrderPaymentRequest request)
+    {
+        var order = await _context.Orders
+            .Include(o => o.Items)
+            .FirstOrDefaultAsync(o => o.Id == orderId)
+            ?? throw new KeyNotFoundException($"Order with ID {orderId} not found");
+
+        // If payment link doesn't exist, create it with MockGateway
+        if (string.IsNullOrEmpty(order.RazorpayPaymentLinkId) || string.IsNullOrEmpty(order.RazorpayShortUrl))
+        {
+            var linkResult = await _razorpayMockGateway.CreatePaymentLinkAsync(
+                amountInRupees: order.TotalAmount,
+                description: $"ShreeAnna Store Order {order.OrderNumber}",
+                referenceId: order.OrderNumber,
+                customerName: order.CustomerName,
+                customerPhone: order.CustomerPhone);
+
+            order.RazorpayPaymentLinkId = linkResult.Id;
+            order.RazorpayShortUrl = linkResult.ShortUrl;
+        }
+
+        // Simulate/Execute capture via MockGateway action endpoint
+        string paymentInternalId = string.Empty;
+        if (!string.IsNullOrEmpty(order.RazorpayShortUrl) && order.RazorpayShortUrl.Contains("/pg/pay/"))
+        {
+            paymentInternalId = order.RazorpayShortUrl.Substring(order.RazorpayShortUrl.LastIndexOf("/pg/pay/") + 8).Trim('/');
+        }
+        if (string.IsNullOrEmpty(paymentInternalId))
+        {
+            paymentInternalId = order.RazorpayPaymentLinkId ?? string.Empty;
+        }
+
+        try
+        {
+            if (!string.IsNullOrEmpty(paymentInternalId) && request.SimulateSuccess)
+            {
+                await _razorpayMockGateway.CompletePaymentAsync(paymentInternalId, "captured");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "CompletePayment call to MockGateway action returned an issue for order {OrderNumber}", order.OrderNumber);
+        }
+
+        string methodDesc = "Razorpay (MockGateway)";
+        if (!string.IsNullOrEmpty(request.CardNumber))
+        {
+            var digits = new string(request.CardNumber.Where(char.IsDigit).ToArray());
+            var last4 = digits.Length >= 4 ? digits.Substring(digits.Length - 4) : "4242";
+            methodDesc = $"Razorpay Card (•••• {last4})";
+        }
+        else if (!string.IsNullOrEmpty(request.UpiId))
+        {
+            methodDesc = $"Razorpay UPI ({request.UpiId})";
+        }
+        else if (!string.IsNullOrEmpty(request.PaymentMethod))
+        {
+            methodDesc = request.PaymentMethod;
+        }
+
+        order.PaymentStatus = "PAID";
+        order.PaymentMethod = methodDesc;
+        order.TransactionId = !string.IsNullOrEmpty(paymentInternalId) 
+            ? $"pay_{paymentInternalId.Replace("-", "")[..Math.Min(14, paymentInternalId.Replace("-", "").Length)]}" 
+            : $"pay_{Guid.NewGuid().ToString("N")[..14]}";
+
+        // Auto-assign driver if not yet assigned
+        if (order.AssignedDriverId == null)
+        {
+            var freeDriver = await _context.Drivers.FirstOrDefaultAsync(d => d.Status == "AVAILABLE")
+                ?? await _context.Drivers.FirstOrDefaultAsync();
+
+            if (freeDriver != null)
+            {
+                order.AssignedDriverId = freeDriver.Id;
+                order.DriverName = freeDriver.Name;
+                order.DriverPhone = freeDriver.Phone;
+                order.VehicleNumber = freeDriver.VehicleNumber;
+                order.Status = "ASSIGNED_TO_DRIVER";
+                freeDriver.Status = "ON_JOURNEY";
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        return MapToResponse(order);
+    }
+
     private static OrderResponse MapToResponse(Order order)
     {
         var dLat = order.DriverLatitude;
@@ -284,7 +439,10 @@ public class OrderService : IOrderService
             order.CustomerLatitude,
             order.CustomerLongitude,
             dLat,
-            dLng
+            dLng,
+            order.RazorpayPaymentLinkId,
+            order.RazorpayShortUrl,
+            order.TransactionId
         );
     }
 }

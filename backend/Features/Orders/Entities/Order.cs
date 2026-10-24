@@ -54,6 +54,18 @@ public class Order
     [Column("payment_status")]
     public string PaymentStatus { get; set; } = "PAID"; // PAID, PENDING
 
+    [MaxLength(100)]
+    [Column("razorpay_payment_link_id")]
+    public string? RazorpayPaymentLinkId { get; set; }
+
+    [MaxLength(500)]
+    [Column("razorpay_short_url")]
+    public string? RazorpayShortUrl { get; set; }
+
+    [MaxLength(100)]
+    [Column("transaction_id")]
+    public string? TransactionId { get; set; }
+
     [Column("subtotal", TypeName = "decimal(18,2)")]
     public decimal Subtotal { get; set; }
 
