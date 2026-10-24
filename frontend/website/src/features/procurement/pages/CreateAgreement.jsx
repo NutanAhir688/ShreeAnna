@@ -184,7 +184,7 @@ function CreateAgreement() {
   const subtotal = (Number(agreedQty) || 0) * (Number(unitPrice) || 0);
   const totalLogistics = logisticsType === "pickup" ? (Number(logisticsCost) || 0) : 0;
   const totalAdjustments = Number(otherAdjustments) || 0;
-  const netPayable = subtotal + totalLogistics + totalAdjustments;
+  const netPayable = Math.max(0, subtotal - totalLogistics - totalAdjustments);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -409,13 +409,13 @@ function CreateAgreement() {
                 <p className="text-emerald-200">
                   Logistics Cost:{" "}
                   <span className="font-semibold text-white">
-                    + ₹{totalLogistics.toLocaleString("en-IN")}
+                    {totalLogistics > 0 ? `- ₹${totalLogistics.toLocaleString("en-IN")}` : `₹0`}
                   </span>
                 </p>
                 <p className="text-emerald-200">
                   Other Adjustments:{" "}
                   <span className="font-semibold text-white">
-                    ₹{totalAdjustments.toLocaleString("en-IN")}
+                    {totalAdjustments > 0 ? `- ₹${totalAdjustments.toLocaleString("en-IN")}` : `₹0`}
                   </span>
                 </p>
               </div>

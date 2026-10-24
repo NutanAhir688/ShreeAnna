@@ -139,7 +139,7 @@ function Agreements() {
 
       const logisticsCost = l.logisticsCost || 0;
       const otherAdjustments = l.otherAdjustments || 0;
-      const netPayable = totalVal + logisticsCost + otherAdjustments;
+      const netPayable = Math.max(0, totalVal - logisticsCost - otherAdjustments);
       const logisticsType = logisticsCost > 0 ? "FPO Pickup" : "Farmer Delivery";
 
       return {
@@ -302,7 +302,7 @@ function Agreements() {
   const logisticsCost =
     formLogisticsType === "pickup" ? Number(formLogisticsCost) || 0 : 0;
   const otherAdjustments = Number(formOtherAdjustments) || 0;
-  const netPayable = subtotal + logisticsCost + otherAdjustments;
+  const netPayable = Math.max(0, subtotal - logisticsCost - otherAdjustments);
 
   return (
     <div className="space-y-6">
@@ -830,12 +830,12 @@ function Agreements() {
                     <span className="font-semibold text-slate-800">₹{selectedAgreement.totalValue.toLocaleString("en-IN")}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Transportation / Logistics Allowance ({selectedAgreement.logisticsType}):</span>
-                    <span className="font-semibold text-slate-800">+ ₹{selectedAgreement.logisticsCost.toLocaleString("en-IN")}</span>
+                    <span>Transportation / Logistics Deduction ({selectedAgreement.logisticsType}):</span>
+                    <span className="font-semibold text-slate-800">{selectedAgreement.logisticsCost > 0 ? `- ₹${selectedAgreement.logisticsCost.toLocaleString("en-IN")}` : `₹0`}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Cleaning & Bagging Incentive:</span>
-                    <span className="font-semibold text-slate-800">+ ₹{selectedAgreement.otherAdjustments.toLocaleString("en-IN")}</span>
+                    <span>Other Deductions (Cleaning/Bagging):</span>
+                    <span className="font-semibold text-slate-800">{selectedAgreement.otherAdjustments > 0 ? `- ₹${selectedAgreement.otherAdjustments.toLocaleString("en-IN")}` : `₹0`}</span>
                   </div>
                   <div className="flex justify-between border-t border-slate-200 pt-2 font-bold text-sm text-slate-900">
                     <span>Net Farmer Payable:</span>

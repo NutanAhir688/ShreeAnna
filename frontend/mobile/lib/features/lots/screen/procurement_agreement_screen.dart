@@ -228,9 +228,9 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
     final qty = _lot?.agreedQuantityKg ?? _lot?.actualQuantityKg ?? _lot?.estimatedQuantityKg ?? 450.0;
     final unitPrice = _lot?.offeredPricePerKg ?? (_cert != null && _cert!['offeredPricePerKg'] != null ? (_cert!['offeredPricePerKg'] as num).toDouble() : 45.0);
     final subtotal = qty * unitPrice;
-    final logisticsCost = _lot?.logisticsCost ?? 500.0;
-    final adjustments = _lot?.otherAdjustments ?? 100.0;
-    final netPayable = subtotal + logisticsCost + adjustments;
+    final logisticsCost = _lot?.logisticsCost ?? 0.0;
+    final adjustments = _lot?.otherAdjustments ?? 0.0;
+    final netPayable = (subtotal - logisticsCost - adjustments).clamp(0.0, double.infinity);
     final farmerName = _lot?.farmerName ?? 'Registered Farmer';
     final farmName = _lot?.farmName ?? 'Member Farm';
     final milletType = _lot?.milletType ?? 'Finger Millet (Ragi)';
@@ -350,9 +350,9 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
     final qty = _lot?.agreedQuantityKg ?? _lot?.actualQuantityKg ?? _lot?.estimatedQuantityKg ?? 450.0;
     final unitPrice = _lot?.offeredPricePerKg ?? (_cert != null && _cert!['offeredPricePerKg'] != null ? (_cert!['offeredPricePerKg'] as num).toDouble() : 45.0);
     final subtotal = qty * unitPrice;
-    final logisticsCost = _lot?.logisticsCost ?? 500.0;
-    final adjustments = _lot?.otherAdjustments ?? 100.0;
-    final netPayable = subtotal + logisticsCost + adjustments;
+    final logisticsCost = _lot?.logisticsCost ?? 0.0;
+    final adjustments = _lot?.otherAdjustments ?? 0.0;
+    final netPayable = (subtotal - logisticsCost - adjustments).clamp(0.0, double.infinity);
     final farmerName = _lot?.farmerName ?? 'Registered Farmer';
     final farmName = _lot?.farmName ?? 'Member Farm';
     final milletType = _lot?.milletType ?? 'Finger Millet (Ragi)';
@@ -556,8 +556,8 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
                               const Text('FINANCIAL BREAKDOWN & LOGISTICS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
                               const SizedBox(height: 8),
                               _docBreakdownRow('Gross Produce Value', '₹${subtotal.toStringAsFixed(2)}'),
-                              _docBreakdownRow('Transport / Logistics Allowance', '+ ₹${logisticsCost.toStringAsFixed(2)}'),
-                              _docBreakdownRow('Bagging & Cleaning Incentive', '+ ₹${adjustments.toStringAsFixed(2)}'),
+                              _docBreakdownRow('Transport / Logistics Deduction', logisticsCost > 0 ? '- ₹${logisticsCost.toStringAsFixed(2)}' : '₹0.00'),
+                              _docBreakdownRow('Other Deductions (Cleaning/Bagging)', adjustments > 0 ? '- ₹${adjustments.toStringAsFixed(2)}' : '₹0.00'),
                               const Divider(height: 12),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -720,9 +720,9 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
     final qty = _lot?.agreedQuantityKg ?? _lot?.actualQuantityKg ?? _lot?.estimatedQuantityKg ?? 450.0;
     final unitPrice = _lot?.offeredPricePerKg ?? (_cert != null && _cert!['offeredPricePerKg'] != null ? (_cert!['offeredPricePerKg'] as num).toDouble() : 45.0);
     final subtotal = qty * unitPrice;
-    final logisticsCost = _lot?.logisticsCost ?? 500.0;
-    final adjustments = _lot?.otherAdjustments ?? 100.0;
-    final netPayable = subtotal + logisticsCost + adjustments;
+    final logisticsCost = _lot?.logisticsCost ?? 0.0;
+    final adjustments = _lot?.otherAdjustments ?? 0.0;
+    final netPayable = (subtotal - logisticsCost - adjustments).clamp(0.0, double.infinity);
 
     return Scaffold(
       backgroundColor: ShreeAnnaTheme.background,
@@ -1065,9 +1065,9 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
                               const Divider(),
                               _termRow('Gross Produce Value', '₹${subtotal.toStringAsFixed(2)}'),
                               const Divider(),
-                              _termRow('FPO Transport & Logistics Allowance', '+ ₹${logisticsCost.toStringAsFixed(2)}'),
+                              _termRow('FPO Transport & Logistics Deduction', logisticsCost > 0 ? '- ₹${logisticsCost.toStringAsFixed(2)}' : '₹0.00'),
                               const Divider(),
-                              _termRow('Cleaning & Bagging Incentive', '+ ₹${adjustments.toStringAsFixed(2)}'),
+                              _termRow('Other Deductions (Cleaning/Bagging)', adjustments > 0 ? '- ₹${adjustments.toStringAsFixed(2)}' : '₹0.00'),
                               const Divider(thickness: 1.5, color: ShreeAnnaTheme.primaryGreen),
                               const SizedBox(height: 4),
                               Row(
