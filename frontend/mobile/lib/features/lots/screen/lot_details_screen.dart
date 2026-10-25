@@ -13,6 +13,7 @@ import 'quality_certificate_screen.dart';
 import 'quality_results_screen.dart';
 import 'warehouse_receipt_screen.dart';
 import 'inspector_chat_screen.dart';
+import 'driver_chat_screen.dart';
 
 class LotDetailsScreen extends StatefulWidget {
   const LotDetailsScreen({
@@ -2477,7 +2478,30 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
               ],
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => _showChatDialog(context, driverName),
+                  onPressed: () {
+                    final sessionKey = widget.lotId ?? _lot?.lotNumber ?? driverName.replaceAll(' ', '_');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => DriverChatScreen(
+                          sessionId: 'trip_$sessionKey',
+                          lotId: widget.lotId ?? '',
+                          lotNumber: _lot?.lotNumber ?? '',
+                          milletType: _lot?.milletType ?? 'Millet',
+                          quantityKg: _lot?.estimatedQuantityKg != null
+                              ? '${_lot!.estimatedQuantityKg.toStringAsFixed(0)} kg'
+                              : '',
+                          otherPartyName: driverName,
+                          otherPartyPhone: driverPhone ?? '',
+                          vehicleNumber: vehicleNo ?? '',
+                          pickupCode: pickupCode ?? '',
+                          pickupLocation: _lot?.farmName ?? '',
+                          farmerName: _lot?.farmerName ?? 'Farmer Member',
+                          isDriver: false,
+                        ),
+                      ),
+                    );
+                  },
                   icon: const Icon(Icons.chat, size: 14, color: Colors.white),
                   label: const Text(
                     'Live Chat',
@@ -2541,202 +2565,6 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
     );
   }
 
-  Widget _buildCompactInspectorCard(BuildContext context) {
-    final name = _lot?.assignedInspectorName;
-    if (name == null || name.trim().isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final scheduledInspection = _formatInspectionSchedule(
-      _lot?.scheduledInspectionDate,
-    );
-
-    final phone =
-        (_lot?.assignedInspectorPhone != null &&
-            _lot!.assignedInspectorPhone!.trim().isNotEmpty)
-        ? _lot!.assignedInspectorPhone!
-        : '';
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF7FAF7),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFD0E0CE)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.check_circle,
-                      size: 16,
-                      color: ShreeAnnaTheme.primaryGreen,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                          color: Color(0xFF1B261B),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE5F5E6),
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: const Color(0xFFA3D9A5)),
-                ),
-                child: const Text(
-                  'Verified',
-                  style: TextStyle(
-                    color: ShreeAnnaTheme.primaryGreen,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (scheduledInspection != null) ...[
-            const SizedBox(height: 8),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF0F7FF),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFB6D5F2)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.event_available,
-                    size: 16,
-                    color: Color(0xFF1265C0),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Scheduled for $scheduledInspection',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1265C0),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-          if (phone.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              'Mobile: $phone',
-              style: const TextStyle(fontSize: 11, color: Color(0xFF526052)),
-            ),
-          ],
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              if (phone.isNotEmpty) ...[
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () =>
-                        _showContactInspectorModal(context, name, phone),
-                    icon: const Icon(
-                      Icons.phone,
-                      size: 14,
-                      color: ShreeAnnaTheme.primaryGreen,
-                    ),
-                    label: const Text(
-                      'Call Inspector',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: ShreeAnnaTheme.primaryGreen,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(
-                        color: ShreeAnnaTheme.primaryGreen,
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-              ],
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    final lotId = widget.lotId ?? _lot?.id ?? '2632-f';
-                    final lotNum = (_lot != null && _lot!.lotNumber.isNotEmpty)
-                        ? _lot!.lotNumber
-                        : widget.lotNumber;
-                    final millet = (_lot != null && _lot!.milletType.isNotEmpty)
-                        ? _lot!.milletType
-                        : widget.milletName;
-                    final qty = _lot?.estimatedQuantityKg ??
-                        (double.tryParse(widget.quantity) ?? 789.0);
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => InspectorChatScreen(
-                          lotId: lotId,
-                          lotNumber: lotNum,
-                          milletType: millet,
-                          quantityKg: qty,
-                          inspectorName: name,
-                          inspectorPhone: phone,
-                          farmerName: _lot?.farmerName ?? 'Farmer Member',
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.chat, size: 14, color: Colors.white),
-                  label: const Text(
-                    'Chat Support',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ShreeAnnaTheme.primaryGreen,
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildCompactAgreementCard(BuildContext context) {
     final version = _lot?.agreementVersion ?? 'v2.0';
@@ -3095,111 +2923,4 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
     );
   }
 
-  void _showChatDialog(BuildContext context, String driverName) {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          title: Row(
-            children: [
-              const Icon(Icons.chat, color: ShreeAnnaTheme.primaryGreen),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Chat with $driverName',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF4F7F4),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CircleAvatar(
-                      radius: 14,
-                      backgroundColor: ShreeAnnaTheme.primaryGreen,
-                      child: Text(
-                        driverName.isNotEmpty ? driverName[0].toUpperCase() : 'D',
-                        style: const TextStyle(color: Colors.white, fontSize: 12),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '$driverName (Driver)',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          const Text(
-                            'Hello! I am on my way to your farm location for pickup.',
-                            style: TextStyle(fontSize: 13),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: controller,
-                decoration: const InputDecoration(
-                  hintText: 'Type your message to driver...',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Close'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ShreeAnnaTheme.primaryGreen,
-              ),
-              onPressed: () {
-                if (controller.text.trim().isNotEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Message sent to driver successfully!'),
-                    ),
-                  );
-                }
-                Navigator.pop(ctx);
-              },
-              child: const Text('Send'),
-            ),
-          ],
-        );
-      },
-    );
-  }
 }
