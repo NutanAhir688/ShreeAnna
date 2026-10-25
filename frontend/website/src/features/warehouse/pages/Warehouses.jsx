@@ -1,4 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
+import { Package, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 import WarehouseStats from "../components/WarehouseStats";
 import WarehouseFilters from "../components/WarehouseFilters";
@@ -6,9 +10,14 @@ import WarehouseTable from "../components/WarehouseTable";
 import WarehouseMapView from "../components/WarehouseMapView";
 import AddWarehouseModal from "../components/AddWarehouseModal";
 
-import { lotsApi, warehousesApi } from "@/services/api";
+import { lotsApi, warehousesApi, logisticsApi } from "@/services/api";
 
 function Warehouses() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const userRole = user?.role || "FpoManager";
+  const isProcessor = userRole === "Processor";
+
   const [warehouseList, setWarehouseList] = useState([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
@@ -17,6 +26,53 @@ function Warehouses() {
 
   const loadWarehouses = async () => {
     try {
+      if (isProcessor) {
+        // For SHG/Processor role: Display their dedicated facility unit with inward stock tracking
+        const dispatchesData = await logisticsApi.getAll().catch(() => []);
+        const dispatchesList = Array.isArray(dispatchesData) ? dispatchesData : [];
+        const deliveredToProcessor = dispatchesList.filter((d) => {
+          const isCompleted = d.status === "COMPLETED" || d.status === "DELIVERED" || d.warehouseReceiptStatus === "CONFIRMED";
+          const dest = String(d.destinationAddress || "").toLowerCase();
+          const bName = String(d.buyerName || "").toLowerCase();
+          const uEmail = String(user?.email || "").toLowerCase();
+          return isCompleted && (dest.includes("processor") || dest.includes("shg") || bName.includes("processor") || (user?.email && dest.includes(uEmail)));
+        });
+
+        const totalReceivedKg = deliveredToProcessor.reduce(
+          (sum, d) => sum + Number(d.finalReceivedQuantityKg || d.totalQuantityKg || 0),
+          0
+        );
+        const stockLotsCount = deliveredToProcessor.length;
+
+        const processorWh = {
+          id: "shg-processor-wh-01",
+          code: "PROC-WH-001",
+          name: user?.memberName ? `${user.memberName} SHG Processing Hub` : "Mahila SHG Processing & Storage Hub",
+          location: "Anand Food Processing Cluster, Anand, Gujarat",
+          district: "Anand",
+          taluka: "Anand",
+          village: "Anand City",
+          manager: user?.memberName || "SHG Unit Incharge",
+          contact: user?.phone || "+91 98765 44321",
+          capacityNum: 10000,
+          utilizedNum: totalReceivedKg,
+          capacity: 10000,
+          utilized: totalReceivedKg,
+          usedCapacity: totalReceivedKg,
+          capacityInKg: 10000,
+          latitude: 22.5645,
+          longitude: 72.9289,
+          storageCondition: "Clean Processing Floor & Dry Storage",
+          status: "Active",
+          stockLots: stockLotsCount,
+          isProcessorUnit: true,
+        };
+
+        setWarehouseList([processorWh]);
+        return;
+      }
+
+      // For FPO, Warehouse Managers, etc: Display regional storage network
       const [data, lotsData] = await Promise.all([
         warehousesApi.getAll().catch(() => []),
         lotsApi.getAll().catch(() => []),
@@ -124,6 +180,7 @@ function Warehouses() {
             storageCondition: w.storageCondition || "Dry Grain, Aerated",
             status: w.status === "ACTIVE" ? "Active" : w.status || "Active",
             stockLots: lotCount,
+            isProcessorUnit: false,
           };
         });
         setWarehouseList(mapped);
@@ -148,7 +205,7 @@ function Warehouses() {
 
   useEffect(() => {
     loadWarehouses();
-  }, []);
+  }, [user?.role]);
 
   const filteredWarehouses = useMemo(() => {
     const query = search.toLowerCase();
@@ -174,16 +231,43 @@ function Warehouses() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Warehouse Operations & Storage Hubs
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            {isProcessor ? "SHG Processing Facility & Inventory Hub" : "Warehouse Operations & Storage Hubs"}
           </h1>
           <p className="text-xs text-slate-500 font-medium">
-            Manage rural Gujarat millet warehouses, capacity allocation & coordinates.
+            {isProcessor
+              ? "Manage value-addition processing facility, raw millet inward stock from FPO procurements & product inventory."
+              : "Manage rural Gujarat millet warehouses, capacity allocation & coordinates."}
           </p>
         </div>
       </div>
 
-      <WarehouseStats warehouses={warehouseList} />
+      <WarehouseStats warehouses={warehouseList} isProcessor={isProcessor} />
+
+      {/* Helpful Guidance when Processor facility has 0 inventory */}
+      {isProcessor && Number(warehouseList[0]?.usedCapacity || 0) === 0 && (
+        <div className="p-4 bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 shrink-0">
+              <Package className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                SHG Processing Facility Inventory is Currently Empty (0 kg)
+              </h4>
+              <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                You are viewing your dedicated processor facility storage. To receive raw millets into this facility, place a procurement request from verified FPO regional warehouses.
+              </p>
+            </div>
+          </div>
+          <Button
+            onClick={() => navigate("/available-lots")}
+            className="bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold h-9 px-3.5 shrink-0 cursor-pointer shadow-xs"
+          >
+            Browse Warehouse Stored Millets <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+          </Button>
+        </div>
+      )}
 
       <WarehouseFilters
         search={search}
@@ -193,6 +277,7 @@ function Warehouses() {
         viewMode={viewMode}
         setViewMode={setViewMode}
         onOpenAddModal={() => setShowAddModal(true)}
+        addLabel={isProcessor ? "Add Storage Unit" : "Add Warehouse"}
       />
 
       {viewMode === "table" ? (

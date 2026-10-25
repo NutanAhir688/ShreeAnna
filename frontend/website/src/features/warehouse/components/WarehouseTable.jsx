@@ -149,10 +149,10 @@ function WarehouseTable({ warehouses, onDeleteWarehouse }) {
                         <Eye size={14} />
                         View
                       </button>
-                      {onDeleteWarehouse && (
+                      {onDeleteWarehouse && !warehouse.isProcessorUnit && (
                         <button
                           onClick={() => onDeleteWarehouse(warehouse.id, warehouse.name)}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 transition"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 transition cursor-pointer"
                           title="Delete Warehouse (Soft Delete)"
                         >
                           <Trash2 size={14} />

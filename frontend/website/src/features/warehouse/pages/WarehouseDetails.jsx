@@ -17,6 +17,7 @@ import {
 
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
 import AllocateLotCard from "../components/AllocateLotCard";
 import { inventoryApi, logisticsApi, lotsApi, warehousesApi } from "@/services/api";
@@ -68,6 +69,8 @@ function formatStatus(status) {
 function WarehouseDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isProcessor = user?.role === "Processor";
 
   const [warehouse, setWarehouse] = useState(null);
   const [allocatedLots, setAllocatedLots] = useState([]);
@@ -88,7 +91,24 @@ function WarehouseDetails() {
         warehousesApi.getAllocatedLots(id).catch(() => []),
       ]);
 
-      if (whData) setWarehouse(whData);
+      const fallbackWh = (id === "shg-processor-wh-01" || (!whData && isProcessor)) ? {
+        id: "shg-processor-wh-01",
+        warehouseCode: "PROC-WH-001",
+        name: user?.memberName ? `${user.memberName} SHG Processing Hub` : "Mahila SHG Processing & Storage Hub",
+        location: "Anand Food Processing Cluster, Anand, Gujarat",
+        district: "Anand",
+        taluka: "Anand",
+        village: "Anand City",
+        managerName: user?.memberName || "SHG Unit Incharge",
+        contactPhone: user?.phone || "+91 98765 44321",
+        capacityInTons: 10,
+        utilizedCapacityTons: 0,
+        storageCondition: "Clean Processing Floor & Dry Storage",
+        status: "ACTIVE",
+      } : null;
+
+      const activeWh = whData || fallbackWh;
+      if (activeWh) setWarehouse(activeWh);
 
       const allLots = Array.isArray(lotsData) ? lotsData : [];
       const allDispatches = Array.isArray(dispatchesData) ? dispatchesData : [];

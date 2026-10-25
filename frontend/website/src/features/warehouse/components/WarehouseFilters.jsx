@@ -9,6 +9,7 @@ function WarehouseFilters({
   viewMode = "table",
   setViewMode,
   onOpenAddModal,
+  addLabel = "Add Warehouse",
 }) {
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 md:flex-row md:items-center md:justify-between shadow-xs">
@@ -69,10 +70,10 @@ function WarehouseFilters({
         {/* Add Warehouse Button */}
         <Button
           onClick={onOpenAddModal}
-          className="bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold h-9 px-4"
+          className="bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold h-9 px-4 cursor-pointer"
         >
           <Plus className="mr-1.5 h-4 w-4" />
-          Add Warehouse
+          {addLabel}
         </Button>
       </div>
     </div>

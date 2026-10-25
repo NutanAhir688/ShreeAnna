@@ -7,7 +7,7 @@ import {
 
 import StatCard from "../../dashboard/components/StatCard";
 
-function WarehouseStats({ warehouses = [] }) {
+function WarehouseStats({ warehouses = [], isProcessor = false }) {
   const activeCount = warehouses.length;
   const totalCapKg = warehouses.reduce((sum, w) => sum + Number(w.capacity || 0), 0);
   const totalUsedKg = warehouses.reduce((sum, w) => sum + Number(w.usedCapacity || 0), 0);
@@ -16,9 +16,9 @@ function WarehouseStats({ warehouses = [] }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <StatCard
-        title="Active Warehouses"
+        title={isProcessor ? "Processing Facilities" : "Active Warehouses"}
         value={activeCount.toString()}
-        description="Currently operational"
+        description={isProcessor ? "Facility operational" : "Currently operational"}
         icon={Warehouse}
         iconBgClass="bg-blue-100/80"
         iconColorClass="text-blue-600"
@@ -27,7 +27,7 @@ function WarehouseStats({ warehouses = [] }) {
       <StatCard
         title="Total Capacity"
         value={`${totalCapKg.toLocaleString('en-IN')} kg`}
-        description="Combined storage capacity"
+        description={isProcessor ? "Unit storage capacity" : "Combined storage capacity"}
         icon={Package}
         iconBgClass="bg-purple-100/80"
         iconColorClass="text-purple-600"
@@ -45,7 +45,7 @@ function WarehouseStats({ warehouses = [] }) {
       <StatCard
         title="Good Condition"
         value={activeCount.toString()}
-        description="Warehouses inspected"
+        description={isProcessor ? "Storage sanitized & active" : "Warehouses inspected"}
         icon={CheckCircle2}
         iconBgClass="bg-emerald-100/80"
         iconColorClass="text-emerald-600"
