@@ -68,7 +68,7 @@ export const ROLE_CONFIGS = {
       {
         title: "BUSINESS",
         items: [
-          { to: "/marketplace", icon: ShoppingCart, label: "Marketplace" },
+          // { to: "/marketplace", icon: ShoppingCart, label: "Marketplace" },
           { to: "/orders", icon: ClipboardCheck, label: "Orders" },
           { to: "/settlements", icon: CircleDollarSign, label: "Settlements & Payments" },
           { to: "/finance", icon: Wallet, label: "Finance" },
@@ -310,10 +310,10 @@ export const ROLE_CONFIGS = {
         ],
       },
       {
-        title: "VALUE ADDITION & MARKETPLACE",
+        title: "INVENTORY & REPORTING",
         items: [
-          { to: "/marketplace/new", icon: Factory, label: "Create Product" },
-          { to: "/marketplace", icon: ShoppingCart, label: "Marketplace" },
+          // { to: "/marketplace/new", icon: Factory, label: "Create Product" },
+          // { to: "/marketplace", icon: ShoppingCart, label: "Marketplace" },
           { to: "/warehouses", icon: Building2, label: "Inventory" },
           { to: "/reports", icon: BarChart3, label: "Reporting" },
         ],
@@ -341,7 +341,7 @@ export const ROLE_CONFIGS = {
       {
         title: null,
         items: [
-          { to: "/store", icon: ShoppingCart, label: "Marketplace Store" },
+          // { to: "/store", icon: ShoppingCart, label: "Marketplace Store" },
           { to: "/my-orders", icon: Package, label: "My Orders & Deliveries" },
         ],
       },

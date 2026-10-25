@@ -189,13 +189,13 @@ export default function Login() {
             <span className="sr-only">Toggle Dark / Light Theme</span>
           </Button>
 
-          <Link
+          {/* <Link
             to="/store"
             className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#EFF5EB] dark:bg-slate-800/80 hover:bg-[#E3EDE0] dark:hover:bg-slate-800 text-[#1B4324] dark:text-emerald-400 text-xs font-semibold border border-[#D5E4D1] dark:border-slate-700 transition-colors"
           >
             <Store className="w-3.5 h-3.5 text-[#266838] dark:text-emerald-400" />
             <span>Customer Marketplace</span>
-          </Link>
+          </Link> */}
           <Link
             to="/"
             className="inline-flex items-center gap-1 text-xs font-semibold text-[#56655A] dark:text-slate-400 hover:text-[#1B4324] dark:hover:text-emerald-400 px-3 py-1.5 transition-colors"
