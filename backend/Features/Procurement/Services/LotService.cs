@@ -26,6 +26,24 @@ public class LotService : ILotService
             .OrderByDescending(x => x.SubmissionDate)
             .ToListAsync();
 
+        bool anyHealed = false;
+        foreach (var lot in lots)
+        {
+            if ((lot.Status == "AGREEMENT_PENDING_FARMER" || lot.Status == "AGREEMENT_PENDING_FPO" || lot.Status == "AGREEMENT_PENDING") &&
+                lot.NegotiationRemarks != null &&
+                lot.NegotiationRemarks.Contains("FARMER_ACCEPTED") &&
+                lot.NegotiationRemarks.Contains("FPO_ACCEPTED"))
+            {
+                lot.Status = "AGREEMENT_ACCEPTED";
+                lot.UpdatedAt = DateTime.UtcNow;
+                anyHealed = true;
+            }
+        }
+        if (anyHealed)
+        {
+            await _context.SaveChangesAsync();
+        }
+
         return lots.Select(MapToResponse).ToList();
     }
 
@@ -39,6 +57,24 @@ public class LotService : ILotService
             .OrderByDescending(x => x.SubmissionDate)
             .ToListAsync();
 
+        bool anyHealed = false;
+        foreach (var lot in lots)
+        {
+            if ((lot.Status == "AGREEMENT_PENDING_FARMER" || lot.Status == "AGREEMENT_PENDING_FPO" || lot.Status == "AGREEMENT_PENDING") &&
+                lot.NegotiationRemarks != null &&
+                lot.NegotiationRemarks.Contains("FARMER_ACCEPTED") &&
+                lot.NegotiationRemarks.Contains("FPO_ACCEPTED"))
+            {
+                lot.Status = "AGREEMENT_ACCEPTED";
+                lot.UpdatedAt = DateTime.UtcNow;
+                anyHealed = true;
+            }
+        }
+        if (anyHealed)
+        {
+            await _context.SaveChangesAsync();
+        }
+
         return lots.Select(MapToResponse).ToList();
     }
 
@@ -49,7 +85,19 @@ public class LotService : ILotService
             .Include(x => x.Farm)
             .FirstOrDefaultAsync(x => x.Id == id);
 
-        return lot is null ? null : MapToResponse(lot);
+        if (lot is null) return null;
+
+        if ((lot.Status == "AGREEMENT_PENDING_FARMER" || lot.Status == "AGREEMENT_PENDING_FPO" || lot.Status == "AGREEMENT_PENDING") &&
+            lot.NegotiationRemarks != null &&
+            lot.NegotiationRemarks.Contains("FARMER_ACCEPTED") &&
+            lot.NegotiationRemarks.Contains("FPO_ACCEPTED"))
+        {
+            lot.Status = "AGREEMENT_ACCEPTED";
+            lot.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+        }
+
+        return MapToResponse(lot);
     }
 
     public async Task<LotResponse> CreateAsync(
@@ -153,6 +201,16 @@ public class LotService : ILotService
         var lot = await _context.ProcurementLots.FindAsync(lotId);
         if (lot is null) return null;
 
+        if ((lot.Status == "AGREEMENT_PENDING_FARMER" || lot.Status == "AGREEMENT_PENDING_FPO" || lot.Status == "AGREEMENT_PENDING") &&
+            lot.NegotiationRemarks != null &&
+            lot.NegotiationRemarks.Contains("FARMER_ACCEPTED") &&
+            lot.NegotiationRemarks.Contains("FPO_ACCEPTED"))
+        {
+            lot.Status = "AGREEMENT_ACCEPTED";
+            lot.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+        }
+
         var statusOrder = new[]
         {
             "SUBMITTED",
@@ -192,7 +250,7 @@ public class LotService : ILotService
                     }
                 }
             }
-            else if (lot.Status == "AGREEMENT_ACCEPTED" || lot.Status == "AGREEMENT_PENDING")
+            else if (rawStatus.Contains("AGREEMENT"))
             {
                 if (rawStatus != "STORED" && rawStatus != "DELIVERED")
                 {
@@ -206,7 +264,7 @@ public class LotService : ILotService
             "SUBMITTED" or "PENDING" => 0,
             "QUALITY_INSPECTION" or "INSPECTION_IN_PROGRESS" or "PENDING_INSPECTION" => 1,
             "QUALITY_CERTIFIED" or "QUALITY_CERTIFICATE" or "QUALITY_PASSED" or "CERTIFIED" or "APPROVED" => 2,
-            "PROCUREMENT_AGREEMENT" or "AGREEMENT_PENDING" or "AGREEMENT_ACCEPTED" => 3,
+            _ when rawStatus.Contains("AGREEMENT") => 3,
             "PICKUP" or "PICKUP_SCHEDULED" or "PICKUP_COMPLETED" or "DISPATCHED" or "IN_TRANSIT" => 4,
             "WAREHOUSE_RECEIPT" or "WAREHOUSE_RECEIVED" or "STORED" or "DELIVERED" or "RECEIVED" => 5,
             "PAYMENT" or "PAYMENT_COMPLETED" or "READY_FOR_PAYMENT" or "SETTLED" or "COMPLETED" or "PAID" => 6,
@@ -360,15 +418,15 @@ public class LotService : ILotService
         if (lot is null) return false;
 
         var remarks = lot.NegotiationRemarks ?? "";
-        bool farmerAccepted = remarks.Contains("[FARMER_ACCEPTED]") || isFarmer;
-        bool fpoAccepted = remarks.Contains("[FPO_ACCEPTED]") || !isFarmer;
+        bool farmerAccepted = isFarmer || remarks.Contains("FARMER_ACCEPTED");
+        bool fpoAccepted = !isFarmer || remarks.Contains("FPO_ACCEPTED");
 
         var updatedRemarks = remarks;
-        if (isFarmer && !updatedRemarks.Contains("[FARMER_ACCEPTED]"))
+        if (isFarmer && !updatedRemarks.Contains("FARMER_ACCEPTED"))
         {
             updatedRemarks = $"{updatedRemarks} [FARMER_ACCEPTED:{DateTime.UtcNow:s}]".Trim();
         }
-        if (!isFarmer && !updatedRemarks.Contains("[FPO_ACCEPTED]"))
+        if (!isFarmer && !updatedRemarks.Contains("FPO_ACCEPTED"))
         {
             updatedRemarks = $"{updatedRemarks} [FPO_ACCEPTED:{DateTime.UtcNow:s}]".Trim();
         }
@@ -505,6 +563,15 @@ public class LotService : ILotService
             verificationCode = null;
         }
 
+        var effectiveStatus = lot.Status ?? "SUBMITTED";
+        if ((effectiveStatus == "AGREEMENT_PENDING_FARMER" || effectiveStatus == "AGREEMENT_PENDING_FPO" || effectiveStatus == "AGREEMENT_PENDING") &&
+            lot.NegotiationRemarks != null &&
+            lot.NegotiationRemarks.Contains("FARMER_ACCEPTED") &&
+            lot.NegotiationRemarks.Contains("FPO_ACCEPTED"))
+        {
+            effectiveStatus = "AGREEMENT_ACCEPTED";
+        }
+
         return new LotResponse(
             lot.Id,
             lot.LotNumber,
@@ -518,7 +585,7 @@ public class LotService : ILotService
             lot.ActualQuantityKg,
             lot.HarvestDate,
             lot.SubmissionDate,
-            lot.Status,
+            effectiveStatus,
             lot.Description,
             lot.AssignedInspectorName,
             lot.AssignedInspectorPhone,

@@ -50,7 +50,12 @@ class _MyLotsScreenState extends State<MyLotsScreen> {
     }
   }
 
-  Color _getStatusColor(String status) {
+  Color _getStatusColor(String status, [String? remarks]) {
+    final effective = _formatStatusText(status, remarks);
+    if (effective == 'Agreement Accepted') return const Color(0xFF087F23);
+    if (effective == 'Awaiting FPO Signature' || effective == 'Awaiting Farmer Signature' || effective == 'Agreement Awaiting Approval') {
+      return const Color(0xFFE97900);
+    }
     switch (status.toUpperCase()) {
       case 'SUBMITTED':
         return const Color(0xFFE97900);
@@ -60,6 +65,7 @@ class _MyLotsScreenState extends State<MyLotsScreen> {
         return const Color(0xFF1265C0);
       case 'QUALITY_CERTIFIED':
       case 'CERTIFIED':
+      case 'AGREEMENT_ACCEPTED':
       case 'PAYMENT_COMPLETED':
       case 'DELIVERY_COMPLETED':
         return const Color(0xFF087F23);
@@ -71,7 +77,12 @@ class _MyLotsScreenState extends State<MyLotsScreen> {
     }
   }
 
-  Color _getStatusBg(String status) {
+  Color _getStatusBg(String status, [String? remarks]) {
+    final effective = _formatStatusText(status, remarks);
+    if (effective == 'Agreement Accepted') return const Color(0xFFDFF3E2);
+    if (effective == 'Awaiting FPO Signature' || effective == 'Awaiting Farmer Signature' || effective == 'Agreement Awaiting Approval') {
+      return const Color(0xFFFFF3E0);
+    }
     switch (status.toUpperCase()) {
       case 'SUBMITTED':
         return const Color(0xFFFFE9D0);
@@ -81,6 +92,7 @@ class _MyLotsScreenState extends State<MyLotsScreen> {
         return const Color(0xFFDCEBFA);
       case 'QUALITY_CERTIFIED':
       case 'CERTIFIED':
+      case 'AGREEMENT_ACCEPTED':
       case 'PAYMENT_COMPLETED':
       case 'DELIVERY_COMPLETED':
         return const Color(0xFFDFF3E2);
@@ -104,16 +116,20 @@ class _MyLotsScreenState extends State<MyLotsScreen> {
       case 'CERTIFIED':
         return 'Certified';
       case 'AGREEMENT_PENDING':
+        if (effectiveRemarks.contains('FARMER_ACCEPTED') && effectiveRemarks.contains('FPO_ACCEPTED')) return 'Agreement Accepted';
+        if (effectiveRemarks.contains('FARMER_ACCEPTED')) return 'Awaiting FPO Signature';
+        if (effectiveRemarks.contains('FPO_ACCEPTED')) return 'Awaiting Farmer Signature';
         return 'Agreement Awaiting Approval';
       case 'AGREEMENT_PENDING_FPO':
+        if (effectiveRemarks.contains('FARMER_ACCEPTED') && effectiveRemarks.contains('FPO_ACCEPTED')) return 'Agreement Accepted';
         return 'Awaiting FPO Signature';
       case 'AGREEMENT_PENDING_FARMER':
+        if (effectiveRemarks.contains('FARMER_ACCEPTED') && effectiveRemarks.contains('FPO_ACCEPTED')) return 'Agreement Accepted';
+        if (effectiveRemarks.contains('FARMER_ACCEPTED')) return 'Awaiting FPO Signature';
         return 'Awaiting Farmer Signature';
       case 'AGREEMENT_ACCEPTED':
       case 'PROCUREMENT_AGREEMENT':
-        return (effectiveRemarks.contains('[FPO_ACCEPTED]'))
-            ? 'Agreement Accepted'
-            : 'Awaiting FPO Signature';
+        return 'Agreement Accepted';
       case 'AGREEMENT_REJECTED':
         return 'Agreement Rejected';
       case 'PICKUP_SCHEDULED':
@@ -309,8 +325,8 @@ class _MyLotsScreenState extends State<MyLotsScreen> {
     required LotModel lot,
   }) {
     final statusText = _formatStatusText(lot.status, lot.negotiationRemarks);
-    final statusColor = _getStatusColor(lot.status);
-    final statusBg = _getStatusBg(lot.status);
+    final statusColor = _getStatusColor(lot.status, lot.negotiationRemarks);
+    final statusBg = _getStatusBg(lot.status, lot.negotiationRemarks);
     final formattedQty = '${lot.estimatedQuantityKg.toStringAsFixed(0)} kg';
     final formattedDate = lot.harvestDate.contains('T')
         ? lot.harvestDate.split('T').first

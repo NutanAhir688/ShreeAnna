@@ -77,7 +77,66 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Color _getStatusColor(String status) {
+  String _formatStatusText(String status, [String? remarks]) {
+    final effectiveRemarks = remarks ?? '';
+    final hasFarmer = effectiveRemarks.contains('FARMER_ACCEPTED');
+    final hasFpo = effectiveRemarks.contains('FPO_ACCEPTED');
+
+    switch (status.toUpperCase()) {
+      case 'SUBMITTED':
+        return 'Submitted';
+      case 'QUALITY_INSPECTION':
+        return 'Inspection in Progress';
+      case 'QUALITY_CERTIFIED':
+      case 'QUALITY_PASSED':
+      case 'CERTIFIED':
+        return 'Certified';
+      case 'AGREEMENT_PENDING':
+        if (hasFarmer && hasFpo) return 'Agreement Accepted';
+        if (hasFarmer) return 'Awaiting FPO Signature';
+        if (hasFpo) return 'Awaiting Farmer Signature';
+        return 'Agreement Pending';
+      case 'AGREEMENT_PENDING_FPO':
+        if (hasFarmer && hasFpo) return 'Agreement Accepted';
+        return 'Awaiting FPO Signature';
+      case 'AGREEMENT_PENDING_FARMER':
+        if (hasFarmer && hasFpo) return 'Agreement Accepted';
+        if (hasFarmer) return 'Awaiting FPO Signature';
+        return 'Awaiting Farmer Signature';
+      case 'AGREEMENT_ACCEPTED':
+      case 'PROCUREMENT_AGREEMENT':
+        return 'Agreement Accepted';
+      case 'AGREEMENT_REJECTED':
+      case 'AGREEMENT_REJECTED_BY_FPO':
+      case 'AGREEMENT_REJECTED_BY_FARMER':
+        return 'Agreement Rejected';
+      case 'PICKUP_SCHEDULED':
+      case 'PICKUP':
+        return 'Pickup Scheduled';
+      case 'PICKUP_COMPLETED':
+        return 'Pickup Completed';
+      case 'DELIVERED':
+      case 'DELIVERY_COMPLETED':
+        return 'Delivered';
+      case 'STORED':
+      case 'WAREHOUSE_RECEIVED':
+      case 'WAREHOUSE_RECEIPT':
+        return 'Stored in Warehouse';
+      case 'PAYMENT_COMPLETED':
+      case 'SETTLED':
+      case 'PAID':
+        return 'Payment Completed';
+      default:
+        return status;
+    }
+  }
+
+  Color _getStatusColor(String status, [String? remarks]) {
+    final effective = _formatStatusText(status, remarks);
+    if (effective == 'Agreement Accepted') return const Color(0xFF087F23);
+    if (effective == 'Awaiting FPO Signature' || effective == 'Awaiting Farmer Signature' || effective == 'Agreement Pending') {
+      return const Color(0xFFE97900);
+    }
     switch (status.toUpperCase()) {
       case 'SUBMITTED':
         return const Color(0xFFE97900);
@@ -87,8 +146,10 @@ class _HomeScreenState extends State<HomeScreen> {
         return const Color(0xFF1265C0);
       case 'QUALITY_CERTIFIED':
       case 'CERTIFIED':
+      case 'AGREEMENT_ACCEPTED':
       case 'PAYMENT_COMPLETED':
       case 'DELIVERY_COMPLETED':
+      case 'STORED':
         return const Color(0xFF087F23);
       case 'AGREEMENT_REJECTED':
       case 'CANCELLED':
@@ -98,7 +159,12 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Color _getStatusBg(String status) {
+  Color _getStatusBg(String status, [String? remarks]) {
+    final effective = _formatStatusText(status, remarks);
+    if (effective == 'Agreement Accepted') return const Color(0xFFDFF3E2);
+    if (effective == 'Awaiting FPO Signature' || effective == 'Awaiting Farmer Signature' || effective == 'Agreement Pending') {
+      return const Color(0xFFFFF3E0);
+    }
     switch (status.toUpperCase()) {
       case 'SUBMITTED':
         return const Color(0xFFFFE9D0);
@@ -108,39 +174,16 @@ class _HomeScreenState extends State<HomeScreen> {
         return const Color(0xFFDCEBFA);
       case 'QUALITY_CERTIFIED':
       case 'CERTIFIED':
+      case 'AGREEMENT_ACCEPTED':
       case 'PAYMENT_COMPLETED':
       case 'DELIVERY_COMPLETED':
+      case 'STORED':
         return const Color(0xFFDFF3E2);
       case 'AGREEMENT_REJECTED':
       case 'CANCELLED':
         return const Color(0xFFFFEBEE);
       default:
         return const Color(0xFFFFE9D0);
-    }
-  }
-
-  String _formatStatusText(String status) {
-    switch (status.toUpperCase()) {
-      case 'SUBMITTED':
-        return 'Submitted';
-      case 'QUALITY_INSPECTION':
-        return 'Inspection in Progress';
-      case 'QUALITY_CERTIFIED':
-        return 'Certified';
-      case 'AGREEMENT_PENDING':
-        return 'Agreement Pending';
-      case 'AGREEMENT_ACCEPTED':
-        return 'Agreement Accepted';
-      case 'AGREEMENT_REJECTED':
-        return 'Agreement Rejected';
-      case 'PICKUP_SCHEDULED':
-        return 'Pickup Scheduled';
-      case 'PICKUP_COMPLETED':
-        return 'Pickup Completed';
-      case 'PAYMENT_COMPLETED':
-        return 'Payment Completed';
-      default:
-        return status;
     }
   }
 
@@ -477,13 +520,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     lotId: lot.id,
                     lotNumber: lot.lotNumber,
                     millet: lot.milletType,
-                    status: _formatStatusText(lot.status),
-                    statusColor: _getStatusColor(lot.status),
-                    statusBackground: _getStatusBg(lot.status),
+                    status: _formatStatusText(lot.status, lot.negotiationRemarks),
+                    statusColor: _getStatusColor(lot.status, lot.negotiationRemarks),
+                    statusBackground: _getStatusBg(lot.status, lot.negotiationRemarks),
                     submittedDate: formattedDate,
                     quantity: formattedQty,
                     farmName: lot.farmName,
-                    action: _formatStatusText(lot.status),
+                    action: _formatStatusText(lot.status, lot.negotiationRemarks),
                   );
                 },
               ),
@@ -498,11 +541,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildActiveLotsCard() {
     final l10n = AppLocalizations.of(context)!;
     final activeCount = _lots.where((l) => l.status.toUpperCase() != 'CANCELLED').length;
-    final pendingCount = _lots.where((l) =>
-      l.status.toUpperCase() == 'SUBMITTED' ||
-      l.status.toUpperCase() == 'QUALITY_INSPECTION' ||
-      l.status.toUpperCase() == 'AGREEMENT_PENDING'
-    ).length;
+    final pendingCount = _lots.where((l) {
+      final statusText = _formatStatusText(l.status, l.negotiationRemarks);
+      return statusText == 'Submitted' ||
+          statusText == 'Inspection in Progress' ||
+          statusText == 'Agreement Pending' ||
+          statusText == 'Awaiting Farmer Signature';
+    }).length;
 
     return Container(
       width: double.infinity,
