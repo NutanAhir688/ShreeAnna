@@ -95,13 +95,13 @@ export default function ProcessorDashboard() {
             >
               <Warehouse className="w-3.5 h-3.5" /> Browse Raw Lots
             </Button>
-            <Button
+            {/* <Button
               onClick={() => navigate("/marketplace/create")}
               variant="outline"
               className="border-emerald-400/60 text-white hover:bg-emerald-800/60 font-bold text-xs h-9 px-4 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5 mr-1" /> Add Product
-            </Button>
+            </Button> */}
           </div>
         </div>
 
@@ -286,14 +286,14 @@ export default function ProcessorDashboard() {
                   Track raw millet conversion into flour, baked cookies, and packaged food items.
                 </CardDescription>
               </div>
-              <Button
+              {/* <Button
                 variant="outline"
                 size="sm"
                 onClick={() => navigate("/marketplace/create")}
                 className="text-xs font-bold h-8 border-purple-200 text-purple-700 hover:bg-purple-50"
               >
                 <Plus className="w-3.5 h-3.5 mr-1" /> Convert Inventory
-              </Button>
+              </Button> */}
             </CardHeader>
 
             <CardContent className="p-4 space-y-3.5">
@@ -507,8 +507,8 @@ export default function ProcessorDashboard() {
             </CardContent>
           </Card>
 
-          {/* Consumer Marketplace Products Card */}
-          <Card className="border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
+          {/* Consumer Marketplace Products Card (Hidden) */}
+          {/* <Card className="border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
             <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                 <ShoppingBag className="w-4 h-4 text-emerald-700" /> Consumer Products
@@ -543,7 +543,7 @@ export default function ProcessorDashboard() {
                 </Badge>
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
         </div>
       </div>
     </div>

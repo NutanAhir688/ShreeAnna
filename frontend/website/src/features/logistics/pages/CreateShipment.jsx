@@ -40,6 +40,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { logisticsApi, lotsApi, inventoryApi, farmersApi, farmsApi, warehousesApi } from "@/services/api";
+import { useAuth } from "@/context/AuthContext";
 
 export function calculateDistanceKm(lat1, lon1, lat2, lon2) {
   if (!lat1 || !lon1 || !lat2 || !lon2) return null;
@@ -381,6 +382,14 @@ function ShipmentWarehouseMap({
 
 function CreateShipment() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user?.role === "Processor") {
+      navigate("/dispatches", { replace: true });
+    }
+  }, [user, navigate]);
+
   const [direction, setDirection] = useState("INBOUND"); // INBOUND | OUTBOUND
 
   const [inboundAgreements, setInboundAgreements] = useState([]);

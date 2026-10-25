@@ -240,8 +240,8 @@ export default function LandingPage() {
               Home
             </a>
 
-            {/* Direct Marketplace Link for Customers */}
-            <a
+            {/* Direct Marketplace Link for Customers (Hidden) */}
+            {/* <a
               href="/store"
               className="text-[#1B4324] hover:text-[#14341C] font-semibold py-1 flex items-center gap-1.5 transition-colors"
             >
@@ -250,7 +250,7 @@ export default function LandingPage() {
               <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-emerald-100 text-emerald-800">
                 Store
               </span>
-            </a>
+            </a> */}
 
             <a href="#solutions" className="hover:text-[#1B4324] transition-colors py-1">
               Solutions
@@ -309,14 +309,14 @@ export default function LandingPage() {
             >
               Home
             </a>
-            <a
+            {/* <a
               href="#marketplace"
               onClick={() => setMobileMenuOpen(false)}
               className="block py-2 text-sm font-bold text-[#1B4324] flex items-center gap-2"
             >
               <Store className="w-4 h-4 text-[#266838]" />
               <span>Marketplace (Buy Products)</span>
-            </a>
+            </a> */}
             <a
               href="#solutions"
               onClick={() => setMobileMenuOpen(false)}
@@ -417,7 +417,7 @@ export default function LandingPage() {
                   <ArrowRight className="w-4 h-4" />
                 </Button>
 
-                <a href="#marketplace">
+                {/* <a href="#marketplace">
                   <Button
                     variant="outline"
                     className="h-12 px-6 rounded-full border-[#D4DED1] bg-white/90 backdrop-blur-xs hover:bg-[#F3F7F1] text-[#1B4324] font-semibold text-xs sm:text-sm shadow-2xs cursor-pointer flex items-center gap-2"
@@ -425,7 +425,7 @@ export default function LandingPage() {
                     <span>Explore Marketplace</span>
                     <Store className="w-4 h-4 text-[#2E7D42]" />
                   </Button>
-                </a>
+                </a> */}
               </div>
             </div>
 
@@ -499,7 +499,7 @@ export default function LandingPage() {
 
           <div className="mt-12 text-center">
             <a
-              href="#marketplace"
+              href="#solutions"
               className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1B4324] hover:text-[#14341C] group cursor-pointer"
             >
               <span>Explore All Solutions</span>
@@ -813,10 +813,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 6. Customer Marketplace Section (Directly browsable published processor products matching Image 5) */}
-      <section id="marketplace" className="py-20 bg-white">
+      {/* 6. Customer Marketplace Section (Hidden) */}
+      {/* <section id="marketplace" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
             <div className="space-y-2 max-w-xl">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200">
@@ -831,7 +830,6 @@ export default function LandingPage() {
               </p>
             </div>
 
-            {/* Link to full Marketplace */}
             <Button
               onClick={() => navigate("/store")}
               className="bg-[#1B4324] hover:bg-[#14341C] text-white text-xs font-bold rounded-full px-5 h-10 shadow-xs cursor-pointer flex items-center gap-1.5 self-start md:self-auto"
@@ -842,7 +840,6 @@ export default function LandingPage() {
             </Button>
           </div>
 
-          {/* Product Grid (Real processor products with real packaging photos) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               {
@@ -890,7 +887,6 @@ export default function LandingPage() {
                 key={product.id}
                 className="bg-white rounded-2xl border border-[#E3ECE0] overflow-hidden shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between group"
               >
-                {/* Real Image Container with Floating Badges */}
                 <div className="relative aspect-4/3 w-full bg-slate-50 overflow-hidden">
                   <img
                     src={product.imageUrl}
@@ -910,7 +906,6 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                {/* Body */}
                 <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
                   <div className="space-y-1">
                     <p className="text-[10px] font-bold text-slate-500 uppercase">{product.brand}</p>
@@ -944,7 +939,7 @@ export default function LandingPage() {
             </Button>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* 7. Interactive QR Verification Section */}
       <section id="verify" className="py-20 bg-[#FBFBFA] border-t border-[#E5EDE2]">
