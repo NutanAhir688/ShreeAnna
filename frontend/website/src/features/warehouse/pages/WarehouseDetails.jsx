@@ -139,13 +139,15 @@ function WarehouseDetails() {
         }
       }
 
-      // 2. Dispatches assigned to this warehouse
+      // 2. Dispatches assigned or delivered to this warehouse
       const whDispatches = allDispatches.filter((d) => {
-        if (!d.warehouseId && !d.warehouseName) return false;
+        const targetName = activeWh?.name ? activeWh.name.toLowerCase().trim() : "";
         const matchesId = id && String(d.warehouseId).toLowerCase() === String(id).toLowerCase();
-        const matchesName = whData?.name && d.warehouseName &&
-          d.warehouseName.toLowerCase().trim().includes(whData.name.toLowerCase().trim());
-        return matchesId || matchesName;
+        const matchesName = targetName && d.warehouseName &&
+          d.warehouseName.toLowerCase().trim().includes(targetName);
+        const matchesDest = targetName && d.destinationAddress &&
+          d.destinationAddress.toLowerCase().trim().includes(targetName);
+        return matchesId || matchesName || matchesDest;
       });
 
       for (const d of whDispatches) {
