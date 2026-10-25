@@ -1129,12 +1129,12 @@ export default function CustomerMarketplace() {
                           <span>Assigned Fleet Driver</span>
                         </p>
                         <p className="text-sm font-bold text-slate-900">
-                          {order.driverName || "Ravi Kumar (Verified Logistics)"}
+                          {order.driverName || "Assignment Pending"}
                         </p>
                         <p className="text-xs text-slate-600 flex items-center gap-2">
-                          <span>Phone: {order.driverPhone || "+91 98765 43210"}</span>
+                          <span>Phone: {order.driverPhone || "—"}</span>
                           <span>•</span>
-                          <span>Vehicle: {order.vehicleNumber || "KA-09-AB-4521"}</span>
+                          <span>Vehicle: {order.vehicleNumber || "Pending"}</span>
                         </p>
                         <p className="text-[11px] text-slate-500">
                           Destination: {order.shippingAddress}, {order.city}

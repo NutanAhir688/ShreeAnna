@@ -103,8 +103,8 @@ function ReportIssue() {
       await logisticsApi.reportIssue({
         referenceType,
         referenceId: referenceId || (shipment?.dispatchCode || id || "SHP-2026-002"),
-        farmerName: shipment?.farmerOrProcessorName || "Sunita Devi",
-        driverName: shipment?.driverName || "Ravi Kumar",
+        farmerName: shipment?.farmerOrProcessorName || "Farmer",
+        driverName: shipment?.driverName || "Unassigned",
         issueCategory,
         incidentDateTime: incidentDateTime ? new Date(incidentDateTime) : new Date(),
         priorityLevel,
@@ -204,11 +204,11 @@ function ReportIssue() {
                 <div className="flex flex-wrap items-center gap-6 text-slate-800 font-bold">
                   <div className="flex items-center gap-1.5">
                     <User className="h-4 w-4 text-slate-500" />
-                    <span>Farmer: {shipment?.farmerOrProcessorName || "Sunita Devi"}</span>
+                    <span>Farmer: {shipment?.farmerOrProcessorName || "Farmer"}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Truck className="h-4 w-4 text-slate-500" />
-                    <span>Driver: {shipment?.driverName || "Ravi Kumar"}</span>
+                    <span>Driver: {shipment?.driverName || "Unassigned"}</span>
                   </div>
                 </div>
               </div>

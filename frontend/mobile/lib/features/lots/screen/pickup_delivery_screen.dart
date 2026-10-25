@@ -769,28 +769,28 @@ class PickupDeliveryScreen extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const CircleAvatar(
+                    CircleAvatar(
                       radius: 14,
                       backgroundColor: ShreeAnnaTheme.primaryGreen,
                       child: Text(
-                        'R',
-                        style: TextStyle(color: Colors.white, fontSize: 12),
+                        driverName.isNotEmpty ? driverName[0].toUpperCase() : 'D',
+                        style: const TextStyle(color: Colors.white, fontSize: 12),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
+                        children: [
                           Text(
-                            'Ravi (Driver)',
-                            style: TextStyle(
+                            '$driverName (Driver)',
+                            style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          SizedBox(height: 2),
-                          Text(
+                          const SizedBox(height: 2),
+                          const Text(
                             'Hello! I am on my way to your farm location for pickup.',
                             style: TextStyle(fontSize: 13),
                           ),

@@ -415,8 +415,13 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                             .toUpperCase();
 
                     final hasDriver =
-                        _lot?.driverName != null &&
-                        _lot!.driverName!.trim().isNotEmpty;
+                        (_lot?.driverName != null &&
+                            _lot!.driverName!.trim().isNotEmpty) ||
+                        (_dispatchDetails?['driverName'] != null &&
+                            _dispatchDetails!['driverName']
+                                .toString()
+                                .trim()
+                                .isNotEmpty);
 
                     final hasInspectorAssignment = _hasInspectionAssignment();
                     final inspectionStarted = _hasInspectionStarted();
@@ -568,8 +573,13 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                     debugPrint('Lot status: ${_lot?.status}');
                     debugPrint('Agreement version: ${_lot?.agreementVersion}');
                     final hasDriver =
-                        _lot?.driverName != null &&
-                        _lot!.driverName!.trim().isNotEmpty;
+                        (_lot?.driverName != null &&
+                            _lot!.driverName!.trim().isNotEmpty) ||
+                        (_dispatchDetails?['driverName'] != null &&
+                            _dispatchDetails!['driverName']
+                                .toString()
+                                .trim()
+                                .isNotEmpty);
                     final hasInspectorAssignment = _hasInspectionAssignment();
                     final inspectionStarted = _hasInspectionStarted();
                     final inspectionCompleted = _hasInspectionCompleted();
@@ -842,7 +852,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                               ? l10n.trackDetails
                               : null,
                           extraContent:
-                              ((hasDriver || isDispatched) && !isStored && !isPaymentCompleted)
+                              (hasDriver && !isStored && !isPaymentCompleted)
                               ? _buildCompactDriverCard(context)
                               : null,
                         ),
@@ -1097,7 +1107,9 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
         isStored;
 
     final hasDriver =
-        _lot?.driverName != null && _lot!.driverName!.trim().isNotEmpty;
+        (_lot?.driverName != null && _lot!.driverName!.trim().isNotEmpty) ||
+        (_dispatchDetails?['driverName'] != null &&
+            _dispatchDetails!['driverName'].toString().trim().isNotEmpty);
     final remarks = _lot?.negotiationRemarks ?? '';
     final hasFpoAccepted = isDelivered || isStored || remarks.contains('FPO_ACCEPTED') || statusUpper == 'AGREEMENT_PENDING_FARMER' || statusUpper == 'AGREEMENT_ACCEPTED';
     final hasFarmerAccepted = isDelivered || isStored || remarks.contains('FARMER_ACCEPTED') || statusUpper == 'AGREEMENT_PENDING_FPO' || statusUpper == 'AGREEMENT_ACCEPTED';
@@ -1197,11 +1209,13 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
       case 'PICKUP':
         title = l10n.pickupDelivery;
         final hasDriverStep =
-            _lot?.driverName != null && _lot!.driverName!.trim().isNotEmpty;
-        final driverName = _lot?.driverName;
-        final driverPhone = _lot?.driverPhone;
-        final vehicleNo = _lot?.vehicleNumber;
-        final pickupCode = _lot?.verificationCode;
+            (_lot?.driverName != null && _lot!.driverName!.trim().isNotEmpty) ||
+            (_dispatchDetails?['driverName'] != null &&
+                _dispatchDetails!['driverName'].toString().trim().isNotEmpty);
+        final driverName = _lot?.driverName ?? _dispatchDetails?['driverName']?.toString();
+        final driverPhone = _lot?.driverPhone ?? _dispatchDetails?['driverPhone']?.toString();
+        final vehicleNo = _lot?.vehicleNumber ?? _dispatchDetails?['vehicleNumber']?.toString();
+        final pickupCode = _lot?.verificationCode ?? _dispatchDetails?['verificationCode']?.toString();
         final agreedQuantityKg = _lot?.agreedQuantityKg;
         final estimatedQuantityKg = _lot?.estimatedQuantityKg;
 
@@ -1215,7 +1229,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
           subtitle = 'Pickup completed & delivered to warehouse.';
         } else if (hasDriverStep) {
           subtitle =
-              'Driver Assigned & Vehicle En Route (Verification Code: ${pickupCode ?? ""})';
+              'Driver Assigned & Vehicle En Route${pickupCode != null && pickupCode.isNotEmpty ? ' (Verification Code: $pickupCode)' : ''}';
         } else {
           subtitle = 'Pickup scheduled. Driver assignment in progress.';
         }
@@ -1323,7 +1337,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
         ],
       );
     } else if (step.step == 'PICKUP' &&
-        (isCurrent || hasDriver) &&
+        hasDriver &&
         !isStored &&
         !isPaymentCompleted) {
       extraContent = _buildCompactDriverCard(context);
@@ -2327,41 +2341,38 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
     );
   }
 
-  Widget _buildCompactDriverCard(BuildContext context) {
-    final driverName =
-        (_lot?.driverName != null && _lot!.driverName!.trim().isNotEmpty)
-        ? _lot!.driverName!
+  Widget? _buildCompactDriverCard(BuildContext context) {
+    final driverName = (_lot?.driverName != null && _lot!.driverName!.trim().isNotEmpty)
+        ? _lot!.driverName!.trim()
         : (_dispatchDetails?['driverName']?.toString().trim().isNotEmpty == true
-              ? _dispatchDetails!['driverName'].toString()
-              : 'Ravi Kumar (Assigned Driver)');
+            ? _dispatchDetails!['driverName'].toString().trim()
+            : null);
 
-    final driverPhone =
-        (_lot?.driverPhone != null && _lot!.driverPhone!.trim().isNotEmpty)
-        ? _lot!.driverPhone!
-        : (_dispatchDetails?['driverPhone']?.toString().trim().isNotEmpty ==
-                  true
-              ? _dispatchDetails!['driverPhone'].toString()
-              : '+91 98765 43210');
+    if (driverName == null || driverName.isEmpty) {
+      return null;
+    }
 
-    final vehicleNo =
-        (_lot?.vehicleNumber != null && _lot!.vehicleNumber!.trim().isNotEmpty)
-        ? _lot!.vehicleNumber!
-        : (_dispatchDetails?['vehicleNumber']?.toString().trim().isNotEmpty ==
-                  true
-              ? _dispatchDetails!['vehicleNumber'].toString()
-              : 'KA-09-AB-4521');
+    final driverPhone = (_lot?.driverPhone != null && _lot!.driverPhone!.trim().isNotEmpty)
+        ? _lot!.driverPhone!.trim()
+        : (_dispatchDetails?['driverPhone']?.toString().trim().isNotEmpty == true
+            ? _dispatchDetails!['driverPhone'].toString().trim()
+            : null);
 
-    final pickupCode =
-        (_lot?.verificationCode != null &&
-            _lot!.verificationCode!.trim().isNotEmpty)
-        ? _lot!.verificationCode!
-        : (_dispatchDetails?['verificationCode']
-                      ?.toString()
-                      .trim()
-                      .isNotEmpty ==
-                  true
-              ? _dispatchDetails!['verificationCode'].toString()
-              : '4829');
+    final vehicleNo = (_lot?.vehicleNumber != null && _lot!.vehicleNumber!.trim().isNotEmpty)
+        ? _lot!.vehicleNumber!.trim()
+        : (_dispatchDetails?['vehicleNumber']?.toString().trim().isNotEmpty == true
+            ? _dispatchDetails!['vehicleNumber'].toString().trim()
+            : null);
+
+    final pickupCode = (_lot?.verificationCode != null && _lot!.verificationCode!.trim().isNotEmpty)
+        ? _lot!.verificationCode!.trim()
+        : (_dispatchDetails?['verificationCode']?.toString().trim().isNotEmpty == true
+            ? _dispatchDetails!['verificationCode'].toString().trim()
+            : null);
+
+    final hasPhone = driverPhone != null && driverPhone.isNotEmpty;
+    final hasVehicle = vehicleNo != null && vehicleNo.isNotEmpty;
+    final hasOtp = pickupCode != null && pickupCode.isNotEmpty;
 
     return Container(
       width: double.infinity,
@@ -2410,7 +2421,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                   border: Border.all(color: const Color(0xFF81C784)),
                 ),
                 child: const Text(
-                  'En Route',
+                  'Assigned Driver',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
@@ -2420,43 +2431,50 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Vehicle: $vehicleNo | $driverPhone',
-            style: const TextStyle(fontSize: 11, color: Color(0xFF687068)),
-          ),
+          if (hasVehicle || hasPhone) ...[
+            const SizedBox(height: 4),
+            Text(
+              [
+                if (hasVehicle) 'Vehicle: $vehicleNo',
+                if (hasPhone) driverPhone,
+              ].join(' | '),
+              style: const TextStyle(fontSize: 11, color: Color(0xFF687068)),
+            ),
+          ],
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _showContactInspectorModal(
-                    context,
-                    driverName,
-                    driverPhone,
-                  ),
-                  icon: const Icon(
-                    Icons.phone,
-                    size: 14,
-                    color: ShreeAnnaTheme.primaryGreen,
-                  ),
-                  label: const Text(
-                    'Call',
-                    style: TextStyle(
-                      fontSize: 11,
+              if (hasPhone) ...[
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _showContactInspectorModal(
+                      context,
+                      driverName,
+                      driverPhone,
+                    ),
+                    icon: const Icon(
+                      Icons.phone,
+                      size: 14,
                       color: ShreeAnnaTheme.primaryGreen,
-                      fontWeight: FontWeight.bold,
+                    ),
+                    label: const Text(
+                      'Call',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: ShreeAnnaTheme.primaryGreen,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: ShreeAnnaTheme.primaryGreen),
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                   ),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: ShreeAnnaTheme.primaryGreen),
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
+                const SizedBox(width: 8),
+              ],
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () => _showChatDialog(context, driverName),
@@ -2479,43 +2497,45 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Pickup Code (OTP):',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF556055),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 3,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(
-                    color: ShreeAnnaTheme.primaryGreen,
-                    width: 1.5,
+          if (hasOtp) ...[
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Pickup Code (OTP):',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF556055),
                   ),
                 ),
-                child: Text(
-                  pickupCode,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 2,
-                    color: ShreeAnnaTheme.primaryGreen,
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                      color: ShreeAnnaTheme.primaryGreen,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Text(
+                    pickupCode,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 2,
+                      color: ShreeAnnaTheme.primaryGreen,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -3111,28 +3131,28 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const CircleAvatar(
+                    CircleAvatar(
                       radius: 14,
                       backgroundColor: ShreeAnnaTheme.primaryGreen,
                       child: Text(
-                        'R',
-                        style: TextStyle(color: Colors.white, fontSize: 12),
+                        driverName.isNotEmpty ? driverName[0].toUpperCase() : 'D',
+                        style: const TextStyle(color: Colors.white, fontSize: 12),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
+                        children: [
                           Text(
-                            'Ravi (Driver)',
-                            style: TextStyle(
+                            '$driverName (Driver)',
+                            style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          SizedBox(height: 2),
-                          Text(
+                          const SizedBox(height: 2),
+                          const Text(
                             'Hello! I am on my way to your farm location for pickup.',
                             style: TextStyle(fontSize: 13),
                           ),

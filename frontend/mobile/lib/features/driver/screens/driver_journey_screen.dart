@@ -2103,9 +2103,9 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
   }
 
   Widget _buildDriverProfileCard() {
-    final driverName = _selectedDriver?.name ?? _activeDispatch?.driverName ?? 'Ravi Kumar';
-    final vehicleNo = _selectedDriver?.vehicleNumber ?? _activeDispatch?.vehicleNumber ?? 'KA-09-AB-4521';
-    final phone = _selectedDriver?.phone ?? _activeDispatch?.driverPhone ?? '9876543210';
+    final driverName = _selectedDriver?.name ?? _activeDispatch?.driverName ?? 'Assigned Driver';
+    final vehicleNo = _selectedDriver?.vehicleNumber ?? _activeDispatch?.vehicleNumber ?? 'Vehicle Pending';
+    final phone = _selectedDriver?.phone ?? _activeDispatch?.driverPhone ?? '';
 
     return InkWell(
       onTap: _openDriverProfile,

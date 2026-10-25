@@ -673,19 +673,19 @@ export default function PurchaseRequests() {
                   <div className="flex justify-between">
                     <span>Driver Name</span>
                     <span className="font-bold text-slate-900 dark:text-white">
-                      {selectedRequest.driverName || "Ravi Kumar"}
+                      {selectedRequest.driverName || "Pending Assignment"}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Driver Phone</span>
                     <span className="font-mono font-semibold text-emerald-700 dark:text-emerald-400">
-                      {selectedRequest.driverPhone || "+91 98765 43210"}
+                      {selectedRequest.driverPhone || "—"}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Vehicle Number</span>
                     <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
-                      {selectedRequest.vehicleNumber || "KA-09-AB-4521"}
+                      {selectedRequest.vehicleNumber || "Pending Assignment"}
                     </span>
                   </div>
                   {selectedRequest.deliveryChallanNumber && (
