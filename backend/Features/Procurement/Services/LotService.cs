@@ -26,6 +26,24 @@ public class LotService : ILotService
             .OrderByDescending(x => x.SubmissionDate)
             .ToListAsync();
 
+        bool anyHealed = false;
+        foreach (var lot in lots)
+        {
+            if ((lot.Status == "AGREEMENT_PENDING_FARMER" || lot.Status == "AGREEMENT_PENDING_FPO" || lot.Status == "AGREEMENT_PENDING") &&
+                lot.NegotiationRemarks != null &&
+                lot.NegotiationRemarks.Contains("FARMER_ACCEPTED") &&
+                lot.NegotiationRemarks.Contains("FPO_ACCEPTED"))
+            {
+                lot.Status = "AGREEMENT_ACCEPTED";
+                lot.UpdatedAt = DateTime.UtcNow;
+                anyHealed = true;
+            }
+        }
+        if (anyHealed)
+        {
+            await _context.SaveChangesAsync();
+        }
+
         return lots.Select(MapToResponse).ToList();
     }
 
@@ -38,6 +56,24 @@ public class LotService : ILotService
             .Where(x => x.FarmerId == farmerId)
             .OrderByDescending(x => x.SubmissionDate)
             .ToListAsync();
+
+        bool anyHealed = false;
+        foreach (var lot in lots)
+        {
+            if ((lot.Status == "AGREEMENT_PENDING_FARMER" || lot.Status == "AGREEMENT_PENDING_FPO" || lot.Status == "AGREEMENT_PENDING") &&
+                lot.NegotiationRemarks != null &&
+                lot.NegotiationRemarks.Contains("FARMER_ACCEPTED") &&
+                lot.NegotiationRemarks.Contains("FPO_ACCEPTED"))
+            {
+                lot.Status = "AGREEMENT_ACCEPTED";
+                lot.UpdatedAt = DateTime.UtcNow;
+                anyHealed = true;
+            }
+        }
+        if (anyHealed)
+        {
+            await _context.SaveChangesAsync();
+        }
 
         return lots.Select(MapToResponse).ToList();
     }

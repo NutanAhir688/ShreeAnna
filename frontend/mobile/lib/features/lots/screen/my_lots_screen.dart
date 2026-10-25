@@ -50,7 +50,12 @@ class _MyLotsScreenState extends State<MyLotsScreen> {
     }
   }
 
-  Color _getStatusColor(String status) {
+  Color _getStatusColor(String status, [String? remarks]) {
+    final effective = _formatStatusText(status, remarks);
+    if (effective == 'Agreement Accepted') return const Color(0xFF087F23);
+    if (effective == 'Awaiting FPO Signature' || effective == 'Awaiting Farmer Signature' || effective == 'Agreement Awaiting Approval') {
+      return const Color(0xFFE97900);
+    }
     switch (status.toUpperCase()) {
       case 'SUBMITTED':
         return const Color(0xFFE97900);
@@ -60,6 +65,7 @@ class _MyLotsScreenState extends State<MyLotsScreen> {
         return const Color(0xFF1265C0);
       case 'QUALITY_CERTIFIED':
       case 'CERTIFIED':
+      case 'AGREEMENT_ACCEPTED':
       case 'PAYMENT_COMPLETED':
       case 'DELIVERY_COMPLETED':
         return const Color(0xFF087F23);
@@ -71,7 +77,12 @@ class _MyLotsScreenState extends State<MyLotsScreen> {
     }
   }
 
-  Color _getStatusBg(String status) {
+  Color _getStatusBg(String status, [String? remarks]) {
+    final effective = _formatStatusText(status, remarks);
+    if (effective == 'Agreement Accepted') return const Color(0xFFDFF3E2);
+    if (effective == 'Awaiting FPO Signature' || effective == 'Awaiting Farmer Signature' || effective == 'Agreement Awaiting Approval') {
+      return const Color(0xFFFFF3E0);
+    }
     switch (status.toUpperCase()) {
       case 'SUBMITTED':
         return const Color(0xFFFFE9D0);
@@ -81,6 +92,7 @@ class _MyLotsScreenState extends State<MyLotsScreen> {
         return const Color(0xFFDCEBFA);
       case 'QUALITY_CERTIFIED':
       case 'CERTIFIED':
+      case 'AGREEMENT_ACCEPTED':
       case 'PAYMENT_COMPLETED':
       case 'DELIVERY_COMPLETED':
         return const Color(0xFFDFF3E2);
@@ -313,8 +325,8 @@ class _MyLotsScreenState extends State<MyLotsScreen> {
     required LotModel lot,
   }) {
     final statusText = _formatStatusText(lot.status, lot.negotiationRemarks);
-    final statusColor = _getStatusColor(lot.status);
-    final statusBg = _getStatusBg(lot.status);
+    final statusColor = _getStatusColor(lot.status, lot.negotiationRemarks);
+    final statusBg = _getStatusBg(lot.status, lot.negotiationRemarks);
     final formattedQty = '${lot.estimatedQuantityKg.toStringAsFixed(0)} kg';
     final formattedDate = lot.harvestDate.contains('T')
         ? lot.harvestDate.split('T').first
