@@ -825,7 +825,10 @@ function Agreements() {
         const modalMeta = getAgreementStatusMeta(selectedAgreement);
         return (
         <Dialog open={Boolean(selectedAgreement)} onOpenChange={() => { setSelectedAgreement(null); setAcceptTermsChecked(false); }}>
-          <DialogContent className="max-w-4xl w-[95vw] bg-white p-6 md:p-8 border-2 border-slate-300 max-h-[90vh] overflow-y-auto">
+          <DialogContent
+            className="w-[95vw] sm:max-w-4xl md:max-w-5xl bg-white p-6 md:p-8 border-2 border-slate-300 max-h-[90vh] overflow-y-auto"
+            style={{ maxWidth: "920px", width: "95vw" }}
+          >
             <DialogHeader>
               <div className="flex items-center justify-between border-b pb-4">
                 <div className="flex items-center gap-3">
@@ -863,7 +866,7 @@ function Agreements() {
                   <p className="text-xs text-slate-400 uppercase font-semibold">
                     {selectedAgreement.agreementId ? "Valid Until" : "Date Created"}
                   </p>
-                  <p className="font-semibold">
+                  <p className="font-semibold whitespace-nowrap">
                     {selectedAgreement.agreementId
                       ? (selectedAgreement.agreementValidUntil ? new Date(selectedAgreement.agreementValidUntil).toLocaleDateString("en-GB") : "27 Aug 2026")
                       : selectedAgreement.date}
@@ -894,18 +897,18 @@ function Agreements() {
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-100 text-slate-600 font-semibold border-b">
                     <tr>
-                      <th className="p-2.5">Produce Description</th>
-                      <th className="p-2.5">Quantity</th>
-                      <th className="p-2.5">Agreed Rate (MSP)</th>
-                      <th className="p-2.5 text-right">Gross Produce Value</th>
+                      <th className="p-3">Produce Description</th>
+                      <th className="p-3 whitespace-nowrap">Quantity</th>
+                      <th className="p-3 whitespace-nowrap">Agreed Rate (MSP)</th>
+                      <th className="p-3 text-right whitespace-nowrap">Gross Produce Value</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr className="border-b">
-                      <td className="p-2.5 font-bold">{selectedAgreement.milletType}</td>
-                      <td className="p-2.5 font-semibold">{selectedAgreement.quantityKg} kg</td>
-                      <td className="p-2.5 font-semibold">₹{selectedAgreement.mspRate.toFixed(2)} / kg</td>
-                      <td className="p-2.5 font-bold text-right text-emerald-800">
+                      <td className="p-3 font-bold">{selectedAgreement.milletType}</td>
+                      <td className="p-3 font-semibold whitespace-nowrap">{selectedAgreement.quantityKg} kg</td>
+                      <td className="p-3 font-semibold whitespace-nowrap">₹{selectedAgreement.mspRate.toFixed(2)} / kg</td>
+                      <td className="p-3 font-bold text-right text-emerald-800 whitespace-nowrap">
                         ₹{selectedAgreement.totalValue.toLocaleString("en-IN")}
                       </td>
                     </tr>
