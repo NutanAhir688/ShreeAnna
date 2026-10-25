@@ -358,8 +358,8 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
     final remarks = _lot?.negotiationRemarks ?? '';
     final isDispatched = status.contains('DISPATCH') || status.contains('TRANSIT') || status.contains('VEHICLE') || status.contains('PICKUP');
     final isDelivered = status.contains('DELIVER') || status.contains('COMPLETED') || status.contains('RECEIVED');
-    final hasFpoAccepted = isDispatched || isDelivered || remarks.contains('[FPO_ACCEPTED]') || status == 'AGREEMENT_PENDING_FARMER';
-    final hasFarmerAccepted = isDispatched || isDelivered || remarks.contains('[FARMER_ACCEPTED]') || status == 'AGREEMENT_PENDING_FPO' || status == 'AGREEMENT_ACCEPTED';
+    final hasFpoAccepted = isDispatched || isDelivered || remarks.contains('FPO_ACCEPTED') || status == 'AGREEMENT_PENDING_FARMER' || status == 'AGREEMENT_ACCEPTED';
+    final hasFarmerAccepted = isDispatched || isDelivered || remarks.contains('FARMER_ACCEPTED') || status == 'AGREEMENT_PENDING_FPO' || status == 'AGREEMENT_ACCEPTED';
 
     showModalBottomSheet(
       context: context,
@@ -732,10 +732,10 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
     final isDelivered = status.contains('DELIVER') || status.contains('COMPLETED') || status.contains('RECEIVED');
     final isRejected = status.contains('REJECTED');
 
-    final hasFpoAccepted = isDispatched || isDelivered || remarks.contains('[FPO_ACCEPTED]') || status == 'AGREEMENT_PENDING_FARMER';
-    final hasFarmerAccepted = isDispatched || isDelivered || remarks.contains('[FARMER_ACCEPTED]') || status == 'AGREEMENT_PENDING_FPO' || status == 'AGREEMENT_ACCEPTED';
+    final hasFpoAccepted = isDispatched || isDelivered || remarks.contains('FPO_ACCEPTED') || status == 'AGREEMENT_PENDING_FARMER' || status == 'AGREEMENT_ACCEPTED';
+    final hasFarmerAccepted = isDispatched || isDelivered || remarks.contains('FARMER_ACCEPTED') || status == 'AGREEMENT_PENDING_FPO' || status == 'AGREEMENT_ACCEPTED';
 
-    final isBothAccepted = isDispatched || isDelivered || (hasFpoAccepted && hasFarmerAccepted);
+    final isBothAccepted = isDispatched || isDelivered || (hasFpoAccepted && hasFarmerAccepted) || status == 'AGREEMENT_ACCEPTED';
     final isAccepted = isBothAccepted;
     final isFarmerAccepted = isAccepted || hasFarmerAccepted;
     final isPending = !isRejected && !isAccepted;
@@ -996,7 +996,7 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
                                       ),
                                     ),
                                     child: Text(
-                                      'VERSION $version - ${isRejected ? "REJECTED" : isAccepted ? "ACCEPTED" : (isFarmerAccepted && !hasFpoAccepted) ? "AWAITING FPO SIGNATURE" : "PENDING CONSENT"}',
+                                      'VERSION $version - ${isRejected ? "REJECTED" : isAccepted ? "ACCEPTED" : (isFarmerAccepted && !hasFpoAccepted) ? "AWAITING FPO SIGNATURE" : (hasFpoAccepted && !isFarmerAccepted) ? "AWAITING FARMER SIGNATURE" : "PENDING CONSENT"}',
                                       style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.bold,
@@ -1458,8 +1458,8 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
       final lotStatus = (_lot?.status ?? '').toUpperCase();
       final lotRemarks = _lot?.negotiationRemarks ?? '';
       final isFpoRejected = lotStatus.contains('FPO') || lotRemarks.contains('FPO') || lotRemarks.contains('[REJECTED_BY_FPO]');
-      final vFpoAccepted = lotRemarks.contains('[FPO_ACCEPTED]') || lotStatus.contains('DISPATCH') || lotStatus.contains('DELIVER');
-      final vFarmerAccepted = lotRemarks.contains('[FARMER_ACCEPTED]') || lotStatus == 'AGREEMENT_PENDING_FPO' || lotStatus == 'AGREEMENT_ACCEPTED' || lotStatus.contains('DISPATCH') || lotStatus.contains('DELIVER');
+      final vFpoAccepted = lotRemarks.contains('FPO_ACCEPTED') || lotStatus.contains('DISPATCH') || lotStatus.contains('DELIVER') || lotStatus == 'AGREEMENT_PENDING_FARMER' || lotStatus == 'AGREEMENT_ACCEPTED';
+      final vFarmerAccepted = lotRemarks.contains('FARMER_ACCEPTED') || lotStatus == 'AGREEMENT_PENDING_FPO' || lotStatus == 'AGREEMENT_ACCEPTED' || lotStatus.contains('DISPATCH') || lotStatus.contains('DELIVER');
 
       String statusText = isFpoRejected ? 'Rejected by FPO' : 'Rejected by Farmer';
       if (isCurrent) {

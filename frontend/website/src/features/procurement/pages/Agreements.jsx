@@ -90,8 +90,37 @@ export function getAgreementStatusMeta(agr) {
     };
   }
 
-  // If newly formulated and pending, neither party has accepted this current formulation yet
+  // If newly formulated and pending, check if any party has accepted in remarks or storage
   if (status === "AGREEMENT_PENDING") {
+    const hasFarmerPending = remarks.includes("FARMER_ACCEPTED") || storedFarmer;
+    const hasFpoPending = storedFpo || remarks.includes("FPO_ACCEPTED");
+    if (hasFarmerPending && hasFpoPending) {
+      return {
+        isFullyAccepted: true,
+        isFpoAccepted: true,
+        isFarmerAccepted: true,
+        isRejected: false,
+        label: "Active / Accepted",
+      };
+    }
+    if (hasFarmerPending && !hasFpoPending) {
+      return {
+        isFullyAccepted: false,
+        isFpoAccepted: false,
+        isFarmerAccepted: true,
+        isRejected: false,
+        label: "Awaiting FPO Acceptance",
+      };
+    }
+    if (hasFpoPending && !hasFarmerPending) {
+      return {
+        isFullyAccepted: false,
+        isFpoAccepted: true,
+        isFarmerAccepted: false,
+        isRejected: false,
+        label: "Awaiting Farmer Acceptance",
+      };
+    }
     return {
       isFullyAccepted: false,
       isFpoAccepted: false,
@@ -101,24 +130,25 @@ export function getAgreementStatusMeta(agr) {
     };
   }
 
-  // Farmer acceptance: on mobile, farmer accept sets status to AGREEMENT_ACCEPTED or AGREEMENT_PENDING_FPO, or remarks has [FARMER_ACCEPTED], or storedFarmer
+  // Farmer acceptance: on mobile, farmer accept sets status to AGREEMENT_ACCEPTED or AGREEMENT_PENDING_FPO, or remarks has FARMER_ACCEPTED, or storedFarmer
   const hasFarmer =
     status === "AGREEMENT_ACCEPTED" ||
     status === "AGREEMENT_PENDING_FPO" ||
-    remarks.includes("[FARMER_ACCEPTED]") ||
+    remarks.includes("FARMER_ACCEPTED") ||
     storedFarmer;
 
   // FPO acceptance: FPO must explicitly accept from the web portal
   const hasFpo =
     storedFpo ||
-    remarks.includes("[FPO_ACCEPTED]") ||
-    status === "AGREEMENT_PENDING_FARMER";
+    remarks.includes("FPO_ACCEPTED") ||
+    status === "AGREEMENT_PENDING_FARMER" ||
+    status === "AGREEMENT_ACCEPTED";
 
   // Downstream operations (produce pickup in progress, warehouse received, or paid) are inherently fully accepted
   const isDownstream = ["PICKUP", "WAREHOUSE_RECEIVED", "PAYMENT", "COMPLETED", "STORED", "DELIVERED"].includes(status);
 
   // Fully accepted ONLY when BOTH parties have accepted (or downstream)
-  const isFullyAccepted = isDownstream || (hasFpo && hasFarmer);
+  const isFullyAccepted = isDownstream || status === "AGREEMENT_ACCEPTED" || (hasFpo && hasFarmer);
 
   let label = "Pending Signatures";
   if (isFullyAccepted) {
@@ -131,8 +161,8 @@ export function getAgreementStatusMeta(agr) {
 
   return {
     isFullyAccepted,
-    isFpoAccepted: isDownstream || hasFpo,
-    isFarmerAccepted: isDownstream || hasFarmer,
+    isFpoAccepted: isDownstream || status === "AGREEMENT_ACCEPTED" || hasFpo,
+    isFarmerAccepted: isDownstream || status === "AGREEMENT_ACCEPTED" || hasFarmer,
     isRejected: false,
     label,
   };

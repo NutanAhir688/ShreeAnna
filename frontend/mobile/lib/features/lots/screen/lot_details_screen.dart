@@ -144,15 +144,16 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
 
   bool _shouldShowAgreementBanner(String status) {
     final value = status.trim().toUpperCase();
-    // Agreement metadata/version alone is not proof that this stage is active.
-    // Only show the banner after the backend moves the lot into an agreement
-    // state (or a later procurement stage).
     return {
       'AGREEMENT_PENDING',
+      'AGREEMENT_PENDING_FARMER',
+      'AGREEMENT_PENDING_FPO',
       'AGREEMENT_FORMULATED',
       'PROCUREMENT_AGREEMENT_PENDING',
       'AGREEMENT_ACCEPTED',
       'AGREEMENT_REJECTED',
+      'AGREEMENT_REJECTED_BY_FPO',
+      'AGREEMENT_REJECTED_BY_FARMER',
       'PICKUP_SCHEDULED',
       'PICKUP_COMPLETED',
       'DELIVERED',
@@ -165,11 +166,14 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
       'PAYMENT_PAID',
       'PAID',
       'SETTLED',
-    }.contains(value);
+    }.contains(value) || value.contains('AGREEMENT');
   }
 
   String _formatStatusText(String status, [String? remarks]) {
     final effectiveRemarks = remarks ?? _lot?.negotiationRemarks ?? '';
+    final hasFarmer = effectiveRemarks.contains('FARMER_ACCEPTED');
+    final hasFpo = effectiveRemarks.contains('FPO_ACCEPTED');
+
     switch (status.toUpperCase()) {
       case 'SUBMITTED':
         return 'Submitted';
@@ -180,16 +184,20 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
       case 'CERTIFIED':
         return 'Certified';
       case 'AGREEMENT_PENDING':
+        if (hasFarmer && hasFpo) return 'Agreement Accepted';
+        if (hasFarmer) return 'Awaiting FPO Signature';
+        if (hasFpo) return 'Awaiting Farmer Signature';
         return 'Agreement Awaiting Approval';
       case 'AGREEMENT_PENDING_FPO':
+        if (hasFarmer && hasFpo) return 'Agreement Accepted';
         return 'Awaiting FPO Signature';
       case 'AGREEMENT_PENDING_FARMER':
+        if (hasFarmer && hasFpo) return 'Agreement Accepted';
+        if (hasFarmer) return 'Awaiting FPO Signature';
         return 'Awaiting Farmer Signature';
       case 'AGREEMENT_ACCEPTED':
       case 'PROCUREMENT_AGREEMENT':
-        return (effectiveRemarks.contains('[FPO_ACCEPTED]'))
-            ? 'Agreement Accepted'
-            : 'Awaiting FPO Signature';
+        return 'Agreement Accepted';
       case 'AGREEMENT_REJECTED':
         return 'Agreement Rejected';
       case 'PICKUP_SCHEDULED':
@@ -455,6 +463,9 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                         statusUpper.contains('VEHICLE') ||
                         statusUpper.contains('SCHEDULED');
 
+                    final remarks = _lot?.negotiationRemarks ?? '';
+                    final hasDualAcceptance = remarks.contains('FARMER_ACCEPTED') && remarks.contains('FPO_ACCEPTED');
+
                     final isAgrAccepted =
                         isDispatched ||
                         isDelivered ||
@@ -462,16 +473,23 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                         isPaymentCompleted ||
                         statusUpper.contains('AGREEMENT_ACCEPTED') ||
                         statusUpper == 'ACCEPTED' ||
-                        statusUpper == 'PROCUREMENT_AGREEMENT';
+                        statusUpper == 'PROCUREMENT_AGREEMENT' ||
+                        hasDualAcceptance;
 
-                    // If the lot has progressed to delivery or beyond,
+                    final isAgreementPhase =
+                        statusUpper.contains('AGREEMENT') ||
+                        _lot?.agreementVersion != null ||
+                        isAgrAccepted ||
+                        isDispatched ||
+                        isDelivered ||
+                        isStored ||
+                        isPaymentCompleted;
+
+                    // If the lot has progressed to agreement or beyond,
                     // inspection & certification must have been completed
                     final isCertified =
                         inspectionCompleted ||
-                        isAgrAccepted ||
-                        isDelivered ||
-                        isStored ||
-                        isPaymentCompleted ||
+                        isAgreementPhase ||
                         statusUpper.contains('CERTIFICATE') ||
                         statusUpper.contains('CERTIFIED') ||
                         statusUpper.contains('PASSED') ||
@@ -491,6 +509,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                           isPaymentCompleted;
                       isCurrent =
                           !isCompleted &&
+                          !isAgreementPhase &&
                           (isCurrent ||
                               hasInspectorAssignment ||
                               inspectionStarted ||
@@ -500,7 +519,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                     } else if (step.step == 'QUALITY_CERTIFICATE') {
                       isCompleted = isCompleted || isCertified || isPaymentCompleted;
                       isCurrent =
-                          !isCompleted && (isCurrent || inspectionCompleted);
+                          !isCompleted && !isAgreementPhase && (isCurrent || inspectionCompleted);
                     } else if (step.step == 'PROCUREMENT_AGREEMENT') {
                       isCompleted =
                           isCompleted ||
@@ -510,8 +529,9 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
 
                       isCurrent =
                           !isCompleted &&
-                          (statusUpper == 'AGREEMENT_PENDING' ||
-                              statusUpper == 'AGREEMENT_FORMULATED');
+                          (statusUpper.contains('AGREEMENT') ||
+                              statusUpper == 'AGREEMENT_FORMULATED' ||
+                              _lot?.agreementVersion != null);
                     } else if (step.step == 'PICKUP') {
                       isCompleted = isCompleted || isDelivered || isStored || isPaymentCompleted;
                       isCurrent =
@@ -1079,15 +1099,16 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
     final hasDriver =
         _lot?.driverName != null && _lot!.driverName!.trim().isNotEmpty;
     final remarks = _lot?.negotiationRemarks ?? '';
-    final hasFpoAccepted = isDelivered || isStored || remarks.contains('[FPO_ACCEPTED]');
-    final hasFarmerAccepted = isDelivered || isStored || remarks.contains('[FARMER_ACCEPTED]') || statusUpper == 'AGREEMENT_PENDING_FPO' || statusUpper == 'AGREEMENT_ACCEPTED';
+    final hasFpoAccepted = isDelivered || isStored || remarks.contains('FPO_ACCEPTED') || statusUpper == 'AGREEMENT_PENDING_FARMER' || statusUpper == 'AGREEMENT_ACCEPTED';
+    final hasFarmerAccepted = isDelivered || isStored || remarks.contains('FARMER_ACCEPTED') || statusUpper == 'AGREEMENT_PENDING_FPO' || statusUpper == 'AGREEMENT_ACCEPTED';
     final isBothAgreed = hasFpoAccepted && hasFarmerAccepted;
 
     final isAgrAccepted =
         isDelivered ||
         isStored ||
         isPaymentCompleted ||
-        isBothAgreed;
+        isBothAgreed ||
+        statusUpper == 'AGREEMENT_ACCEPTED';
 
     final isAgrPending =
         !isAgrAccepted &&
@@ -1150,11 +1171,13 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
             ? 'Procurement agreement signed & approved.'
             : (hasFarmerAccepted && !hasFpoAccepted)
                 ? 'Agreement consented by farmer — Awaiting FPO signature.'
-                : (isAgrPending
-                    ? 'Agreement formulated & awaiting acceptance.'
-                    : l10n.procurementAgreementSubtitle);
+                : (hasFpoAccepted && !hasFarmerAccepted)
+                    ? 'Agreement formulated & awaiting your signature.'
+                    : (isAgrPending
+                        ? 'Agreement formulated & awaiting acceptance.'
+                        : l10n.procurementAgreementSubtitle);
         actionLabel = (isAgrAccepted || isCompleted || isPaymentCompleted || isAgrPending)
-            ? l10n.viewAgreement
+            ? (!hasFarmerAccepted && isAgrPending ? 'Review & Sign' : l10n.viewAgreement)
             : null;
         onTap = (isAgrAccepted || isCompleted || isPaymentCompleted || isAgrPending)
             ? () async {
@@ -2156,16 +2179,18 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
         statusUpper.contains('TRANSIT');
 
     final hasFpoAccepted = isDispatched ||
-        remarks.contains('[FPO_ACCEPTED]') ||
-        statusUpper == 'AGREEMENT_PENDING_FARMER';
+        remarks.contains('FPO_ACCEPTED') ||
+        statusUpper == 'AGREEMENT_PENDING_FARMER' ||
+        statusUpper == 'AGREEMENT_ACCEPTED';
 
     final hasFarmerAccepted = isDispatched ||
-        remarks.contains('[FARMER_ACCEPTED]') ||
+        remarks.contains('FARMER_ACCEPTED') ||
         statusUpper == 'AGREEMENT_PENDING_FPO' ||
         statusUpper == 'AGREEMENT_ACCEPTED';
 
-    final isAccepted = isDispatched || (hasFpoAccepted && hasFarmerAccepted);
+    final isAccepted = isDispatched || (hasFpoAccepted && hasFarmerAccepted) || statusUpper == 'AGREEMENT_ACCEPTED';
     final isAwaitingFpo = hasFarmerAccepted && !hasFpoAccepted && !isRejected;
+    final isAwaitingFarmer = !hasFarmerAccepted && !isRejected;
 
     return Container(
       width: double.infinity,
@@ -2274,7 +2299,13 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
               },
               icon: const Icon(Icons.description, size: 16),
               label: Text(
-                isAwaitingFpo ? 'Review Agreement (Awaiting FPO Signature)' : 'Review Agreement ($ver)',
+                isAwaitingFpo
+                    ? 'Review Agreement (Awaiting FPO Signature)'
+                    : (isAccepted
+                        ? 'View Signed Agreement ($ver)'
+                        : (isAwaitingFarmer
+                            ? 'Review & Sign Agreement ($ver)'
+                            : 'Review Agreement ($ver)')),
                 style: const TextStyle(fontSize: 12),
               ),
               style: ElevatedButton.styleFrom(
@@ -2284,7 +2315,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                     ? ShreeAnnaTheme.primaryGreen
                     : isAwaitingFpo
                     ? const Color(0xFFD97706)
-                    : Colors.amber.shade800,
+                    : ShreeAnnaTheme.primaryGreen,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(vertical: 10),
@@ -2714,15 +2745,17 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
         lotStatus.contains('DELIVER') ||
         lotStatus.contains('STORED') ||
         lotStatus.contains('PAYMENT_COMPLETED') ||
-        remarks.contains('[FPO_ACCEPTED]');
+        remarks.contains('FPO_ACCEPTED') ||
+        lotStatus == 'AGREEMENT_PENDING_FARMER' ||
+        lotStatus == 'AGREEMENT_ACCEPTED';
     final hasFarmerAccepted = lotStatus.contains('DISPATCH') ||
         lotStatus.contains('DELIVER') ||
         lotStatus.contains('STORED') ||
         lotStatus.contains('PAYMENT_COMPLETED') ||
-        remarks.contains('[FARMER_ACCEPTED]') ||
+        remarks.contains('FARMER_ACCEPTED') ||
         lotStatus == 'AGREEMENT_ACCEPTED' ||
         lotStatus == 'AGREEMENT_PENDING_FPO';
-    final isBothAccepted = hasFpoAccepted && hasFarmerAccepted;
+    final isBothAccepted = (hasFpoAccepted && hasFarmerAccepted) || lotStatus == 'AGREEMENT_ACCEPTED';
 
     final status = lotStatus.contains('REJECTED')
         ? 'Rejected'
@@ -2730,6 +2763,8 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
         ? 'Accepted'
         : (hasFarmerAccepted && !hasFpoAccepted)
         ? 'Awaiting FPO Signature'
+        : (hasFpoAccepted && !hasFarmerAccepted)
+        ? 'Awaiting Farmer Signature'
         : 'Pending';
 
     final detailsList = [
@@ -2738,79 +2773,101 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
       if (millet.isNotEmpty) millet,
     ].join(' | ');
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF7FAF7),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFD0E0CE)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.assignment_turned_in,
-                      color: ShreeAnnaTheme.primaryGreen,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        agrCode,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF202420),
+    return InkWell(
+      onTap: () async {
+        final refreshed = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                ProcurementAgreementScreen(lotId: widget.lotId ?? ''),
+          ),
+        );
+        if (refreshed == true) {
+          _loadTimeline();
+        }
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7FAF7),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFD0E0CE)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.assignment_turned_in,
+                        color: ShreeAnnaTheme.primaryGreen,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          agrCode,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF202420),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: status == 'Accepted'
+                            ? const Color(0xFFE8F5E9)
+                            : const Color(0xFFFFF3E0),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: status == 'Accepted'
+                              ? const Color(0xFF81C784)
+                              : const Color(0xFFFFB74D),
+                        ),
+                      ),
+                      child: Text(
+                        status,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: status == 'Accepted'
+                              ? Colors.green
+                              : Colors.orange.shade800,
+                        ),
                       ),
                     ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.chevron_right, size: 16, color: Color(0xFF687068)),
                   ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: status == 'Accepted'
-                      ? const Color(0xFFE8F5E9)
-                      : const Color(0xFFFFF3E0),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: status == 'Accepted'
-                        ? const Color(0xFF81C784)
-                        : const Color(0xFFFFB74D),
-                  ),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: status == 'Accepted'
-                        ? Colors.green
-                        : Colors.orange.shade800,
-                  ),
-                ),
+              ],
+            ),
+            if (detailsList.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                detailsList,
+                style: const TextStyle(fontSize: 11, color: Color(0xFF687068)),
               ),
             ],
-          ),
-          if (detailsList.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              detailsList,
-              style: const TextStyle(fontSize: 11, color: Color(0xFF687068)),
-            ),
           ],
-        ],
+        ),
       ),
     );
   }

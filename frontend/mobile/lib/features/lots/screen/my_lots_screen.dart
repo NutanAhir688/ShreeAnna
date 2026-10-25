@@ -104,16 +104,20 @@ class _MyLotsScreenState extends State<MyLotsScreen> {
       case 'CERTIFIED':
         return 'Certified';
       case 'AGREEMENT_PENDING':
+        if (effectiveRemarks.contains('FARMER_ACCEPTED') && effectiveRemarks.contains('FPO_ACCEPTED')) return 'Agreement Accepted';
+        if (effectiveRemarks.contains('FARMER_ACCEPTED')) return 'Awaiting FPO Signature';
+        if (effectiveRemarks.contains('FPO_ACCEPTED')) return 'Awaiting Farmer Signature';
         return 'Agreement Awaiting Approval';
       case 'AGREEMENT_PENDING_FPO':
+        if (effectiveRemarks.contains('FARMER_ACCEPTED') && effectiveRemarks.contains('FPO_ACCEPTED')) return 'Agreement Accepted';
         return 'Awaiting FPO Signature';
       case 'AGREEMENT_PENDING_FARMER':
+        if (effectiveRemarks.contains('FARMER_ACCEPTED') && effectiveRemarks.contains('FPO_ACCEPTED')) return 'Agreement Accepted';
+        if (effectiveRemarks.contains('FARMER_ACCEPTED')) return 'Awaiting FPO Signature';
         return 'Awaiting Farmer Signature';
       case 'AGREEMENT_ACCEPTED':
       case 'PROCUREMENT_AGREEMENT':
-        return (effectiveRemarks.contains('[FPO_ACCEPTED]'))
-            ? 'Agreement Accepted'
-            : 'Awaiting FPO Signature';
+        return 'Agreement Accepted';
       case 'AGREEMENT_REJECTED':
         return 'Agreement Rejected';
       case 'PICKUP_SCHEDULED':
