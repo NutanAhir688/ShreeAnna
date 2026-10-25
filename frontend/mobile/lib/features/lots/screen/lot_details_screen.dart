@@ -129,7 +129,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
         _dispatchDetails = dispatchDetails;
 
         if (lotDetails != null) {
-          _currentStatus = _formatStatusText(lotDetails.status);
+          _currentStatus = _formatStatusText(lotDetails.status, lotDetails.negotiationRemarks);
         }
         _isLoadingTimeline = false;
       });
@@ -168,7 +168,8 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
     }.contains(value);
   }
 
-  String _formatStatusText(String status) {
+  String _formatStatusText(String status, [String? remarks]) {
+    final effectiveRemarks = remarks ?? _lot?.negotiationRemarks ?? '';
     switch (status.toUpperCase()) {
       case 'SUBMITTED':
         return 'Submitted';
@@ -186,7 +187,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
         return 'Awaiting Farmer Signature';
       case 'AGREEMENT_ACCEPTED':
       case 'PROCUREMENT_AGREEMENT':
-        return (_lot?.negotiationRemarks?.contains('[FPO_ACCEPTED]') ?? false)
+        return (effectiveRemarks.contains('[FPO_ACCEPTED]'))
             ? 'Agreement Accepted'
             : 'Awaiting FPO Signature';
       case 'AGREEMENT_REJECTED':
@@ -242,9 +243,14 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
       ),
 
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(18, 10, 18, 30),
-          child: Column(
+        child: RefreshIndicator(
+          color: ShreeAnnaTheme.primaryGreen,
+          backgroundColor: Colors.white,
+          onRefresh: _loadTimeline,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(18, 10, 18, 30),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ==================================================
@@ -299,23 +305,51 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
 
                     const SizedBox(height: 14),
 
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFDCEBFA),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        _currentStatus ?? widget.status,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1265C0),
-                        ),
-                      ),
+                    Builder(
+                      builder: (context) {
+                        final rawStatus = _lot?.status ?? _currentStatus ?? widget.status;
+                        final displayStatus = _formatStatusText(
+                          rawStatus,
+                          _lot?.negotiationRemarks,
+                        );
+                        final isAwaitingFpo = displayStatus == 'Awaiting FPO Signature';
+                        final isAwaitingFarmer = displayStatus == 'Awaiting Farmer Signature';
+                        final isAccepted = displayStatus == 'Agreement Accepted';
+                        final isRejected = displayStatus == 'Agreement Rejected';
+
+                        Color bgColor = const Color(0xFFDCEBFA);
+                        Color textColor = const Color(0xFF1265C0);
+
+                        if (isAwaitingFpo || isAwaitingFarmer) {
+                          bgColor = const Color(0xFFFEF3C7);
+                          textColor = const Color(0xFFB45309);
+                        } else if (isAccepted) {
+                          bgColor = const Color(0xFFDCFCE7);
+                          textColor = const Color(0xFF15803D);
+                        } else if (isRejected) {
+                          bgColor = const Color(0xFFFEE2E2);
+                          textColor = const Color(0xFFB91C1C);
+                        }
+
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: bgColor,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            displayStatus,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: textColor,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -984,6 +1018,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 

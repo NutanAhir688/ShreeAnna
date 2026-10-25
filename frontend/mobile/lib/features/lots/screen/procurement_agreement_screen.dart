@@ -817,9 +817,14 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
                       ),
                     ),
                   )
-                : SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
+                : RefreshIndicator(
+                    color: ShreeAnnaTheme.primaryGreen,
+                    backgroundColor: Colors.white,
+                    onRefresh: _loadData,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Download Agreement & View Document Quick Action Buttons
@@ -1419,6 +1424,7 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
                       ],
                     ),
                   ),
+                ),
       ),
     );
   }
