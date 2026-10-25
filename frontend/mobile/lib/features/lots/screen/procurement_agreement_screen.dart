@@ -227,10 +227,8 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
     final version = _lot?.agreementVersion ?? 'v1.0';
     final qty = _lot?.agreedQuantityKg ?? _lot?.actualQuantityKg ?? _lot?.estimatedQuantityKg ?? 450.0;
     final unitPrice = _lot?.offeredPricePerKg ?? (_cert != null && _cert!['offeredPricePerKg'] != null ? (_cert!['offeredPricePerKg'] as num).toDouble() : 45.0);
-    final subtotal = qty * unitPrice;
     final logisticsCost = _lot?.logisticsCost ?? 0.0;
     final adjustments = _lot?.otherAdjustments ?? 0.0;
-    final netPayable = (subtotal - logisticsCost - adjustments).clamp(0.0, double.infinity);
     final farmerName = _lot?.farmerName ?? 'Registered Farmer';
     final farmName = _lot?.farmName ?? 'Member Farm';
     final milletType = _lot?.milletType ?? 'Finger Millet (Ragi)';
@@ -709,10 +707,14 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final status = _lot == null ? 'AGREEMENT_PENDING' : _lot!.status.toUpperCase();
+    final remarks = _lot?.negotiationRemarks ?? '';
     final isDispatched = status.contains('DISPATCH') || status.contains('TRANSIT') || status.contains('VEHICLE') || status.contains('PICKUP');
     final isDelivered = status.contains('DELIVER') || status.contains('COMPLETED') || status.contains('RECEIVED');
     final isRejected = status.contains('REJECTED');
-    final isAccepted = isDispatched || isDelivered || status.contains('ACCEPTED') || status.contains('APPROVED') || status.contains('CERTIFIED');
+    final isBothAccepted = (status == 'AGREEMENT_ACCEPTED' || status == 'ACCEPTED' || status.contains('CERTIFIED')) ||
+        (remarks.contains('[FPO_ACCEPTED]') && remarks.contains('[FARMER_ACCEPTED]'));
+    final isAccepted = isDispatched || isDelivered || isBothAccepted;
+    final isFarmerAccepted = isAccepted || status == 'AGREEMENT_PENDING_FPO' || remarks.contains('[FARMER_ACCEPTED]');
     final isPending = !isRejected && !isAccepted;
 
     final version = _lot?.agreementVersion ?? (isRejected ? 'v1.0' : 'v2.0');
@@ -1305,46 +1307,68 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
 
                         // Action Buttons (Only shown if pending)
                         if (isPending)
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: _isProcessing ? null : _handleRejectClick,
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.red,
-                                    side: const BorderSide(color: Colors.red),
+                          if (isFarmerAccepted)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEF3C7),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFFDE047)),
+                              ),
+                              child: Row(
+                                children: const [
+                                  Icon(Icons.hourglass_top, color: Color(0xFFB45309), size: 20),
+                                  SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      'Agreement consented by you. Awaiting ShreeAnna FPO counter-signature.',
+                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF92400E)),
+                                    ),
                                   ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
-                                    child: Text(l10n.rejectAgreement),
+                                ],
+                              ),
+                            )
+                          else
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: _isProcessing ? null : _handleRejectClick,
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.red,
+                                      side: const BorderSide(color: Colors.red),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      child: Text(l10n.rejectAgreement),
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: ElevatedButton(
-                                  onPressed: _isProcessing ? null : _acceptAgreement,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: ShreeAnnaTheme.primaryGreen,
-                                    foregroundColor: Colors.white,
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
-                                    child: _isProcessing
-                                        ? const SizedBox(
-                                            width: 18,
-                                            height: 18,
-                                            child: CircularProgressIndicator(
-                                              color: Colors.white,
-                                              strokeWidth: 2,
-                                            ),
-                                          )
-                                        : Text(l10n.acceptAgreement),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: _isProcessing ? null : _acceptAgreement,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: ShreeAnnaTheme.primaryGreen,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      child: _isProcessing
+                                          ? const SizedBox(
+                                              width: 18,
+                                              height: 18,
+                                              child: CircularProgressIndicator(
+                                                color: Colors.white,
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                          : Text(l10n.acceptAgreement),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
+                              ],
+                            ),
 
                         const SizedBox(height: 20),
                       ],
@@ -1380,16 +1404,21 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
       final isCurrent = (i == currentNum);
       final isPastRejected = (i < currentNum);
       final itemRejected = isPastRejected || (isCurrent && isRejected);
-
-      String statusText = 'Rejected by Farmer';
+      final lotStatus = (_lot?.status ?? '').toUpperCase();
+      final isFpoRejected = lotStatus.contains('FPO') || (_lot?.negotiationRemarks?.contains('FPO') ?? false) || (_lot?.negotiationRemarks?.contains('[REJECTED_BY_FPO]') ?? false);
+      String statusText = isFpoRejected ? 'Rejected by FPO' : 'Rejected by Farmer';
       if (isCurrent) {
-        statusText = isRejected ? 'Rejected by Farmer' : (isAccepted ? 'Accepted & Signed' : 'Current Active Formulation');
+        statusText = isRejected
+            ? (isFpoRejected ? 'Rejected by FPO' : 'Rejected by Farmer')
+            : (isAccepted ? 'Accepted & Signed' : 'Current Active Formulation');
       }
 
       String desc = isPastRejected
-          ? 'Contract version $verStr was rejected during negotiation.'
+          ? (isFpoRejected ? 'Contract version $verStr was rejected by FPO.' : 'Contract version $verStr was rejected by farmer.')
           : (isCurrent && isRejected)
-              ? 'Farmer rejected version $verStr contract.'
+              ? (_lot?.negotiationRemarks?.isNotEmpty == true
+                  ? _lot!.negotiationRemarks!.replaceAll(RegExp(r'\[REJECTED_BY_[A-Z]+\]\s*'), '')
+                  : (isFpoRejected ? 'FPO rejected version $verStr commercial terms.' : 'Farmer rejected version $verStr contract.'))
               : 'Re-negotiated commercial terms updated with FPO transport allowance and offered rate.';
 
       if (items.isNotEmpty) {

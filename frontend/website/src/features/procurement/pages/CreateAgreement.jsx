@@ -147,11 +147,45 @@ function CreateAgreement() {
     const list = [];
     for (let i = 1; i <= num; i++) {
       if (status.includes("REJECTED") || i < num) {
+        const rawRemarks = selectedLot.negotiationRemarks || "";
+        const isFpoRejected =
+          status.includes("FPO") ||
+          rawRemarks.includes("FPO") ||
+          rawRemarks.includes("[REJECTED_BY_FPO]");
+        const isFarmerRejected =
+          status.includes("FARMER") ||
+          rawRemarks.includes("Farmer") ||
+          rawRemarks.includes("[REJECTED_BY_FARMER]");
+
+        let rejectLabel = "REJECTED BY FPO";
+        if (isFarmerRejected && !isFpoRejected) {
+          rejectLabel = "REJECTED BY FARMER";
+        } else if (isFpoRejected) {
+          rejectLabel = "REJECTED BY FPO";
+        } else {
+          // If status is simply AGREEMENT_REJECTED without remarks, default to FPO rejection
+          rejectLabel = "REJECTED BY FPO";
+        }
+
+        const cleanRemarks = rawRemarks
+          ? rawRemarks.replace(/\[REJECTED_BY_[A-Z]+\]\s*/g, "")
+          : (rejectLabel === "REJECTED BY FPO"
+              ? "Commercial terms not approved by FPO procurement officer."
+              : "Farmer requested higher unit price and revised commercial terms.");
+
         list.push({
           ver: `v${i}.0`,
-          price: i === num && selectedLot.offeredPricePerKg ? selectedLot.offeredPricePerKg : (MSP_RATES[selectedLot.milletType] || 38.50),
-          qty: selectedLot.agreedQuantityKg || selectedLot.actualQuantityKg || selectedLot.estimatedQuantityKg || 450,
-          remarks: selectedLot.negotiationRemarks || "Farmer requested higher unit price and revised commercial terms.",
+          price:
+            i === num && selectedLot.offeredPricePerKg
+              ? selectedLot.offeredPricePerKg
+              : MSP_RATES[selectedLot.milletType] || 38.5,
+          qty:
+            selectedLot.agreedQuantityKg ||
+            selectedLot.actualQuantityKg ||
+            selectedLot.estimatedQuantityKg ||
+            450,
+          remarks: cleanRemarks,
+          rejectedBy: rejectLabel,
         });
       }
     }
@@ -529,7 +563,7 @@ function CreateAgreement() {
                     <div key={v.ver} className="p-3 rounded-lg bg-red-50/80 border border-red-200 space-y-1.5 text-xs">
                       <div className="flex items-center justify-between">
                         <span className="font-mono font-bold text-red-900 bg-red-100 px-1.5 py-0.5 rounded text-[10px]">
-                          {v.ver} — REJECTED BY FARMER
+                          {v.ver} — {v.rejectedBy}
                         </span>
                         <span className="text-[10px] text-slate-500 font-medium">Previous Offer</span>
                       </div>

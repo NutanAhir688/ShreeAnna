@@ -1069,7 +1069,11 @@ function AgreementCard({ lot }) {
                                     {lot.agreementVersion || "v1.0"}
                                 </Badge>
                                 <Badge variant={lot.status?.includes("REJECTED") ? "destructive" : "secondary"}>
-                                    {lot.status?.includes("REJECTED") ? "REJECTED BY FARMER" : lot.agreementStatus || lot.status}
+                                    {lot.status?.includes("REJECTED")
+                                        ? (lot.status?.includes("FPO") || lot.negotiationRemarks?.includes("FPO") || lot.negotiationRemarks?.includes("[REJECTED_BY_FPO]")
+                                            ? "REJECTED BY FPO"
+                                            : "REJECTED BY FARMER")
+                                        : lot.agreementStatus || lot.status}
                                 </Badge>
                             </div>
                         </div>

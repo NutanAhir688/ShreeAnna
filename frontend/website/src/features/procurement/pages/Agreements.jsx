@@ -50,6 +50,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 
 import { agreementsApi, lotsApi, purchaseRequestsApi } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
@@ -64,6 +65,56 @@ const MSP_RATES = {
   "Little Millet": 40.00,
   "Barnyard Millet": 39.00,
 };
+
+export function getAgreementStatusMeta(agr) {
+  if (!agr) return { isFullyAccepted: false, isFpoAccepted: false, isFarmerAccepted: false, isRejected: false, label: "Pending Signatures" };
+
+  const status = (agr.status || "").toUpperCase();
+  const remarks = agr.negotiationRemarks || "";
+  const storedFpo = typeof window !== "undefined" && localStorage.getItem(`fpo_accepted_${agr.id}`) === "true";
+  const storedFarmer = typeof window !== "undefined" && localStorage.getItem(`farmer_accepted_${agr.id}`) === "true";
+
+  // Rejection check
+  const isRejected = status.includes("REJECTED");
+  if (isRejected) {
+    const isFpo = status.includes("FPO") || remarks.includes("FPO") || remarks.includes("[REJECTED_BY_FPO]");
+    const isFarmer = status.includes("FARMER") || remarks.includes("Farmer") || remarks.includes("[REJECTED_BY_FARMER]");
+    const rejectedBy = isFarmer && !isFpo ? "Farmer" : "FPO";
+    return {
+      isFullyAccepted: false,
+      isFpoAccepted: false,
+      isFarmerAccepted: false,
+      isRejected: true,
+      rejectedBy,
+      label: rejectedBy === "FPO" ? "Rejected by FPO" : "Rejected by Farmer",
+    };
+  }
+
+  // Acceptance check
+  const hasFpo = status === "AGREEMENT_ACCEPTED" || status === "AGREEMENT_PENDING_FARMER" || remarks.includes("[FPO_ACCEPTED]") || storedFpo;
+  const hasFarmer = status === "AGREEMENT_ACCEPTED" || status === "AGREEMENT_PENDING_FPO" || remarks.includes("[FARMER_ACCEPTED]") || storedFarmer;
+
+  // Fully accepted only when BOTH accept
+  const isDownstream = ["PICKUP", "WAREHOUSE_RECEIVED", "PAYMENT", "COMPLETED"].includes(status);
+  const isFullyAccepted = isDownstream || (hasFpo && hasFarmer) || (status === "AGREEMENT_ACCEPTED" && !remarks.includes("[FPO_ACCEPTED]") && !remarks.includes("[FARMER_ACCEPTED]"));
+
+  let label = "Pending Signatures";
+  if (isFullyAccepted) {
+    label = "Active / Accepted";
+  } else if (hasFpo && !hasFarmer) {
+    label = "Awaiting Farmer Acceptance";
+  } else if (!hasFpo && hasFarmer) {
+    label = "Awaiting FPO Acceptance";
+  }
+
+  return {
+    isFullyAccepted,
+    isFpoAccepted: hasFpo || isFullyAccepted,
+    isFarmerAccepted: hasFarmer || isFullyAccepted,
+    isRejected: false,
+    label,
+  };
+}
 
 function Agreements() {
   const navigate = useNavigate();
@@ -80,9 +131,15 @@ function Agreements() {
 
   // Document Modal & Formulation Modal State
   const [selectedAgreement, setSelectedAgreement] = useState(null);
+  const [acceptTermsChecked, setAcceptTermsChecked] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [showFormulationModal, setShowFormulationModal] = useState(false);
   const [formulationLot, setFormulationLot] = useState(null);
+
+  const openAgreementModal = (agr) => {
+    setAcceptTermsChecked(false);
+    setSelectedAgreement(agr);
+  };
 
   // Formulation Form Fields
   const [formAgreedQty, setFormAgreedQty] = useState(1250);
@@ -225,18 +282,13 @@ function Agreements() {
   const totalCount = isProcessor ? processorAgreements.length : agreements.length;
   const acceptedCount = isProcessor
     ? processorAgreements.filter((a) => ["ACCEPTED", "PAID", "DELIVERED"].includes(a.status)).length
-    : agreements.filter(
-        (a) =>
-          a.status.toUpperCase().includes("ACCEPTED") ||
-          a.status.toUpperCase().includes("CERTIFIED")
-      ).length;
+    : agreements.filter((a) => getAgreementStatusMeta(a).isFullyAccepted).length;
   const pendingCount = isProcessor
     ? processorAgreements.filter((a) => a.status === "AGREEMENT_PROPOSED").length
-    : agreements.filter(
-        (a) =>
-          !a.status.toUpperCase().includes("ACCEPTED") &&
-          !a.status.toUpperCase().includes("REJECTED")
-      ).length;
+    : agreements.filter((a) => {
+        const meta = getAgreementStatusMeta(a);
+        return !meta.isFullyAccepted && !meta.isRejected;
+      }).length;
   const totalValSum = isProcessor
     ? processorAgreements.reduce((acc, a) => acc + (a.totalValue || a.indicativeValue || 0), 0)
     : agreements.reduce((acc, a) => acc + a.totalValue, 0);
@@ -258,9 +310,13 @@ function Agreements() {
   const handleAccept = async (id) => {
     setActionLoading(true);
     try {
-      await agreementsApi.accept(id);
+      await agreementsApi.accept(id, "FpoManager");
+      try {
+        localStorage.setItem(`fpo_accepted_${id}`, "true");
+      } catch (_) {}
       await loadAgreements();
       setSelectedAgreement(null);
+      setAcceptTermsChecked(false);
     } catch (err) {
       alert(err.message || "Failed to accept agreement.");
     } finally {
@@ -271,9 +327,14 @@ function Agreements() {
   const handleReject = async (id) => {
     setActionLoading(true);
     try {
-      await agreementsApi.reject(id, "Terms not met / Rejected by FPO Officer");
+      await agreementsApi.reject(id, "Terms not met / Rejected by FPO Officer", "FpoManager");
+      try {
+        localStorage.removeItem(`fpo_accepted_${id}`);
+        localStorage.removeItem(`farmer_accepted_${id}`);
+      } catch (_) {}
       await loadAgreements();
       setSelectedAgreement(null);
+      setAcceptTermsChecked(false);
     } catch (err) {
       alert(err.message || "Failed to reject agreement.");
     } finally {
@@ -610,10 +671,7 @@ function Agreements() {
               <TableBody>
                 {filteredAgreements.length > 0 ? (
                   filteredAgreements.map((agr) => {
-                    const isAccepted =
-                      agr.status.toUpperCase().includes("ACCEPTED") ||
-                      agr.status.toUpperCase().includes("CERTIFIED");
-                    const isRejected = agr.status.toUpperCase().includes("REJECTED");
+                    const meta = getAgreementStatusMeta(agr);
 
                     return (
                       <TableRow key={agr.id} className="hover:bg-slate-50/80">
@@ -650,20 +708,30 @@ function Agreements() {
                         </TableCell>
 
                         <TableCell>
-                          {isAccepted ? (
+                          {meta.isFullyAccepted ? (
                             <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300">
                               <CheckCircle2 className="mr-1 h-3 w-3" />
                               Active / Accepted
                             </Badge>
-                          ) : isRejected ? (
+                          ) : meta.isRejected ? (
                             <Badge variant="destructive">
                               <XCircle className="mr-1 h-3 w-3" />
-                              Rejected
+                              {meta.label}
+                            </Badge>
+                          ) : meta.isFpoAccepted && !meta.isFarmerAccepted ? (
+                            <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800 font-medium">
+                              <Clock className="mr-1 h-3 w-3" />
+                              Awaiting Farmer Signature
+                            </Badge>
+                          ) : !meta.isFpoAccepted && meta.isFarmerAccepted ? (
+                            <Badge variant="outline" className="border-blue-300 bg-blue-50 text-blue-800 font-medium">
+                              <Clock className="mr-1 h-3 w-3" />
+                              Awaiting FPO Signature
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800">
+                            <Badge variant="outline" className="border-slate-300 bg-slate-50 text-slate-700">
                               <Clock className="mr-1 h-3 w-3" />
-                              Pending Signature
+                              Pending Signatures
                             </Badge>
                           )}
                         </TableCell>
@@ -684,7 +752,7 @@ function Agreements() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => setSelectedAgreement(agr)}
+                                  onClick={() => openAgreementModal(agr)}
                                   className="border-slate-300 hover:bg-slate-50 text-slate-700 font-medium"
                                 >
                                   <FileText className="mr-1.5 h-3.5 w-3.5 text-blue-600" />
@@ -726,9 +794,11 @@ function Agreements() {
       )}
 
       {/* AGREEMENT DOCUMENT PREVIEW MODAL */}
-      {selectedAgreement && (
-        <Dialog open={Boolean(selectedAgreement)} onOpenChange={() => setSelectedAgreement(null)}>
-          <DialogContent className="max-w-2xl bg-white p-6 border-2 border-slate-300 max-h-[90vh] overflow-y-auto">
+      {selectedAgreement && (() => {
+        const modalMeta = getAgreementStatusMeta(selectedAgreement);
+        return (
+        <Dialog open={Boolean(selectedAgreement)} onOpenChange={() => { setSelectedAgreement(null); setAcceptTermsChecked(false); }}>
+          <DialogContent className="max-w-4xl w-[95vw] bg-white p-6 md:p-8 border-2 border-slate-300 max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <div className="flex items-center justify-between border-b pb-4">
                 <div className="flex items-center gap-3">
@@ -866,15 +936,54 @@ function Agreements() {
 
               {/* Signatures */}
               <div className="grid grid-cols-2 gap-6 pt-4 border-t border-slate-200">
-                <div className="border-t-2 border-dashed border-slate-300 pt-2 text-center">
-                  <p className="text-xs font-bold text-slate-700">ShreeAnna Procurement Officer</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Digitally Sealed & Authorized</p>
+                <div className={`border-2 rounded-lg p-3 text-center transition-colors ${modalMeta.isFpoAccepted ? "border-emerald-300 bg-emerald-50/60" : "border-dashed border-slate-300 bg-slate-50/60"}`}>
+                  <p className="text-xs font-bold text-slate-800">ShreeAnna Procurement Officer</p>
+                  {modalMeta.isFpoAccepted ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 mt-1">
+                      <CheckCircle2 className="h-3.5 w-3.5" /> Digitally Authorized &amp; Signed
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[11px] text-amber-700 mt-1 font-medium">
+                      <Clock className="h-3.5 w-3.5" /> Pending FPO Authorization
+                    </span>
+                  )}
                 </div>
-                <div className="border-t-2 border-dashed border-slate-300 pt-2 text-center">
-                  <p className="text-xs font-bold text-slate-700">{selectedAgreement.farmerName}</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Farmer Signature / OTP Consent</p>
+                <div className={`border-2 rounded-lg p-3 text-center transition-colors ${modalMeta.isFarmerAccepted ? "border-emerald-300 bg-emerald-50/60" : "border-dashed border-slate-300 bg-slate-50/60"}`}>
+                  <p className="text-xs font-bold text-slate-800">{selectedAgreement.farmerName}</p>
+                  {modalMeta.isFarmerAccepted ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 mt-1">
+                      <CheckCircle2 className="h-3.5 w-3.5" /> Farmer Digitally Consented (OTP)
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[11px] text-amber-700 mt-1 font-medium">
+                      <Clock className="h-3.5 w-3.5" /> Pending Farmer Consent &amp; Signature
+                    </span>
+                  )}
                 </div>
               </div>
+
+              {/* Acceptance Confirmation Checkbox */}
+              {!modalMeta.isFullyAccepted && !modalMeta.isRejected && !modalMeta.isFpoAccepted && (
+                <div className="rounded-lg border-2 border-emerald-300 bg-emerald-50/90 p-4 space-y-2 mt-4">
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="fpo-accept-agreement-terms"
+                      checked={acceptTermsChecked}
+                      onCheckedChange={(checked) => setAcceptTermsChecked(Boolean(checked))}
+                      className="mt-0.5 data-[state=checked]:bg-emerald-700 data-[state=checked]:border-emerald-700"
+                    />
+                    <label
+                      htmlFor="fpo-accept-agreement-terms"
+                      className="text-xs font-semibold text-slate-800 leading-snug cursor-pointer select-none"
+                    >
+                      I confirm that I have reviewed the produce quality inspection results, quantity ({selectedAgreement.quantityKg} kg), unit rate (₹{selectedAgreement.mspRate.toFixed(2)}/kg), logistics deductions, and legal terms, and authorize this procurement agreement on behalf of ShreeAnna FPO.
+                    </label>
+                  </div>
+                  <p className="text-[11px] text-slate-500 pl-7">
+                    Checking this box is required before signing. This agreement requires dual acceptance from both ShreeAnna FPO and the farmer to become Active / Accepted.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Modal Actions */}
@@ -884,7 +993,7 @@ function Agreements() {
                 Print Contract
               </Button>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
                 {selectedAgreement.agreementId ? (
                   selectedAgreement.status === "AGREEMENT_PROPOSED" ? (
                     <Button
@@ -913,28 +1022,43 @@ function Agreements() {
                       </Button>
                     )}
 
-                    {!selectedAgreement.status.toUpperCase().includes("ACCEPTED") && (
+                    {!modalMeta.isFullyAccepted && !modalMeta.isFpoAccepted && (
                       <Button
                         size="sm"
                         className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
-                        disabled={actionLoading}
+                        disabled={actionLoading || !acceptTermsChecked}
                         onClick={() => handleAccept(selectedAgreement.id)}
                       >
                         {actionLoading && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-                        Accept & Sign Agreement
+                        Accept &amp; Sign Agreement
                       </Button>
+                    )}
+
+                    {modalMeta.isFpoAccepted && !modalMeta.isFullyAccepted && (
+                      <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800 font-semibold py-1.5 px-3">
+                        <Clock className="mr-1.5 h-3.5 w-3.5" />
+                        FPO Signed — Awaiting Farmer Acceptance
+                      </Badge>
+                    )}
+
+                    {modalMeta.isFullyAccepted && (
+                      <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 font-bold py-1.5 px-3">
+                        <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                        Fully Accepted &amp; Active
+                      </Badge>
                     )}
                   </>
                 )}
 
-                <Button variant="secondary" size="sm" onClick={() => setSelectedAgreement(null)}>
+                <Button variant="secondary" size="sm" onClick={() => { setSelectedAgreement(null); setAcceptTermsChecked(false); }}>
                   Close
                 </Button>
               </div>
             </div>
           </DialogContent>
         </Dialog>
-      )}
+        );
+      })()}
     </div>
   );
 }

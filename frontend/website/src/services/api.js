@@ -166,9 +166,10 @@ export const agreementsApi = {
   getById: (id) => request(`/api/lots/${id}`),
   getByLot: (id) => request(`/api/lots/${id}`),
   create: (id, data) => request(`/api/lots/${id}/agreement/create`, { method: "POST", body: data }),
-  accept: (id) => request(`/api/lots/${id}/agreement/accept`, { method: "POST" }),
-  reject: (id, reason) =>
-    request(`/api/lots/${id}/agreement/reject`, {
+  accept: (id, role = "FpoManager") =>
+    request(`/api/lots/${id}/agreement/accept?role=${role}`, { method: "POST" }),
+  reject: (id, reason, role = "FpoManager") =>
+    request(`/api/lots/${id}/agreement/reject?role=${role}`, {
       method: "POST",
       body: { reason: reason || "Rejected by FPO Officer" },
     }),
