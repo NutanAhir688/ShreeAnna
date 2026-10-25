@@ -303,7 +303,7 @@ export const ROLE_CONFIGS = {
         title: null,
         items: [
           { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-          { to: "/available-lots", icon: Warehouse, label: "Available Lots" },
+          { to: "/available-lots", icon: Warehouse, label: "Warehouse Stored Millets" },
           { to: "/purchase-requests", icon: ShoppingCart, label: "Purchase Requests" },
           { to: "/agreements", icon: FileText, label: "Agreements" },
           { to: "/dispatches", icon: Truck, label: "My Shipments" },
