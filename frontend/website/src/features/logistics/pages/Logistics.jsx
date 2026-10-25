@@ -38,10 +38,13 @@ import {
 } from "@/components/ui/select";
 
 import { logisticsApi } from "@/services/api";
+import { useAuth } from "@/context/AuthContext";
 
 function Logistics() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { user } = useAuth();
+  const isProcessor = user?.role === "Processor";
 
   const [shipments, setShipments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -133,8 +136,16 @@ function Logistics() {
     }
   };
 
+  // Processors only see outbound shipments dispatched from regional FPO warehouses
+  const roleFilteredShipments = useMemo(() => {
+    if (isProcessor) {
+      return shipments.filter((item) => item.direction.toUpperCase() === "OUTBOUND");
+    }
+    return shipments;
+  }, [shipments, isProcessor]);
+
   const filteredShipments = useMemo(() => {
-    return shipments.filter((item) => {
+    return roleFilteredShipments.filter((item) => {
       const q = search.toLowerCase();
       const matchesSearch =
         !q ||
@@ -145,6 +156,7 @@ function Logistics() {
         item.milletType.toLowerCase().includes(q);
 
       const matchesDirection =
+        isProcessor ||
         directionFilter === "All" ||
         item.direction.toUpperCase() === directionFilter.toUpperCase();
 
@@ -165,7 +177,7 @@ function Logistics() {
 
       return matchesSearch && matchesDirection && matchesStatus && matchesMillet;
     });
-  }, [shipments, search, directionFilter, statusFilter, milletFilter]);
+  }, [roleFilteredShipments, search, directionFilter, statusFilter, milletFilter, isProcessor]);
 
   const getStatusBadge = (status) => {
     const s = (status || "").toUpperCase().replace(/_/g, " ");
@@ -224,20 +236,24 @@ function Logistics() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-            Logistics Operations
+            {isProcessor ? "Outbound Dispatches" : "Logistics Operations"}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
-            Schedule and track millet pickup and delivery from farms to warehouses.
+            {isProcessor
+              ? "Track raw millet dispatches delivered from regional FPO warehouses to your processing unit."
+              : "Schedule and track millet pickup and delivery from farms to warehouses."}
           </p>
         </div>
 
-        <Button
-          onClick={() => navigate("/logistics/create")}
-          className="bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold h-10 px-5 rounded-lg shadow-xs flex items-center gap-2 self-start md:self-auto"
-        >
-          <Plus className="h-4 w-4 stroke-[3]" />
-          Create Shipment
-        </Button>
+        {!isProcessor && (
+          <Button
+            onClick={() => navigate("/dispatches/create")}
+            className="bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold h-10 px-5 rounded-lg shadow-xs flex items-center gap-2 self-start md:self-auto"
+          >
+            <Plus className="h-4 w-4 stroke-[3]" />
+            Create Shipment
+          </Button>
+        )}
       </div>
 
       {/* KPI Cards Row */}
@@ -250,21 +266,21 @@ function Logistics() {
             Pending Shipments
           </p>
           <p className="text-3xl font-black text-slate-900 dark:text-white mt-2">
-            {shipments.filter((s) => s.status.toUpperCase().includes("PENDING") || s.status.toUpperCase().includes("SCHEDULED") || s.status.toUpperCase().includes("ISSUE")).length}
+            {roleFilteredShipments.filter((s) => s.status.toUpperCase().includes("PENDING") || s.status.toUpperCase().includes("SCHEDULED") || s.status.toUpperCase().includes("ISSUE")).length}
           </p>
         </Card>
 
         <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 shadow-xs rounded-xl">
           <div className="flex justify-between items-start">
             <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Today's Shipments
+              {isProcessor ? "Total Outbound" : "Today's Shipments"}
             </p>
             <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800/50">
-              +3 today
+              Active
             </span>
           </div>
           <p className="text-3xl font-black text-slate-900 dark:text-white mt-2">
-            {shipments.length}
+            {roleFilteredShipments.length}
           </p>
         </Card>
 
@@ -273,35 +289,35 @@ function Logistics() {
             In Transit
           </p>
           <p className="text-3xl font-black text-slate-900 dark:text-white mt-2">
-            {shipments.filter((s) => s.status.toUpperCase().includes("TRANSIT")).length}
+            {roleFilteredShipments.filter((s) => s.status.toUpperCase().includes("TRANSIT")).length}
           </p>
         </Card>
 
         <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 shadow-xs rounded-xl">
           <div className="flex justify-between items-start">
             <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Delivered Today
+              Delivered
             </p>
             <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800/50">
-              +15% vs last week
+              Verified
             </span>
           </div>
           <p className="text-3xl font-black text-emerald-700 dark:text-emerald-400 mt-2">
-            {shipments.filter((s) => s.status.toUpperCase().includes("DELIVERED") || s.status.toUpperCase().includes("COMPLETED")).length}
+            {roleFilteredShipments.filter((s) => s.status.toUpperCase().includes("DELIVERED") || s.status.toUpperCase().includes("COMPLETED")).length}
           </p>
         </Card>
 
         <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 shadow-xs rounded-xl col-span-2 md:col-span-1">
           <div className="flex justify-between items-start">
             <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Awaiting Confirmation
+              Awaiting Receipt
             </p>
             <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800/50">
-              This month
+              Inward
             </span>
           </div>
           <p className="text-3xl font-black text-amber-700 dark:text-amber-400 mt-2">
-            {shipments.filter((s) => s.warehouseReceiptStatus === "PENDING").length}
+            {roleFilteredShipments.filter((s) => s.warehouseReceiptStatus === "PENDING" || s.status.toUpperCase().includes("AWAITING")).length}
           </p>
         </Card>
       </div>
@@ -313,33 +329,37 @@ function Logistics() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search Lot ID, Agreement ID..."
+            placeholder={isProcessor ? "Search Dispatch Code, Agreement..." : "Search Lot ID, Agreement ID..."}
             className="pl-9 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 h-9 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Select value={directionFilter} onValueChange={setDirectionFilter}>
-            <SelectTrigger className="h-9 min-w-[150px] bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-slate-100">
-              <SelectValue placeholder="Shipment Direction" />
-            </SelectTrigger>
-            <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">
-              <SelectItem value="All">Direction (All)</SelectItem>
-              <SelectItem value="Inbound">Inbound</SelectItem>
-              <SelectItem value="Outbound">Outbound</SelectItem>
-            </SelectContent>
-          </Select>
+          {!isProcessor && (
+            <>
+              <Select value={directionFilter} onValueChange={setDirectionFilter}>
+                <SelectTrigger className="h-9 min-w-[150px] bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-slate-100">
+                  <SelectValue placeholder="Shipment Direction" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">
+                  <SelectItem value="All">Direction (All)</SelectItem>
+                  <SelectItem value="Inbound">Inbound</SelectItem>
+                  <SelectItem value="Outbound">Outbound</SelectItem>
+                </SelectContent>
+              </Select>
 
-          <Select value={destinationFilter} onValueChange={setDestinationFilter}>
-            <SelectTrigger className="h-9 min-w-[150px] bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-slate-100">
-              <SelectValue placeholder="Destination Type" />
-            </SelectTrigger>
-            <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">
-              <SelectItem value="All">Destination (All)</SelectItem>
-              <SelectItem value="Warehouse">Warehouse</SelectItem>
-              <SelectItem value="Processor">Processor / SHG</SelectItem>
-            </SelectContent>
-          </Select>
+              <Select value={destinationFilter} onValueChange={setDestinationFilter}>
+                <SelectTrigger className="h-9 min-w-[150px] bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-slate-100">
+                  <SelectValue placeholder="Destination Type" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">
+                  <SelectItem value="All">Destination (All)</SelectItem>
+                  <SelectItem value="Warehouse">Warehouse</SelectItem>
+                  <SelectItem value="Processor">Processor / SHG</SelectItem>
+                </SelectContent>
+              </Select>
+            </>
+          )}
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="h-9 min-w-[140px] bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-slate-100">
@@ -383,10 +403,12 @@ function Logistics() {
             <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div>
                 <CardTitle className="text-base font-bold text-slate-900 dark:text-white">
-                  Pickup & Delivery Queue
+                  {isProcessor ? "Outbound Delivery Queue" : "Pickup & Delivery Queue"}
                 </CardTitle>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Shipment schedules and operational queue
+                  {isProcessor
+                    ? "Raw millet dispatches from FPO warehouses arriving at processing facility"
+                    : "Shipment schedules and operational queue"}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-lg">
@@ -395,7 +417,7 @@ function Logistics() {
                   {
                     label: "Pending Dispatch",
                     value: "Pending Dispatch",
-                    badgeCount: shipments.filter(
+                    badgeCount: roleFilteredShipments.filter(
                       (s) =>
                         s.status.toUpperCase().includes("PENDING") ||
                         s.status.toUpperCase().includes("SCHEDULED") ||
@@ -446,96 +468,108 @@ function Logistics() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                  {filteredShipments.map((shp) => (
-                    <tr key={shp.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
-                      <td className="p-3.5 font-mono font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
-                        {shp.shipmentCode}
-                      </td>
-
-                      <td className="p-3.5 whitespace-nowrap">
-                        {shp.direction === "OUTBOUND" ? (
-                          <Badge className="bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-950/80 dark:text-sky-300 dark:border-sky-800/50 text-[10px] font-extrabold uppercase tracking-wider">
-                            OUTBOUND
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-800/50 text-[10px] font-extrabold uppercase tracking-wider">
-                            INBOUND
-                          </Badge>
-                        )}
-                      </td>
-
-                      <td className="p-3.5 min-w-[220px]">
-                        <p className="font-bold text-slate-900 dark:text-slate-100 text-xs">
-                          {shp.farmerOrProcessorName}
-                        </p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                          {shp.agreementId} • {shp.lotId}
-                        </p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                          {shp.milletType}
-                        </p>
-
-                        {/* Vehicle & Driver Info Callout if assigned */}
-                        {shp.vehicleNumber && (
-                          <div className="mt-2 p-2 rounded-md bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-[11px]">
-                            <p className="font-bold text-slate-900 dark:text-slate-100">Vehicle: {shp.vehicleNumber}</p>
-                            {shp.driverName && (
-                              <p className="text-[11px] text-slate-600 dark:text-slate-300 font-medium mt-0.5">
-                                Driver: {shp.driverName} ({shp.driverPhone})
-                              </p>
-                            )}
-                          </div>
-                        )}
-
-                        {shp.transportResponsibility === "Farmer Delivery" && (
-                          <span className="inline-block mt-1 text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-                            Transported by Farmer
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="p-3.5 font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">
-                        {shp.expectedQuantityKg?.toLocaleString("en-IN")} kg
-                      </td>
-
-                      <td className="p-3.5 min-w-[180px] text-[11px]">
-                        <p className="text-slate-500 dark:text-slate-400">{shp.sourceAddress}</p>
-                        <p className="text-slate-400 dark:text-slate-500 font-bold my-0.5">↓</p>
-                        <p className="font-bold text-slate-900 dark:text-slate-100">{shp.destinationAddress}</p>
-                      </td>
-
-                      <td className="p-3.5 whitespace-nowrap text-slate-600 dark:text-slate-400 font-medium">
-                        {shp.scheduledDate}
-                      </td>
-
-                      <td className="p-3.5 whitespace-nowrap">
-                        {getStatusBadge(shp.status)}
-                      </td>
-
-                      <td className="p-3.5 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-2">
-                          {shp.status !== "COMPLETED" && shp.status !== "DELIVERED" && (
-                            <Button
-                              size="sm"
-                              onClick={() => navigate(`/warehouses/receiving/${shp.id}`)}
-                              className="h-8 bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold text-xs shadow-2xs"
-                            >
-                              <ShieldCheck className="h-3.5 w-3.5 mr-1" />
-                              Warehouse Receiving
-                            </Button>
-                          )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate(`/logistics/${shp.id}`)}
-                            className="h-8 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white font-bold text-xs"
-                          >
-                            View Details
-                          </Button>
-                        </div>
+                  {filteredShipments.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="p-8 text-center text-slate-400 dark:text-slate-500">
+                        No outbound shipments found matching your filters.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filteredShipments.map((shp) => (
+                      <tr key={shp.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                        <td className="p-3.5 font-mono font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                          {shp.shipmentCode}
+                        </td>
+
+                        <td className="p-3.5 whitespace-nowrap">
+                          {shp.direction === "OUTBOUND" ? (
+                            <Badge className="bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-950/80 dark:text-sky-300 dark:border-sky-800/50 text-[10px] font-extrabold uppercase tracking-wider">
+                              OUTBOUND
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-800/50 text-[10px] font-extrabold uppercase tracking-wider">
+                              INBOUND
+                            </Badge>
+                          )}
+                        </td>
+
+                        <td className="p-3.5 min-w-[220px]">
+                          <p className="font-bold text-slate-900 dark:text-slate-100 text-xs">
+                            {shp.farmerOrProcessorName}
+                          </p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            {isProcessor ? (
+                              <span>{shp.agreementId && shp.agreementId !== "-" ? shp.agreementId : "Procurement Dispatch"}</span>
+                            ) : (
+                              <span>{shp.agreementId} • {shp.lotId}</span>
+                            )}
+                          </p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                            {shp.milletType}
+                          </p>
+
+                          {/* Vehicle & Driver Info Callout if assigned */}
+                          {shp.vehicleNumber && (
+                            <div className="mt-2 p-2 rounded-md bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-[11px]">
+                              <p className="font-bold text-slate-900 dark:text-slate-100">Vehicle: {shp.vehicleNumber}</p>
+                              {shp.driverName && (
+                                <p className="text-[11px] text-slate-600 dark:text-slate-300 font-medium mt-0.5">
+                                  Driver: {shp.driverName} ({shp.driverPhone})
+                                </p>
+                              )}
+                            </div>
+                          )}
+
+                          {shp.transportResponsibility === "Farmer Delivery" && (
+                            <span className="inline-block mt-1 text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                              Transported by Farmer
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="p-3.5 font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                          {shp.expectedQuantityKg?.toLocaleString("en-IN")} kg
+                        </td>
+
+                        <td className="p-3.5 min-w-[180px] text-[11px]">
+                          <p className="text-slate-500 dark:text-slate-400">{shp.sourceAddress}</p>
+                          <p className="text-slate-400 dark:text-slate-500 font-bold my-0.5">↓</p>
+                          <p className="font-bold text-slate-900 dark:text-slate-100">{shp.destinationAddress}</p>
+                        </td>
+
+                        <td className="p-3.5 whitespace-nowrap text-slate-600 dark:text-slate-400 font-medium">
+                          {shp.scheduledDate}
+                        </td>
+
+                        <td className="p-3.5 whitespace-nowrap">
+                          {getStatusBadge(shp.status)}
+                        </td>
+
+                        <td className="p-3.5 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-2">
+                            {shp.status !== "COMPLETED" && shp.status !== "DELIVERED" && !isProcessor && (
+                              <Button
+                                size="sm"
+                                onClick={() => navigate(`/warehouses/receiving/${shp.id}`)}
+                                className="h-8 bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold text-xs shadow-2xs"
+                              >
+                                <ShieldCheck className="h-3.5 w-3.5 mr-1" />
+                                Warehouse Receiving
+                              </Button>
+                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate(`/dispatches/${shp.id}`)}
+                              className="h-8 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white font-bold text-xs"
+                            >
+                              View Details
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </CardContent>
@@ -596,73 +630,85 @@ function Logistics() {
           </Dialog>
         </div>
 
-        {/* Right Column: Today's Pipeline Sidebar (matches Mockup 1) */}
+        {/* Right Column: Today's Pipeline Sidebar */}
         <div className="space-y-6">
           <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-xs">
             <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
               <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">
-                Today's Pipeline
+                {isProcessor ? "Outbound Pipeline" : "Today's Pipeline"}
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-4 space-y-4 text-xs">
               <div className="space-y-2">
                 <div className="flex justify-between items-center text-slate-700 dark:text-slate-300 font-medium">
                   <span>Scheduled</span>
-                  <span className="font-bold text-slate-900 dark:text-white">5</span>
+                  <span className="font-bold text-slate-900 dark:text-white">
+                    {roleFilteredShipments.filter((s) => s.status.toUpperCase().includes("SCHEDULED")).length}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center text-slate-700 dark:text-slate-300 font-medium">
                   <span>Vehicles Assigned</span>
-                  <span className="font-bold text-slate-900 dark:text-white">3</span>
+                  <span className="font-bold text-slate-900 dark:text-white">
+                    {roleFilteredShipments.filter((s) => s.status.toUpperCase().includes("ASSIGNED")).length}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center text-slate-700 dark:text-slate-300 font-medium">
                   <span>In Transit</span>
-                  <span className="font-bold text-slate-900 dark:text-white">3</span>
+                  <span className="font-bold text-slate-900 dark:text-white">
+                    {roleFilteredShipments.filter((s) => s.status.toUpperCase().includes("TRANSIT")).length}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center text-slate-700 dark:text-slate-300 font-medium">
                   <span>Completed Deliveries</span>
-                  <span className="font-bold text-emerald-700 dark:text-emerald-400">7</span>
+                  <span className="font-bold text-emerald-700 dark:text-emerald-400">
+                    {roleFilteredShipments.filter((s) => s.status.toUpperCase().includes("DELIVERED") || s.status.toUpperCase().includes("COMPLETED")).length}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center text-slate-700 dark:text-slate-300 font-medium">
                   <span>Awaiting Confirmation</span>
-                  <span className="font-bold text-amber-700 dark:text-amber-400">4</span>
+                  <span className="font-bold text-amber-700 dark:text-amber-400">
+                    {roleFilteredShipments.filter((s) => s.warehouseReceiptStatus === "PENDING" || s.status.toUpperCase().includes("AWAITING")).length}
+                  </span>
                 </div>
               </div>
 
-              <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
-                <p className="font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider text-[11px]">
-                  Inbound Flow
-                </p>
-                <div className="space-y-2 text-[11px] text-slate-600 dark:text-slate-400 pl-2">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full border border-slate-400 bg-white" />
-                    <span>Scheduled</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-blue-600" />
-                    <span className="font-bold text-slate-800 dark:text-slate-200">Vehicle Assigned</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-emerald-600" />
-                    <span>Pickup Confirmed</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-amber-500" />
-                    <span>In Transit</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-emerald-600" />
-                    <span>Delivered</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full border border-slate-400 bg-white" />
-                    <span>Warehouse Receipt</span>
+              {!isProcessor && (
+                <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
+                  <p className="font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider text-[11px]">
+                    Inbound Flow (Farm → Warehouse)
+                  </p>
+                  <div className="space-y-2 text-[11px] text-slate-600 dark:text-slate-400 pl-2">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full border border-slate-400 bg-white" />
+                      <span>Scheduled</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-blue-600" />
+                      <span className="font-bold text-slate-800 dark:text-slate-200">Vehicle Assigned</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-emerald-600" />
+                      <span>Pickup Confirmed</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-amber-500" />
+                      <span>In Transit</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-emerald-600" />
+                      <span>Delivered</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full border border-slate-400 bg-white" />
+                      <span>Warehouse Receipt</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
                 <p className="font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider text-[11px]">
-                  Outbound Flow
+                  {isProcessor ? "Outbound Delivery Pipeline" : "Outbound Flow"}
                 </p>
                 <div className="space-y-2 text-[11px] text-slate-600 dark:text-slate-400 pl-2">
                   <div className="flex items-center gap-2">
