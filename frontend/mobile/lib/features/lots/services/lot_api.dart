@@ -180,6 +180,31 @@ class LotApi {
     return null;
   }
 
+  Future<Map<String, dynamic>?> getSettlementByLot(String lotIdentifier) async {
+    try {
+      final response = await _apiClient.get('/api/settlements');
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        final list = _extractList(decoded);
+        final target = lotIdentifier.trim().toLowerCase();
+        for (final item in list) {
+          if (item is Map<String, dynamic>) {
+            final sLotId = (item['lotId'] ?? '').toString().trim().toLowerCase();
+            final sCode = (item['settlementCode'] ?? '').toString().trim().toLowerCase();
+            final sOrder = (item['orderId'] ?? '').toString().trim().toLowerCase();
+            if (sLotId == target ||
+                sLotId.contains(target) ||
+                sCode.contains(target) ||
+                sOrder.contains(target)) {
+              return item;
+            }
+          }
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
   List<dynamic> _extractList(dynamic decoded) {
     if (decoded is List<dynamic>) {
       return decoded;
