@@ -14,6 +14,7 @@ import '../services/driver_location_publisher.dart';
 import '../../auth/screen/welcome_screen.dart';
 import 'driver_profile_screen.dart';
 import 'driver_fullscreen_map_screen.dart';
+import '../../lots/screen/driver_chat_screen.dart';
 
 class DriverJourneyScreen extends StatefulWidget {
   final String? initialDriverPhone;
@@ -460,11 +461,11 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: const Color(0xFFCBD5E1)),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.shield_outlined, color: Color(0xFF0F766E), size: 18),
-                        SizedBox(width: 8),
-                        Expanded(
+                        const Icon(Icons.shield_outlined, color: Color(0xFF0F766E), size: 18),
+                        const SizedBox(width: 8),
+                        const Expanded(
                           child: Text(
                             'Farmer verification required. Please obtain the 4-digit OTP directly from the farmer.',
                             style: TextStyle(
@@ -472,6 +473,17 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
                               color: Color(0xFF334155),
                               fontWeight: FontWeight.w500,
                             ),
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _openFarmerChat(dispatch);
+                          },
+                          icon: const Icon(Icons.chat_bubble_outline, size: 14, color: ShreeAnnaTheme.primaryGreen),
+                          label: const Text(
+                            'Chat',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: ShreeAnnaTheme.primaryGreen),
                           ),
                         ),
                       ],
@@ -1730,6 +1742,20 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
           const SizedBox(height: 12),
           Row(
             children: [
+              OutlinedButton.icon(
+                onPressed: () => _openFarmerChat(p),
+                icon: const Icon(Icons.chat_bubble_outline, size: 15, color: ShreeAnnaTheme.primaryGreen),
+                label: const Text(
+                  'CHAT',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: ShreeAnnaTheme.primaryGreen),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                  side: const BorderSide(color: ShreeAnnaTheme.primaryGreen),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+              const SizedBox(width: 8),
               Expanded(
                 flex: 4,
                 child: OutlinedButton.icon(
@@ -1746,14 +1772,14 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               Expanded(
-                flex: 6,
+                flex: 5,
                 child: ElevatedButton.icon(
                   onPressed: () => _showPickupCodeModal(p),
                   icon: const Icon(Icons.pin_outlined, size: 16, color: Colors.white),
                   label: const Text(
-                    'ENTER PICKUP CODE',
+                    'VERIFY CODE',
                     style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -2103,9 +2129,9 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
   }
 
   Widget _buildDriverProfileCard() {
-    final driverName = _selectedDriver?.name ?? _activeDispatch?.driverName ?? 'Ravi Kumar';
-    final vehicleNo = _selectedDriver?.vehicleNumber ?? _activeDispatch?.vehicleNumber ?? 'KA-09-AB-4521';
-    final phone = _selectedDriver?.phone ?? _activeDispatch?.driverPhone ?? '9876543210';
+    final driverName = _selectedDriver?.name ?? _activeDispatch?.driverName ?? 'Assigned Driver';
+    final vehicleNo = _selectedDriver?.vehicleNumber ?? _activeDispatch?.vehicleNumber ?? 'Vehicle Pending';
+    final phone = _selectedDriver?.phone ?? _activeDispatch?.driverPhone ?? '';
 
     return InkWell(
       onTap: _openDriverProfile,
@@ -2312,7 +2338,78 @@ class _DriverJourneyScreenState extends State<DriverJourneyScreen> {
           _buildInfoRow(Icons.location_on_outlined, 'Pickup Location', d?.sourceAddress ?? 'N/A'),
           const SizedBox(height: 8),
           _buildInfoRow(Icons.warehouse_outlined, 'Destination Warehouse', d?.destinationAddress ?? 'N/A'),
+          const Divider(height: 20, color: Color(0xFFE2E8F0)),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    final phone = d?.driverPhone ?? '';
+                    if (phone.isNotEmpty) {
+                      launchUrl(Uri.parse('tel:${phone.replaceAll(' ', '')}'));
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Farmer phone not available')),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.phone, size: 15, color: ShreeAnnaTheme.primaryGreen),
+                  label: const Text(
+                    'CALL FARMER',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: ShreeAnnaTheme.primaryGreen),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    side: const BorderSide(color: ShreeAnnaTheme.primaryGreen),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    if (d != null) _openFarmerChat(d);
+                  },
+                  icon: const Icon(Icons.chat_bubble_outline, size: 15, color: Colors.white),
+                  label: const Text(
+                    'CHAT WITH FARMER',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    backgroundColor: ShreeAnnaTheme.primaryGreen,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
+      ),
+    );
+  }
+
+  void _openFarmerChat(DriverDispatchModel p) {
+    final sessionKey = p.lotId.isNotEmpty ? p.lotId : (p.id.isNotEmpty ? p.id : p.dispatchCode);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DriverChatScreen(
+          sessionId: 'trip_$sessionKey',
+          lotId: p.lotId,
+          lotNumber: p.dispatchCode,
+          milletType: p.milletType,
+          quantityKg: '${p.totalQuantityKg.toStringAsFixed(0)} kg',
+          otherPartyName: p.farmerOrProcessorName,
+          otherPartyPhone: p.driverPhone,
+          vehicleNumber: p.vehicleNumber,
+          pickupCode: p.verificationCode,
+          pickupLocation: p.sourceAddress,
+          farmerName: p.farmerOrProcessorName,
+          isDriver: true,
+        ),
       ),
     );
   }

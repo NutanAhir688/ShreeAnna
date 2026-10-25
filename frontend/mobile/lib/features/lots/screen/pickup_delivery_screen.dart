@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 
 import '../../../app/theme.dart';
+import 'driver_chat_screen.dart';
 
 class PickupDeliveryScreen extends StatelessWidget {
   const PickupDeliveryScreen({
@@ -578,7 +579,28 @@ class PickupDeliveryScreen extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => _showChatDialog(context, actualDriverName),
+                  onPressed: () {
+                    final sessionKey = lotId ?? actualDriverName.replaceAll(' ', '_');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => DriverChatScreen(
+                          sessionId: 'trip_$sessionKey',
+                          lotId: lotId ?? '',
+                          lotNumber: lotId ?? '',
+                          milletType: milletName ?? 'Millet',
+                          quantityKg: quantity ?? '',
+                          otherPartyName: actualDriverName,
+                          otherPartyPhone: actualDriverPhone != '-' ? actualDriverPhone : '',
+                          vehicleNumber: actualVehicleNo != '-' ? actualVehicleNo : '',
+                          pickupCode: actualPickupCode != '-' ? actualPickupCode : '',
+                          pickupLocation: pickupLocation ?? farmName ?? 'Farm Location',
+                          farmerName: 'Farmer Member',
+                          isDriver: false,
+                        ),
+                      ),
+                    );
+                  },
                   icon: const Icon(Icons.chat, size: 18, color: Colors.white),
                   label: const Text(
                     'Live Chat',
@@ -733,113 +755,6 @@ class PickupDeliveryScreen extends StatelessWidget {
     );
   }
 
-  void _showChatDialog(BuildContext context, String driverName) {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          title: Row(
-            children: [
-              const Icon(Icons.chat, color: ShreeAnnaTheme.primaryGreen),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Chat with $driverName',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF4F7F4),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const CircleAvatar(
-                      radius: 14,
-                      backgroundColor: ShreeAnnaTheme.primaryGreen,
-                      child: Text(
-                        'R',
-                        style: TextStyle(color: Colors.white, fontSize: 12),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            'Ravi (Driver)',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: 2),
-                          Text(
-                            'Hello! I am on my way to your farm location for pickup.',
-                            style: TextStyle(fontSize: 13),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: controller,
-                decoration: const InputDecoration(
-                  hintText: 'Type your message to driver...',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Close'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ShreeAnnaTheme.primaryGreen,
-              ),
-              onPressed: () {
-                if (controller.text.trim().isNotEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Message sent to driver successfully!'),
-                    ),
-                  );
-                }
-                Navigator.pop(ctx);
-              },
-              child: const Text('Send'),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   void _showContactDriverModal(
     BuildContext context,
