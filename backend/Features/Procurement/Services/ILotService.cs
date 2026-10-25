@@ -12,8 +12,8 @@ public interface ILotService
     Task<LotResponse?> UpdateInspectorLocationAsync(Guid lotId, UpdateInspectorLocationRequest request);
     Task<LotTimelineResponse?> GetTimelineAsync(Guid lotId);
     Task<bool> CreateAgreementAsync(Guid lotId, FormulateAgreementRequest? request);
-    Task<bool> AcceptAgreementAsync(Guid lotId);
-    Task<bool> RejectAgreementAsync(Guid lotId, RejectAgreementRequest request);
+    Task<bool> AcceptAgreementAsync(Guid lotId, bool isFarmer = false);
+    Task<bool> RejectAgreementAsync(Guid lotId, RejectAgreementRequest request, bool isFarmer = false);
     Task<bool> ReschedulePickupAsync(Guid lotId, ReschedulePickupRequest request);
     Task<List<InspectorResponse>> GetInspectorsAsync();
     Task<bool> RecordDriverLocationAsync(string lotId, RecordDriverLocationRequest request, System.Security.Claims.ClaimsPrincipal user);

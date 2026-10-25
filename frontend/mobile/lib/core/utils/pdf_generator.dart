@@ -18,7 +18,7 @@ class PdfGenerator {
   }) async {
     final pdf = pw.Document();
     final subtotal = qty * unitPrice;
-    final netPayable = subtotal + logisticsCost + adjustments;
+    final netPayable = (subtotal - logisticsCost - adjustments).clamp(0.0, double.infinity);
     final dateStr = DateTime.now().toString().split(' ').first;
 
     pdf.addPage(
@@ -187,9 +187,9 @@ class PdfGenerator {
                   children: [
                     _pdfRow('Gross Produce Value', 'Rs. ${subtotal.toStringAsFixed(2)}'),
                     pw.SizedBox(height: 4),
-                    _pdfRow('Transportation / Logistics Allowance', '+ Rs. ${logisticsCost.toStringAsFixed(2)}'),
+                    _pdfRow('Transportation / Logistics Deduction', logisticsCost > 0 ? '- Rs. ${logisticsCost.toStringAsFixed(2)}' : 'Rs. 0.00'),
                     pw.SizedBox(height: 4),
-                    _pdfRow('Bagging & Cleaning Incentive', '+ Rs. ${adjustments.toStringAsFixed(2)}'),
+                    _pdfRow('Other Deductions (Cleaning/Bagging)', adjustments > 0 ? '- Rs. ${adjustments.toStringAsFixed(2)}' : 'Rs. 0.00'),
                     pw.SizedBox(height: 6),
                     pw.Divider(color: PdfColors.green300),
                     pw.SizedBox(height: 4),

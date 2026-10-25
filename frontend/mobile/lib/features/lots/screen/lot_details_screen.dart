@@ -129,7 +129,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
         _dispatchDetails = dispatchDetails;
 
         if (lotDetails != null) {
-          _currentStatus = _formatStatusText(lotDetails.status);
+          _currentStatus = _formatStatusText(lotDetails.status, lotDetails.negotiationRemarks);
         }
         _isLoadingTimeline = false;
       });
@@ -168,7 +168,8 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
     }.contains(value);
   }
 
-  String _formatStatusText(String status) {
+  String _formatStatusText(String status, [String? remarks]) {
+    final effectiveRemarks = remarks ?? _lot?.negotiationRemarks ?? '';
     switch (status.toUpperCase()) {
       case 'SUBMITTED':
         return 'Submitted';
@@ -180,9 +181,15 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
         return 'Certified';
       case 'AGREEMENT_PENDING':
         return 'Agreement Awaiting Approval';
+      case 'AGREEMENT_PENDING_FPO':
+        return 'Awaiting FPO Signature';
+      case 'AGREEMENT_PENDING_FARMER':
+        return 'Awaiting Farmer Signature';
       case 'AGREEMENT_ACCEPTED':
       case 'PROCUREMENT_AGREEMENT':
-        return 'Agreement Accepted';
+        return (effectiveRemarks.contains('[FPO_ACCEPTED]'))
+            ? 'Agreement Accepted'
+            : 'Awaiting FPO Signature';
       case 'AGREEMENT_REJECTED':
         return 'Agreement Rejected';
       case 'PICKUP_SCHEDULED':
@@ -236,9 +243,14 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
       ),
 
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(18, 10, 18, 30),
-          child: Column(
+        child: RefreshIndicator(
+          color: ShreeAnnaTheme.primaryGreen,
+          backgroundColor: Colors.white,
+          onRefresh: _loadTimeline,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(18, 10, 18, 30),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ==================================================
@@ -293,23 +305,51 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
 
                     const SizedBox(height: 14),
 
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFDCEBFA),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        _currentStatus ?? widget.status,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1265C0),
-                        ),
-                      ),
+                    Builder(
+                      builder: (context) {
+                        final rawStatus = _lot?.status ?? _currentStatus ?? widget.status;
+                        final displayStatus = _formatStatusText(
+                          rawStatus,
+                          _lot?.negotiationRemarks,
+                        );
+                        final isAwaitingFpo = displayStatus == 'Awaiting FPO Signature';
+                        final isAwaitingFarmer = displayStatus == 'Awaiting Farmer Signature';
+                        final isAccepted = displayStatus == 'Agreement Accepted';
+                        final isRejected = displayStatus == 'Agreement Rejected';
+
+                        Color bgColor = const Color(0xFFDCEBFA);
+                        Color textColor = const Color(0xFF1265C0);
+
+                        if (isAwaitingFpo || isAwaitingFarmer) {
+                          bgColor = const Color(0xFFFEF3C7);
+                          textColor = const Color(0xFFB45309);
+                        } else if (isAccepted) {
+                          bgColor = const Color(0xFFDCFCE7);
+                          textColor = const Color(0xFF15803D);
+                        } else if (isRejected) {
+                          bgColor = const Color(0xFFFEE2E2);
+                          textColor = const Color(0xFFB91C1C);
+                        }
+
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: bgColor,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            displayStatus,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: textColor,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -978,6 +1018,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 
@@ -1037,35 +1078,22 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
 
     final hasDriver =
         _lot?.driverName != null && _lot!.driverName!.trim().isNotEmpty;
-
-    final isDispatched =
-        hasDriver ||
-        isDelivered ||
-        statusUpper.contains('DISPATCH') ||
-        statusUpper.contains('TRANSIT') ||
-        statusUpper.contains('VEHICLE') ||
-        statusUpper.contains('SCHEDULED');
+    final remarks = _lot?.negotiationRemarks ?? '';
+    final hasFpoAccepted = isDelivered || isStored || remarks.contains('[FPO_ACCEPTED]');
+    final hasFarmerAccepted = isDelivered || isStored || remarks.contains('[FARMER_ACCEPTED]') || statusUpper == 'AGREEMENT_PENDING_FPO' || statusUpper == 'AGREEMENT_ACCEPTED';
+    final isBothAgreed = hasFpoAccepted && hasFarmerAccepted;
 
     final isAgrAccepted =
-        statusUpper == 'AGREEMENT_ACCEPTED' ||
-        statusUpper == 'ACCEPTED' ||
-        statusUpper == 'PICKUP_COMPLETED' ||
-        statusUpper == 'DELIVERED' ||
-        statusUpper == 'DELIVERY_COMPLETED' ||
-        statusUpper == 'WAREHOUSE_RECEIVED' ||
-        statusUpper == 'STORED' ||
-        statusUpper == 'SETTLED' ||
-        statusUpper == 'PAID' ||
-        statusUpper == 'PAYMENT_COMPLETED' ||
+        isDelivered ||
         isStored ||
         isPaymentCompleted ||
-        isDelivered;
+        isBothAgreed;
 
     final isAgrPending =
         !isAgrAccepted &&
-        (statusUpper == 'AGREEMENT_PENDING' ||
-            statusUpper == 'AGREEMENT_FORMULATED' ||
-            statusUpper == 'PROCUREMENT_AGREEMENT_PENDING');
+        (statusUpper.contains('AGREEMENT') ||
+            statusUpper == 'PROCUREMENT_AGREEMENT_PENDING' ||
+            _lot?.agreementVersion != null);
 
     final isCertified =
         statusUpper.contains('CERTIFIED') ||
@@ -1120,9 +1148,11 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
         title = l10n.procurementAgreement;
         subtitle = (isAgrAccepted || isCompleted || isPaymentCompleted)
             ? 'Procurement agreement signed & approved.'
-            : (isAgrPending
-                ? 'Agreement formulated & awaiting acceptance.'
-                : l10n.procurementAgreementSubtitle);
+            : (hasFarmerAccepted && !hasFpoAccepted)
+                ? 'Agreement consented by farmer — Awaiting FPO signature.'
+                : (isAgrPending
+                    ? 'Agreement formulated & awaiting acceptance.'
+                    : l10n.procurementAgreementSubtitle);
         actionLabel = (isAgrAccepted || isCompleted || isPaymentCompleted || isAgrPending)
             ? l10n.viewAgreement
             : null;
@@ -2115,14 +2145,27 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
 
   Widget _buildAgreementNotificationBanner(LotModel lot, BuildContext context) {
     final ver = lot.agreementVersion;
-    final isRejected = lot.status.contains('REJECTED');
-    final isAccepted = lot.status.toUpperCase() == 'AGREEMENT_ACCEPTED' ||
-        lot.status.toUpperCase() == 'ACCEPTED' ||
-        lot.status.toUpperCase() == 'PICKUP_COMPLETED' ||
-        lot.status.toUpperCase() == 'DELIVERED' ||
-        lot.status.toUpperCase() == 'DELIVERY_COMPLETED' ||
-        lot.status.toUpperCase() == 'WAREHOUSE_RECEIVED' ||
-        lot.status.toUpperCase() == 'STORED';
+    final statusUpper = lot.status.toUpperCase();
+    final remarks = lot.negotiationRemarks ?? '';
+    final isRejected = statusUpper.contains('REJECTED');
+
+    final isDispatched = statusUpper.contains('PICKUP_COMPLETED') ||
+        statusUpper.contains('DELIVER') ||
+        statusUpper.contains('STORED') ||
+        statusUpper.contains('DISPATCH') ||
+        statusUpper.contains('TRANSIT');
+
+    final hasFpoAccepted = isDispatched ||
+        remarks.contains('[FPO_ACCEPTED]') ||
+        statusUpper == 'AGREEMENT_PENDING_FARMER';
+
+    final hasFarmerAccepted = isDispatched ||
+        remarks.contains('[FARMER_ACCEPTED]') ||
+        statusUpper == 'AGREEMENT_PENDING_FPO' ||
+        statusUpper == 'AGREEMENT_ACCEPTED';
+
+    final isAccepted = isDispatched || (hasFpoAccepted && hasFarmerAccepted);
+    final isAwaitingFpo = hasFarmerAccepted && !hasFpoAccepted && !isRejected;
 
     return Container(
       width: double.infinity,
@@ -2132,6 +2175,8 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
             ? const Color(0xFFFDE8E8)
             : isAccepted
             ? const Color(0xFFE8F5E9)
+            : isAwaitingFpo
+            ? const Color(0xFFFEF3C7)
             : const Color(0xFFFFF8E1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
@@ -2139,6 +2184,8 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
               ? Colors.red.shade300
               : isAccepted
               ? ShreeAnnaTheme.primaryGreen
+              : isAwaitingFpo
+              ? const Color(0xFFFDE047)
               : Colors.amber.shade400,
         ),
       ),
@@ -2152,11 +2199,15 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                     ? Icons.cancel
                     : isAccepted
                     ? Icons.check_circle
+                    : isAwaitingFpo
+                    ? Icons.hourglass_top
                     : Icons.notifications_active,
                 color: isRejected
                     ? Colors.red
                     : isAccepted
                     ? ShreeAnnaTheme.primaryGreen
+                    : isAwaitingFpo
+                    ? const Color(0xFFB45309)
                     : Colors.amber.shade900,
                 size: 22,
               ),
@@ -2167,6 +2218,8 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                       ? 'Procurement Agreement Rejected ($ver)'
                       : isAccepted
                       ? 'Agreement Executed & Signed ($ver)'
+                      : isAwaitingFpo
+                      ? 'Agreement Consented ($ver) — Awaiting FPO Signature'
                       : 'New Procurement Agreement Formulated ($ver)',
                   style: TextStyle(
                     fontSize: 13,
@@ -2175,6 +2228,8 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                         ? Colors.red.shade900
                         : isAccepted
                         ? ShreeAnnaTheme.primaryGreen
+                        : isAwaitingFpo
+                        ? const Color(0xFF92400E)
                         : Colors.amber.shade900,
                   ),
                 ),
@@ -2187,6 +2242,8 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                 ? 'You rejected version $ver. You can view the full commercial terms & re-negotiate with the Procurement Officer.'
                 : isAccepted
                 ? 'Version $ver contract has been accepted and digitally signed.'
+                : isAwaitingFpo
+                ? 'You have consented to version $ver. Awaiting final counter-signature from ShreeAnna FPO Procurement Officer.'
                 : 'FPO Procurement Officer formulated your commercial purchase contract terms ($ver). Review pricing & details.',
             style: TextStyle(
               fontSize: 11,
@@ -2194,6 +2251,8 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                   ? const Color(0xFF7A1C1C)
                   : isAccepted
                   ? const Color(0xFF1B4D2E)
+                  : isAwaitingFpo
+                  ? const Color(0xFF78350F)
                   : const Color(0xFF5D4037),
             ),
           ),
@@ -2215,7 +2274,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
               },
               icon: const Icon(Icons.description, size: 16),
               label: Text(
-                'Review Agreement ($ver)',
+                isAwaitingFpo ? 'Review Agreement (Awaiting FPO Signature)' : 'Review Agreement ($ver)',
                 style: const TextStyle(fontSize: 12),
               ),
               style: ElevatedButton.styleFrom(
@@ -2223,6 +2282,8 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                     ? Colors.red
                     : isAccepted
                     ? ShreeAnnaTheme.primaryGreen
+                    : isAwaitingFpo
+                    ? const Color(0xFFD97706)
                     : Colors.amber.shade800,
                 foregroundColor: Colors.white,
                 elevation: 0,
@@ -2648,20 +2709,31 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
     final lotStatus = (_lot?.status ?? _currentStatus ?? widget.status)
         .trim()
         .toUpperCase();
+    final remarks = _lot?.negotiationRemarks ?? '';
+    final hasFpoAccepted = lotStatus.contains('DISPATCH') ||
+        lotStatus.contains('DELIVER') ||
+        lotStatus.contains('STORED') ||
+        lotStatus.contains('PAYMENT_COMPLETED') ||
+        remarks.contains('[FPO_ACCEPTED]');
+    final hasFarmerAccepted = lotStatus.contains('DISPATCH') ||
+        lotStatus.contains('DELIVER') ||
+        lotStatus.contains('STORED') ||
+        lotStatus.contains('PAYMENT_COMPLETED') ||
+        remarks.contains('[FARMER_ACCEPTED]') ||
+        lotStatus == 'AGREEMENT_ACCEPTED' ||
+        lotStatus == 'AGREEMENT_PENDING_FPO';
+    final isBothAccepted = hasFpoAccepted && hasFarmerAccepted;
+
     final status = lotStatus.contains('REJECTED')
         ? 'Rejected'
-        : (lotStatus == 'AGREEMENT_ACCEPTED' ||
-              lotStatus == 'PROCUREMENT_AGREEMENT' ||
-              lotStatus == 'ACCEPTED' ||
-              lotStatus.contains('DISPATCH') ||
-              lotStatus.contains('DELIVER') ||
-              lotStatus.contains('STORED') ||
-              lotStatus.contains('PAYMENT_COMPLETED'))
+        : isBothAccepted
         ? 'Accepted'
+        : (hasFarmerAccepted && !hasFpoAccepted)
+        ? 'Awaiting FPO Signature'
         : 'Pending';
 
     final detailsList = [
-      if (rate != null) rate,
+      rate,
       qty,
       if (millet.isNotEmpty) millet,
     ].join(' | ');

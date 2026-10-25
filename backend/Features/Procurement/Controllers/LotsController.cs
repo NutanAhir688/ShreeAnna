@@ -143,9 +143,10 @@ public class LotsController : ControllerBase
     }
 
     [HttpPost("lots/{id:guid}/agreement/accept")]
-    public async Task<IActionResult> AcceptAgreement(Guid id)
+    public async Task<IActionResult> AcceptAgreement(Guid id, [FromQuery] string? role = null)
     {
-        var result = await _lotService.AcceptAgreementAsync(id);
+        bool isFarmer = User.IsInRole(Roles.Farmer) || string.Equals(role, "Farmer", StringComparison.OrdinalIgnoreCase);
+        var result = await _lotService.AcceptAgreementAsync(id, isFarmer);
         if (!result)
         {
             return NotFound(new { message = "Lot not found." });
@@ -155,9 +156,10 @@ public class LotsController : ControllerBase
     }
 
     [HttpPost("lots/{id:guid}/agreement/reject")]
-    public async Task<IActionResult> RejectAgreement(Guid id, RejectAgreementRequest request)
+    public async Task<IActionResult> RejectAgreement(Guid id, RejectAgreementRequest request, [FromQuery] string? role = null)
     {
-        var result = await _lotService.RejectAgreementAsync(id, request);
+        bool isFarmer = User.IsInRole(Roles.Farmer) || string.Equals(role, "Farmer", StringComparison.OrdinalIgnoreCase);
+        var result = await _lotService.RejectAgreementAsync(id, request, isFarmer);
         if (!result)
         {
             return NotFound(new { message = "Lot not found." });

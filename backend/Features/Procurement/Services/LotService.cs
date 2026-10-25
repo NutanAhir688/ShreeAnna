@@ -354,24 +354,65 @@ public class LotService : ILotService
         return true;
     }
 
-    public async Task<bool> AcceptAgreementAsync(Guid lotId)
+    public async Task<bool> AcceptAgreementAsync(Guid lotId, bool isFarmer = false)
     {
         var lot = await _context.ProcurementLots.FindAsync(lotId);
         if (lot is null) return false;
 
-        lot.Status = "AGREEMENT_ACCEPTED";
+        var remarks = lot.NegotiationRemarks ?? "";
+        bool farmerAccepted = remarks.Contains("[FARMER_ACCEPTED]") || isFarmer;
+        bool fpoAccepted = remarks.Contains("[FPO_ACCEPTED]") || !isFarmer;
+
+        var updatedRemarks = remarks;
+        if (isFarmer && !updatedRemarks.Contains("[FARMER_ACCEPTED]"))
+        {
+            updatedRemarks = $"{updatedRemarks} [FARMER_ACCEPTED:{DateTime.UtcNow:s}]".Trim();
+        }
+        if (!isFarmer && !updatedRemarks.Contains("[FPO_ACCEPTED]"))
+        {
+            updatedRemarks = $"{updatedRemarks} [FPO_ACCEPTED:{DateTime.UtcNow:s}]".Trim();
+        }
+        lot.NegotiationRemarks = updatedRemarks;
+
+        if (farmerAccepted && fpoAccepted)
+        {
+            lot.Status = "AGREEMENT_ACCEPTED";
+        }
+        else if (fpoAccepted)
+        {
+            lot.Status = "AGREEMENT_PENDING_FARMER";
+        }
+        else if (farmerAccepted)
+        {
+            lot.Status = "AGREEMENT_PENDING_FPO";
+        }
+        else
+        {
+            lot.Status = "AGREEMENT_PENDING";
+        }
+
         lot.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
         return true;
     }
 
-    public async Task<bool> RejectAgreementAsync(Guid lotId, RejectAgreementRequest request)
+    public async Task<bool> RejectAgreementAsync(Guid lotId, RejectAgreementRequest request, bool isFarmer = false)
     {
         var lot = await _context.ProcurementLots.FindAsync(lotId);
         if (lot is null) return false;
 
-        lot.Status = "AGREEMENT_REJECTED";
+        string reason = !string.IsNullOrWhiteSpace(request.Reason)
+            ? request.Reason
+            : "Terms rejected";
+        if (!string.IsNullOrWhiteSpace(request.Comment))
+        {
+            reason = $"{reason}: {request.Comment}";
+        }
+
+        bool byFpo = !isFarmer || reason.Contains("FPO", StringComparison.OrdinalIgnoreCase);
+        lot.Status = byFpo ? "AGREEMENT_REJECTED_BY_FPO" : "AGREEMENT_REJECTED_BY_FARMER";
+        lot.NegotiationRemarks = $"[REJECTED_BY_{(byFpo ? "FPO" : "FARMER")}] {reason}";
         lot.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();

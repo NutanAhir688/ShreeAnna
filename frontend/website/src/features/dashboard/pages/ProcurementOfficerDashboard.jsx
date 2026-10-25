@@ -89,10 +89,10 @@ export default function ProcurementOfficerDashboard() {
   const totalAgreementsValue = digitalContracts.reduce((acc, a) => {
     const qty = Number(a.agreedQuantityKg) || Number(a.actualQuantityKg) || Number(a.estimatedQuantityKg) || 0;
     const price = Number(a.offeredPricePerKg) || 0;
-    const base = Number(a.totalValue) || Number(a.netPayable) || (qty * price);
+    const base = Number(a.totalValue) || (qty * price);
     const logistics = Number(a.logisticsCost) || 0;
     const adjustments = Number(a.otherAdjustments) || 0;
-    return acc + base + logistics + adjustments;
+    return acc + Math.max(0, base - logistics - adjustments);
   }, 0);
 
   const pendingProcessorRequests = purchaseRequests.filter(

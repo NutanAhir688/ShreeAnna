@@ -227,10 +227,8 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
     final version = _lot?.agreementVersion ?? 'v1.0';
     final qty = _lot?.agreedQuantityKg ?? _lot?.actualQuantityKg ?? _lot?.estimatedQuantityKg ?? 450.0;
     final unitPrice = _lot?.offeredPricePerKg ?? (_cert != null && _cert!['offeredPricePerKg'] != null ? (_cert!['offeredPricePerKg'] as num).toDouble() : 45.0);
-    final subtotal = qty * unitPrice;
-    final logisticsCost = _lot?.logisticsCost ?? 500.0;
-    final adjustments = _lot?.otherAdjustments ?? 100.0;
-    final netPayable = subtotal + logisticsCost + adjustments;
+    final logisticsCost = _lot?.logisticsCost ?? 0.0;
+    final adjustments = _lot?.otherAdjustments ?? 0.0;
     final farmerName = _lot?.farmerName ?? 'Registered Farmer';
     final farmName = _lot?.farmName ?? 'Member Farm';
     final milletType = _lot?.milletType ?? 'Finger Millet (Ragi)';
@@ -350,12 +348,18 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
     final qty = _lot?.agreedQuantityKg ?? _lot?.actualQuantityKg ?? _lot?.estimatedQuantityKg ?? 450.0;
     final unitPrice = _lot?.offeredPricePerKg ?? (_cert != null && _cert!['offeredPricePerKg'] != null ? (_cert!['offeredPricePerKg'] as num).toDouble() : 45.0);
     final subtotal = qty * unitPrice;
-    final logisticsCost = _lot?.logisticsCost ?? 500.0;
-    final adjustments = _lot?.otherAdjustments ?? 100.0;
-    final netPayable = subtotal + logisticsCost + adjustments;
+    final logisticsCost = _lot?.logisticsCost ?? 0.0;
+    final adjustments = _lot?.otherAdjustments ?? 0.0;
+    final netPayable = (subtotal - logisticsCost - adjustments).clamp(0.0, double.infinity);
     final farmerName = _lot?.farmerName ?? 'Registered Farmer';
     final farmName = _lot?.farmName ?? 'Member Farm';
     final milletType = _lot?.milletType ?? 'Finger Millet (Ragi)';
+    final status = _lot == null ? 'AGREEMENT_PENDING' : _lot!.status.toUpperCase();
+    final remarks = _lot?.negotiationRemarks ?? '';
+    final isDispatched = status.contains('DISPATCH') || status.contains('TRANSIT') || status.contains('VEHICLE') || status.contains('PICKUP');
+    final isDelivered = status.contains('DELIVER') || status.contains('COMPLETED') || status.contains('RECEIVED');
+    final hasFpoAccepted = isDispatched || isDelivered || remarks.contains('[FPO_ACCEPTED]') || status == 'AGREEMENT_PENDING_FARMER';
+    final hasFarmerAccepted = isDispatched || isDelivered || remarks.contains('[FARMER_ACCEPTED]') || status == 'AGREEMENT_PENDING_FPO' || status == 'AGREEMENT_ACCEPTED';
 
     showModalBottomSheet(
       context: context,
@@ -556,8 +560,8 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
                               const Text('FINANCIAL BREAKDOWN & LOGISTICS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
                               const SizedBox(height: 8),
                               _docBreakdownRow('Gross Produce Value', '₹${subtotal.toStringAsFixed(2)}'),
-                              _docBreakdownRow('Transport / Logistics Allowance', '+ ₹${logisticsCost.toStringAsFixed(2)}'),
-                              _docBreakdownRow('Bagging & Cleaning Incentive', '+ ₹${adjustments.toStringAsFixed(2)}'),
+                              _docBreakdownRow('Transport / Logistics Deduction', logisticsCost > 0 ? '- ₹${logisticsCost.toStringAsFixed(2)}' : '₹0.00'),
+                              _docBreakdownRow('Other Deductions (Cleaning/Bagging)', adjustments > 0 ? '- ₹${adjustments.toStringAsFixed(2)}' : '₹0.00'),
                               const Divider(height: 12),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -615,10 +619,17 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Column(
-                                  children: const [
-                                    Text('ShreeAnna Officer', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-                                    SizedBox(height: 2),
-                                    Text('✓ Digitally Sealed', style: TextStyle(fontSize: 9, color: ShreeAnnaTheme.primaryGreen, fontWeight: FontWeight.bold)),
+                                  children: [
+                                    const Text('ShreeAnna Officer', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      hasFpoAccepted ? '✓ Digitally Sealed' : '⏳ Pending Authorization',
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        color: hasFpoAccepted ? ShreeAnnaTheme.primaryGreen : Colors.amber.shade800,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -635,7 +646,14 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
                                   children: [
                                     Text(farmerName, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
                                     const SizedBox(height: 2),
-                                    const Text('✓ OTP Consent Signed', style: TextStyle(fontSize: 9, color: ShreeAnnaTheme.primaryGreen, fontWeight: FontWeight.bold)),
+                                    Text(
+                                      hasFarmerAccepted ? '✓ OTP Consent Signed' : '⏳ Pending Consent',
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        color: hasFarmerAccepted ? ShreeAnnaTheme.primaryGreen : Colors.amber.shade800,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -709,10 +727,17 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final status = _lot == null ? 'AGREEMENT_PENDING' : _lot!.status.toUpperCase();
+    final remarks = _lot?.negotiationRemarks ?? '';
     final isDispatched = status.contains('DISPATCH') || status.contains('TRANSIT') || status.contains('VEHICLE') || status.contains('PICKUP');
     final isDelivered = status.contains('DELIVER') || status.contains('COMPLETED') || status.contains('RECEIVED');
     final isRejected = status.contains('REJECTED');
-    final isAccepted = isDispatched || isDelivered || status.contains('ACCEPTED') || status.contains('APPROVED') || status.contains('CERTIFIED');
+
+    final hasFpoAccepted = isDispatched || isDelivered || remarks.contains('[FPO_ACCEPTED]') || status == 'AGREEMENT_PENDING_FARMER';
+    final hasFarmerAccepted = isDispatched || isDelivered || remarks.contains('[FARMER_ACCEPTED]') || status == 'AGREEMENT_PENDING_FPO' || status == 'AGREEMENT_ACCEPTED';
+
+    final isBothAccepted = isDispatched || isDelivered || (hasFpoAccepted && hasFarmerAccepted);
+    final isAccepted = isBothAccepted;
+    final isFarmerAccepted = isAccepted || hasFarmerAccepted;
     final isPending = !isRejected && !isAccepted;
 
     final version = _lot?.agreementVersion ?? (isRejected ? 'v1.0' : 'v2.0');
@@ -720,9 +745,9 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
     final qty = _lot?.agreedQuantityKg ?? _lot?.actualQuantityKg ?? _lot?.estimatedQuantityKg ?? 450.0;
     final unitPrice = _lot?.offeredPricePerKg ?? (_cert != null && _cert!['offeredPricePerKg'] != null ? (_cert!['offeredPricePerKg'] as num).toDouble() : 45.0);
     final subtotal = qty * unitPrice;
-    final logisticsCost = _lot?.logisticsCost ?? 500.0;
-    final adjustments = _lot?.otherAdjustments ?? 100.0;
-    final netPayable = subtotal + logisticsCost + adjustments;
+    final logisticsCost = _lot?.logisticsCost ?? 0.0;
+    final adjustments = _lot?.otherAdjustments ?? 0.0;
+    final netPayable = (subtotal - logisticsCost - adjustments).clamp(0.0, double.infinity);
 
     return Scaffold(
       backgroundColor: ShreeAnnaTheme.background,
@@ -792,9 +817,14 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
                       ),
                     ),
                   )
-                : SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
+                : RefreshIndicator(
+                    color: ShreeAnnaTheme.primaryGreen,
+                    backgroundColor: Colors.white,
+                    onRefresh: _loadData,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Download Agreement & View Document Quick Action Buttons
@@ -844,14 +874,18 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
                                 ? const Color(0xFFFDE8E8)
                                 : isAccepted
                                     ? const Color(0xFFE8F5E9)
-                                    : const Color(0xFFFFF8E1),
+                                    : (isFarmerAccepted && !hasFpoAccepted)
+                                        ? const Color(0xFFFEF3C7)
+                                        : const Color(0xFFFFF8E1),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
                               color: isRejected
                                   ? Colors.red.shade300
                                   : isAccepted
                                       ? ShreeAnnaTheme.primaryGreen
-                                      : Colors.amber.shade400,
+                                      : (isFarmerAccepted && !hasFpoAccepted)
+                                          ? const Color(0xFFFDE047)
+                                          : Colors.amber.shade400,
                             ),
                           ),
                           child: Row(
@@ -861,12 +895,16 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
                                     ? Icons.cancel
                                     : isAccepted
                                         ? Icons.check_circle
-                                        : Icons.notifications_active,
+                                        : (isFarmerAccepted && !hasFpoAccepted)
+                                            ? Icons.hourglass_top
+                                            : Icons.notifications_active,
                                 color: isRejected
                                     ? Colors.red
                                     : isAccepted
                                         ? ShreeAnnaTheme.primaryGreen
-                                        : Colors.amber.shade900,
+                                        : (isFarmerAccepted && !hasFpoAccepted)
+                                            ? const Color(0xFFB45309)
+                                            : Colors.amber.shade900,
                                 size: 26,
                               ),
                               const SizedBox(width: 12),
@@ -879,13 +917,17 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
                                           ? 'Agreement Rejected ($version)'
                                           : isAccepted
                                               ? 'Agreement Executed & Signed ($version)'
-                                              : '🔔 Contract Formulated by FPO Officer ($version)',
+                                              : (isFarmerAccepted && !hasFpoAccepted)
+                                                  ? 'Agreement Consented — Awaiting FPO Signature ($version)'
+                                                  : '🔔 Contract Formulated by FPO Officer ($version)',
                                       style: TextStyle(
                                         color: isRejected
                                             ? Colors.red.shade900
                                             : isAccepted
                                                 ? ShreeAnnaTheme.primaryGreen
-                                                : Colors.amber.shade900,
+                                                : (isFarmerAccepted && !hasFpoAccepted)
+                                                    ? const Color(0xFF92400E)
+                                                    : Colors.amber.shade900,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 13,
                                       ),
@@ -896,13 +938,17 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
                                           ? 'You rejected version $version contract. Review contract history below and contact FPO officer to re-negotiate.'
                                           : isAccepted
                                               ? 'Contract version $version has been accepted and digitally signed.'
-                                              : 'FPO Procurement Officer generated purchase agreement $version. Review details and provide consent.',
+                                              : (isFarmerAccepted && !hasFpoAccepted)
+                                                  ? 'You have consented to version $version. Awaiting final counter-signature from ShreeAnna FPO Procurement Officer.'
+                                                  : 'FPO Procurement Officer generated purchase agreement $version. Review details and provide consent.',
                                       style: TextStyle(
                                         color: isRejected
                                             ? const Color(0xFF7A1C1C)
                                             : isAccepted
                                                 ? const Color(0xFF1B4D2E)
-                                                : const Color(0xFF5D4037),
+                                                : (isFarmerAccepted && !hasFpoAccepted)
+                                                    ? const Color(0xFF78350F)
+                                                    : const Color(0xFF5D4037),
                                         fontSize: 11,
                                       ),
                                     ),
@@ -950,7 +996,7 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
                                       ),
                                     ),
                                     child: Text(
-                                      'VERSION $version - ${isRejected ? "REJECTED" : isAccepted ? "ACCEPTED" : "PENDING CONSENT"}',
+                                      'VERSION $version - ${isRejected ? "REJECTED" : isAccepted ? "ACCEPTED" : (isFarmerAccepted && !hasFpoAccepted) ? "AWAITING FPO SIGNATURE" : "PENDING CONSENT"}',
                                       style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.bold,
@@ -958,7 +1004,9 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
                                             ? Colors.red
                                             : isAccepted
                                                 ? ShreeAnnaTheme.primaryGreen
-                                                : Colors.amber.shade800,
+                                                : (isFarmerAccepted && !hasFpoAccepted)
+                                                    ? Colors.amber.shade900
+                                                    : Colors.amber.shade800,
                                       ),
                                     ),
                                   ),
@@ -1065,9 +1113,9 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
                               const Divider(),
                               _termRow('Gross Produce Value', '₹${subtotal.toStringAsFixed(2)}'),
                               const Divider(),
-                              _termRow('FPO Transport & Logistics Allowance', '+ ₹${logisticsCost.toStringAsFixed(2)}'),
+                              _termRow('FPO Transport & Logistics Deduction', logisticsCost > 0 ? '- ₹${logisticsCost.toStringAsFixed(2)}' : '₹0.00'),
                               const Divider(),
-                              _termRow('Cleaning & Bagging Incentive', '+ ₹${adjustments.toStringAsFixed(2)}'),
+                              _termRow('Other Deductions (Cleaning/Bagging)', adjustments > 0 ? '- ₹${adjustments.toStringAsFixed(2)}' : '₹0.00'),
                               const Divider(thickness: 1.5, color: ShreeAnnaTheme.primaryGreen),
                               const SizedBox(height: 4),
                               Row(
@@ -1209,12 +1257,16 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
                               ),
                               _lifecycleStep(
                                 stepNumber: '3',
-                                title: 'Farmer Digital Consent & Signature',
+                                title: 'Dual Legal Agreement Execution',
                                 subtitle: isAccepted
-                                    ? 'Accepted & digitally signed by farmer ($version).'
+                                    ? 'Fully accepted & digitally signed by both FPO & Farmer ($version).'
                                     : isRejected
                                         ? 'Agreement Rejected ($version). Re-negotiation requested.'
-                                        : 'Awaiting farmer signature & consent ($version).',
+                                        : (isFarmerAccepted && !hasFpoAccepted)
+                                            ? 'Consented by farmer. Awaiting FPO officer authorization ($version).'
+                                            : (hasFpoAccepted && !isFarmerAccepted)
+                                                ? 'Authorized by FPO. Awaiting farmer signature & consent ($version).'
+                                                : 'Awaiting agreement review & dual execution ($version).',
                                 isCompleted: isAccepted,
                                 isRejectedStep: isRejected,
                                 isCurrent: isPending,
@@ -1305,51 +1357,74 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
 
                         // Action Buttons (Only shown if pending)
                         if (isPending)
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: _isProcessing ? null : _handleRejectClick,
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.red,
-                                    side: const BorderSide(color: Colors.red),
+                          if (isFarmerAccepted)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEF3C7),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFFDE047)),
+                              ),
+                              child: Row(
+                                children: const [
+                                  Icon(Icons.hourglass_top, color: Color(0xFFB45309), size: 20),
+                                  SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      'Agreement consented by you. Awaiting ShreeAnna FPO counter-signature.',
+                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF92400E)),
+                                    ),
                                   ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
-                                    child: Text(l10n.rejectAgreement),
+                                ],
+                              ),
+                            )
+                          else
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: _isProcessing ? null : _handleRejectClick,
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.red,
+                                      side: const BorderSide(color: Colors.red),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      child: Text(l10n.rejectAgreement),
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: ElevatedButton(
-                                  onPressed: _isProcessing ? null : _acceptAgreement,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: ShreeAnnaTheme.primaryGreen,
-                                    foregroundColor: Colors.white,
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
-                                    child: _isProcessing
-                                        ? const SizedBox(
-                                            width: 18,
-                                            height: 18,
-                                            child: CircularProgressIndicator(
-                                              color: Colors.white,
-                                              strokeWidth: 2,
-                                            ),
-                                          )
-                                        : Text(l10n.acceptAgreement),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: _isProcessing ? null : _acceptAgreement,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: ShreeAnnaTheme.primaryGreen,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      child: _isProcessing
+                                          ? const SizedBox(
+                                              width: 18,
+                                              height: 18,
+                                              child: CircularProgressIndicator(
+                                                color: Colors.white,
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                          : Text(l10n.acceptAgreement),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
+                              ],
+                            ),
 
                         const SizedBox(height: 20),
                       ],
                     ),
                   ),
+                ),
       ),
     );
   }
@@ -1380,16 +1455,29 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
       final isCurrent = (i == currentNum);
       final isPastRejected = (i < currentNum);
       final itemRejected = isPastRejected || (isCurrent && isRejected);
+      final lotStatus = (_lot?.status ?? '').toUpperCase();
+      final lotRemarks = _lot?.negotiationRemarks ?? '';
+      final isFpoRejected = lotStatus.contains('FPO') || lotRemarks.contains('FPO') || lotRemarks.contains('[REJECTED_BY_FPO]');
+      final vFpoAccepted = lotRemarks.contains('[FPO_ACCEPTED]') || lotStatus.contains('DISPATCH') || lotStatus.contains('DELIVER');
+      final vFarmerAccepted = lotRemarks.contains('[FARMER_ACCEPTED]') || lotStatus == 'AGREEMENT_PENDING_FPO' || lotStatus == 'AGREEMENT_ACCEPTED' || lotStatus.contains('DISPATCH') || lotStatus.contains('DELIVER');
 
-      String statusText = 'Rejected by Farmer';
+      String statusText = isFpoRejected ? 'Rejected by FPO' : 'Rejected by Farmer';
       if (isCurrent) {
-        statusText = isRejected ? 'Rejected by Farmer' : (isAccepted ? 'Accepted & Signed' : 'Current Active Formulation');
+        statusText = isRejected
+            ? (isFpoRejected ? 'Rejected by FPO' : 'Rejected by Farmer')
+            : (isAccepted
+                ? 'Accepted & Signed'
+                : (vFarmerAccepted && !vFpoAccepted)
+                    ? 'Awaiting FPO Signature'
+                    : 'Current Active Formulation');
       }
 
       String desc = isPastRejected
-          ? 'Contract version $verStr was rejected during negotiation.'
+          ? (isFpoRejected ? 'Contract version $verStr was rejected by FPO.' : 'Contract version $verStr was rejected by farmer.')
           : (isCurrent && isRejected)
-              ? 'Farmer rejected version $verStr contract.'
+              ? (_lot?.negotiationRemarks?.isNotEmpty == true
+                  ? _lot!.negotiationRemarks!.replaceAll(RegExp(r'\[REJECTED_BY_[A-Z]+\]\s*'), '')
+                  : (isFpoRejected ? 'FPO rejected version $verStr commercial terms.' : 'Farmer rejected version $verStr contract.'))
               : 'Re-negotiated commercial terms updated with FPO transport allowance and offered rate.';
 
       if (items.isNotEmpty) {

@@ -92,18 +92,28 @@ class _MyLotsScreenState extends State<MyLotsScreen> {
     }
   }
 
-  String _formatStatusText(String status) {
+  String _formatStatusText(String status, [String? remarks]) {
+    final effectiveRemarks = remarks ?? '';
     switch (status.toUpperCase()) {
       case 'SUBMITTED':
         return 'Submitted';
       case 'QUALITY_INSPECTION':
         return 'Inspection in Progress';
       case 'QUALITY_CERTIFIED':
+      case 'QUALITY_PASSED':
+      case 'CERTIFIED':
         return 'Certified';
       case 'AGREEMENT_PENDING':
         return 'Agreement Awaiting Approval';
+      case 'AGREEMENT_PENDING_FPO':
+        return 'Awaiting FPO Signature';
+      case 'AGREEMENT_PENDING_FARMER':
+        return 'Awaiting Farmer Signature';
       case 'AGREEMENT_ACCEPTED':
-        return 'Agreement Accepted';
+      case 'PROCUREMENT_AGREEMENT':
+        return (effectiveRemarks.contains('[FPO_ACCEPTED]'))
+            ? 'Agreement Accepted'
+            : 'Awaiting FPO Signature';
       case 'AGREEMENT_REJECTED':
         return 'Agreement Rejected';
       case 'PICKUP_SCHEDULED':
@@ -298,7 +308,7 @@ class _MyLotsScreenState extends State<MyLotsScreen> {
     required BuildContext context,
     required LotModel lot,
   }) {
-    final statusText = _formatStatusText(lot.status);
+    final statusText = _formatStatusText(lot.status, lot.negotiationRemarks);
     final statusColor = _getStatusColor(lot.status);
     final statusBg = _getStatusBg(lot.status);
     final formattedQty = '${lot.estimatedQuantityKg.toStringAsFixed(0)} kg';
