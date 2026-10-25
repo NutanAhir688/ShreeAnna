@@ -90,13 +90,35 @@ export function getAgreementStatusMeta(agr) {
     };
   }
 
-  // Acceptance check
-  const hasFpo = status === "AGREEMENT_ACCEPTED" || status === "AGREEMENT_PENDING_FARMER" || remarks.includes("[FPO_ACCEPTED]") || storedFpo;
-  const hasFarmer = status === "AGREEMENT_ACCEPTED" || status === "AGREEMENT_PENDING_FPO" || remarks.includes("[FARMER_ACCEPTED]") || storedFarmer;
+  // If newly formulated and pending, neither party has accepted this current formulation yet
+  if (status === "AGREEMENT_PENDING") {
+    return {
+      isFullyAccepted: false,
+      isFpoAccepted: false,
+      isFarmerAccepted: false,
+      isRejected: false,
+      label: "Pending Signatures",
+    };
+  }
 
-  // Fully accepted only when BOTH accept
-  const isDownstream = ["PICKUP", "WAREHOUSE_RECEIVED", "PAYMENT", "COMPLETED"].includes(status);
-  const isFullyAccepted = isDownstream || (hasFpo && hasFarmer) || (status === "AGREEMENT_ACCEPTED" && !remarks.includes("[FPO_ACCEPTED]") && !remarks.includes("[FARMER_ACCEPTED]"));
+  // Farmer acceptance: on mobile, farmer accept sets status to AGREEMENT_ACCEPTED or AGREEMENT_PENDING_FPO, or remarks has [FARMER_ACCEPTED], or storedFarmer
+  const hasFarmer =
+    status === "AGREEMENT_ACCEPTED" ||
+    status === "AGREEMENT_PENDING_FPO" ||
+    remarks.includes("[FARMER_ACCEPTED]") ||
+    storedFarmer;
+
+  // FPO acceptance: FPO must explicitly accept from the web portal
+  const hasFpo =
+    storedFpo ||
+    remarks.includes("[FPO_ACCEPTED]") ||
+    status === "AGREEMENT_PENDING_FARMER";
+
+  // Downstream operations (produce pickup in progress, warehouse received, or paid) are inherently fully accepted
+  const isDownstream = ["PICKUP", "WAREHOUSE_RECEIVED", "PAYMENT", "COMPLETED", "STORED", "DELIVERED"].includes(status);
+
+  // Fully accepted ONLY when BOTH parties have accepted (or downstream)
+  const isFullyAccepted = isDownstream || (hasFpo && hasFarmer);
 
   let label = "Pending Signatures";
   if (isFullyAccepted) {
@@ -109,8 +131,8 @@ export function getAgreementStatusMeta(agr) {
 
   return {
     isFullyAccepted,
-    isFpoAccepted: hasFpo || isFullyAccepted,
-    isFarmerAccepted: hasFarmer || isFullyAccepted,
+    isFpoAccepted: isDownstream || hasFpo,
+    isFarmerAccepted: isDownstream || hasFarmer,
     isRejected: false,
     label,
   };
@@ -188,10 +210,14 @@ function Agreements() {
         "PROCUREMENT_AGREEMENT",
         "AGREEMENT_ACCEPTED",
         "AGREEMENT_PENDING",
+        "AGREEMENT_PENDING_FARMER",
+        "AGREEMENT_PENDING_FPO",
         "PICKUP",
         "WAREHOUSE_RECEIVED",
         "PAYMENT",
         "COMPLETED",
+        "STORED",
+        "DELIVERED",
       ].includes(statusUpper);
 
       const logisticsCost = l.logisticsCost || 0;
@@ -240,16 +266,13 @@ function Agreements() {
         agr.milletType.toLowerCase().includes(q);
 
       let matchStatus = true;
+      const meta = getAgreementStatusMeta(agr);
       if (statusFilter === "ACCEPTED") {
-        matchStatus =
-          agr.status.toUpperCase().includes("ACCEPTED") ||
-          agr.status.toUpperCase().includes("CERTIFIED");
+        matchStatus = meta.isFullyAccepted;
       } else if (statusFilter === "REJECTED") {
-        matchStatus = agr.status.toUpperCase().includes("REJECTED");
+        matchStatus = meta.isRejected;
       } else if (statusFilter === "PENDING") {
-        matchStatus =
-          !agr.status.toUpperCase().includes("ACCEPTED") &&
-          !agr.status.toUpperCase().includes("REJECTED");
+        matchStatus = !meta.isFullyAccepted && !meta.isRejected;
       }
 
       return matchSearch && matchStatus;
@@ -348,6 +371,10 @@ function Agreements() {
     setActionLoading(true);
     try {
       await agreementsApi.create(formulationLot.id);
+      try {
+        localStorage.removeItem(`fpo_accepted_${formulationLot.id}`);
+        localStorage.removeItem(`farmer_accepted_${formulationLot.id}`);
+      } catch (_) {}
       await loadAgreements();
       setShowFormulationModal(false);
       setFormulationLot(null);

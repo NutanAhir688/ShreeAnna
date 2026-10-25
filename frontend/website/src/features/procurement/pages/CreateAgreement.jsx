@@ -206,6 +206,10 @@ function CreateAgreement() {
         otherAdjustments: Number(otherAdjustments) || 0,
         remarks,
       });
+      try {
+        localStorage.removeItem(`fpo_accepted_${selectedLot.id}`);
+        localStorage.removeItem(`farmer_accepted_${selectedLot.id}`);
+      } catch (_) {}
       navigate("/agreements");
     } catch (err) {
       alert(err.message || "Failed to create procurement agreement.");

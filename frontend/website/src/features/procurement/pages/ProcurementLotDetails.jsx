@@ -1,4 +1,5 @@
 import {
+    AlertCircle,
     ArrowLeft,
     Calendar,
     Car,
@@ -38,6 +39,7 @@ import {
     qualityApi,
     agreementsApi,
 } from "@/services/api";
+import { getAgreementStatusMeta } from "./Agreements";
 
 
 function ProcurementLotDetails() {
@@ -301,6 +303,7 @@ function ProcurementLotDetails() {
 
                             <LotStatus
                                 status={lot.status}
+                                lot={lot}
                             />
 
                         </div>
@@ -871,20 +874,18 @@ function Detail({
 
 /* ---------------- Status Badge ---------------- */
 
-function LotStatus({ status }) {
+function LotStatus({ status, lot }) {
     const currentStatus = (
         status || ""
     ).toUpperCase();
-
 
     if (
         currentStatus === "COMPLETED" ||
         currentStatus === "PAYMENT"
     ) {
         return (
-            <Badge>
+            <Badge className="bg-emerald-600 text-white hover:bg-emerald-700">
                 <CheckCircle2 className="mr-1 h-3 w-3" />
-
                 {currentStatus === "PAYMENT"
                     ? "Payment"
                     : "Completed"}
@@ -892,6 +893,47 @@ function LotStatus({ status }) {
         );
     }
 
+    if (lot && (currentStatus.includes("AGREEMENT") || currentStatus.includes("REJECTED"))) {
+        const meta = getAgreementStatusMeta(lot);
+        if (meta.isFullyAccepted) {
+            return (
+                <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 font-medium">
+                    <CheckCircle2 className="mr-1 h-3 w-3" />
+                    Active / Accepted
+                </Badge>
+            );
+        }
+        if (meta.isRejected) {
+            return (
+                <Badge variant="destructive">
+                    <AlertCircle className="mr-1 h-3 w-3" />
+                    {meta.label}
+                </Badge>
+            );
+        }
+        if (meta.isFarmerAccepted && !meta.isFpoAccepted) {
+            return (
+                <Badge variant="outline" className="border-blue-300 bg-blue-50 text-blue-800 font-medium">
+                    <Clock3 className="mr-1 h-3 w-3" />
+                    Awaiting FPO Signature
+                </Badge>
+            );
+        }
+        if (meta.isFpoAccepted && !meta.isFarmerAccepted) {
+            return (
+                <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800 font-medium">
+                    <Clock3 className="mr-1 h-3 w-3" />
+                    Awaiting Farmer Signature
+                </Badge>
+            );
+        }
+        return (
+            <Badge variant="outline" className="border-slate-300 bg-slate-50 text-slate-700 font-medium">
+                <Clock3 className="mr-1 h-3 w-3" />
+                Pending Signatures
+            </Badge>
+        );
+    }
 
     if (
         currentStatus === "QUALITY_CERTIFICATE" ||
@@ -905,24 +947,19 @@ function LotStatus({ status }) {
         );
     }
 
-
     if (
         currentStatus === "QUALITY_INSPECTION" ||
         currentStatus === "SUBMITTED"
     ) {
         return (
             <Badge variant="outline">
-
                 <Clock3 className="mr-1 h-3 w-3" />
-
                 {currentStatus === "SUBMITTED"
                     ? "Submitted"
                     : "Quality Inspection"}
-
             </Badge>
         );
     }
-
 
     return (
         <Badge variant="outline">
@@ -1068,13 +1105,47 @@ function AgreementCard({ lot }) {
                                 <Badge variant="outline" className="font-mono text-xs">
                                     {lot.agreementVersion || "v1.0"}
                                 </Badge>
-                                <Badge variant={lot.status?.includes("REJECTED") ? "destructive" : "secondary"}>
-                                    {lot.status?.includes("REJECTED")
-                                        ? (lot.status?.includes("FPO") || lot.negotiationRemarks?.includes("FPO") || lot.negotiationRemarks?.includes("[REJECTED_BY_FPO]")
-                                            ? "REJECTED BY FPO"
-                                            : "REJECTED BY FARMER")
-                                        : lot.agreementStatus || lot.status}
-                                </Badge>
+                                {(() => {
+                                    const meta = getAgreementStatusMeta(lot);
+                                    if (meta.isFullyAccepted) {
+                                        return (
+                                            <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 font-medium">
+                                                <CheckCircle2 className="mr-1 h-3 w-3" />
+                                                Active / Accepted
+                                            </Badge>
+                                        );
+                                    }
+                                    if (meta.isRejected) {
+                                        return (
+                                            <Badge variant="destructive">
+                                                <AlertCircle className="mr-1 h-3 w-3" />
+                                                {meta.label}
+                                            </Badge>
+                                        );
+                                    }
+                                    if (meta.isFarmerAccepted && !meta.isFpoAccepted) {
+                                        return (
+                                            <Badge variant="outline" className="border-blue-300 bg-blue-50 text-blue-800 font-medium">
+                                                <Clock3 className="mr-1 h-3 w-3" />
+                                                Awaiting FPO Signature
+                                            </Badge>
+                                        );
+                                    }
+                                    if (meta.isFpoAccepted && !meta.isFarmerAccepted) {
+                                        return (
+                                            <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800 font-medium">
+                                                <Clock3 className="mr-1 h-3 w-3" />
+                                                Awaiting Farmer Signature
+                                            </Badge>
+                                        );
+                                    }
+                                    return (
+                                        <Badge variant="outline" className="border-slate-300 bg-slate-50 text-slate-700 font-medium">
+                                            <Clock3 className="mr-1 h-3 w-3" />
+                                            Pending Signatures
+                                        </Badge>
+                                    );
+                                })()}
                             </div>
                         </div>
 
@@ -1147,7 +1218,13 @@ function ProcurementWorkflow({ lot }) {
     if (currentIndex === -1) {
         if (currentStatus === "STORED" || currentStatus === "DELIVERED" || currentStatus === "RECEIVED") {
             currentIndex = STATUS_ORDER.indexOf("WAREHOUSE_RECEIPT");
-        } else if (currentStatus === "AGREEMENT_ACCEPTED") {
+        } else if (
+            currentStatus === "AGREEMENT_ACCEPTED" ||
+            currentStatus === "AGREEMENT_PENDING" ||
+            currentStatus === "AGREEMENT_PENDING_FARMER" ||
+            currentStatus === "AGREEMENT_PENDING_FPO" ||
+            currentStatus === "PROCUREMENT_AGREEMENT"
+        ) {
             currentIndex = STATUS_ORDER.indexOf("PROCUREMENT_AGREEMENT");
         } else if (currentStatus === "DISPATCHED" || currentStatus === "IN_TRANSIT" || currentStatus === "PICKUP_SCHEDULED") {
             currentIndex = STATUS_ORDER.indexOf("PICKUP");
