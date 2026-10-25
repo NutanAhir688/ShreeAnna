@@ -348,64 +348,64 @@ export default function AvailableLots() {
       </div>
 
       {/* KPI Overview Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs p-4 rounded-xl">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+        <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs p-3.5 rounded-xl">
           <div className="flex justify-between items-start">
             <p className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
               ACTIVE WAREHOUSES
             </p>
             <Building2 className="h-4 w-4 text-emerald-700" />
           </div>
-          <p className="text-3xl font-black text-slate-900 dark:text-white mt-2">
+          <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1.5">
             {warehouses.length}
           </p>
-          <p className="text-[10px] text-slate-400 mt-1 font-medium">Regional storage facilities</p>
+          <p className="text-[10px] text-slate-400 mt-0.5 font-medium">Regional storage facilities</p>
         </Card>
 
-        <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs p-4 rounded-xl">
+        <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs p-3.5 rounded-xl">
           <div className="flex justify-between items-start">
             <p className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
               TOTAL STORED STOCK
             </p>
             <Boxes className="h-4 w-4 text-emerald-700" />
           </div>
-          <p className="text-3xl font-black text-slate-900 dark:text-white mt-2">
+          <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1.5">
             {totalStockInTons.toLocaleString("en-IN")}{" "}
             <span className="text-xs font-semibold text-slate-500">kg</span>
           </p>
-          <p className="text-[10px] text-slate-400 mt-1 font-medium">Verified in warehouse inventory</p>
+          <p className="text-[10px] text-slate-400 mt-0.5 font-medium">Verified in warehouse inventory</p>
         </Card>
 
-        <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs p-4 rounded-xl">
+        <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs p-3.5 rounded-xl">
           <div className="flex justify-between items-start">
             <p className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
               MILLET VARIETIES
             </p>
             <Sparkles className="h-4 w-4 text-emerald-700" />
           </div>
-          <p className="text-3xl font-black text-slate-900 dark:text-white mt-2">
+          <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1.5">
             {uniqueMilletVarieties}
           </p>
-          <p className="text-[10px] text-slate-400 mt-1 font-medium">Certified cultivars available</p>
+          <p className="text-[10px] text-slate-400 mt-0.5 font-medium">Certified cultivars available</p>
         </Card>
 
-        <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs p-4 rounded-xl">
+        <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs p-3.5 rounded-xl">
           <div className="flex justify-between items-start">
             <p className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
               MAX SINGLE REQUEST
             </p>
             <Scale className="h-4 w-4 text-emerald-700" />
           </div>
-          <p className="text-3xl font-black text-slate-900 dark:text-white mt-2">
+          <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1.5">
             {maxSingleStockKg.toLocaleString("en-IN")}{" "}
             <span className="text-xs font-semibold text-slate-500">kg</span>
           </p>
-          <p className="text-[10px] text-slate-400 mt-1 font-medium">Largest available single stock</p>
+          <p className="text-[10px] text-slate-400 mt-0.5 font-medium">Largest available single stock</p>
         </Card>
       </div>
 
       {/* Search and Filters Bar */}
-      <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-wrap items-center gap-3 shadow-2xs">
+      <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-wrap items-center gap-3 shadow-2xs">
         <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
@@ -455,7 +455,7 @@ export default function AvailableLots() {
           No warehouses or stored millet varieties found matching your filter criteria.
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {filteredWarehouses.map((wh) => {
             // Apply millet filter inside the warehouse
             const visibleMillets = wh.storedMillets.filter(
@@ -470,14 +470,14 @@ export default function AvailableLots() {
                 className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs rounded-xl overflow-hidden hover:border-emerald-600/40 transition-all"
               >
                 {/* Warehouse Top Header Banner */}
-                <CardHeader className="bg-slate-50/70 dark:bg-slate-950/60 p-4 border-b border-slate-200/90 dark:border-slate-800">
+                <CardHeader className="bg-slate-50/70 dark:bg-slate-950/60 px-4 py-3 border-b border-slate-200/90 dark:border-slate-800">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-xs font-black bg-emerald-800 text-white px-2 py-0.5 rounded shadow-2xs">
                           {wh.warehouseCode || "WH-GUJ"}
                         </span>
-                        <CardTitle className="text-lg font-black text-slate-900 dark:text-white">
+                        <CardTitle className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
                           {wh.name}
                         </CardTitle>
                         <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[10px] font-bold">
@@ -504,7 +504,7 @@ export default function AvailableLots() {
                     </div>
 
                     {/* Warehouse Capacity Gauge Badge */}
-                    <div className="text-right shrink-0 bg-white dark:bg-slate-900 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800">
+                    <div className="text-right shrink-0 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                         WAREHOUSE CAPACITY
                       </p>
@@ -519,50 +519,58 @@ export default function AvailableLots() {
                 </CardHeader>
 
                 {/* Stored Millet Types Section */}
-                <CardContent className="p-5">
-                  <div className="mb-3 flex items-center justify-between">
+                <CardContent className="p-3.5 sm:p-4">
+                  <div className="mb-2.5 flex items-center justify-between">
                     <p className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                      <Boxes className="w-4 h-4 text-emerald-700" /> Stored Millet Inventory &amp; Available Request Limits
+                      <Boxes className="w-3.5 h-3.5 text-emerald-700" /> Stored Millet Inventory &amp; Available Request Limits
                     </p>
                     <span className="text-[11px] font-medium text-slate-400">
-                      {visibleMillets.length} {visibleMillets.length === 1 ? "millet type" : "millet types"} available
+                      {visibleMillets.length} {visibleMillets.length === 1 ? "millet variety" : "millet varieties"} available
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {visibleMillets.map((millet, index) => {
+                  {visibleMillets.length === 0 ? (
+                    <div className="py-6 text-center text-xs text-slate-400 font-medium bg-slate-50/50 dark:bg-slate-950/30 rounded-lg border border-dashed border-slate-200 dark:border-slate-800">
+                      No stored millets match the selected filter for this warehouse.
+                    </div>
+                  ) : visibleMillets.length === 1 ? (
+                    /* Adaptive Single Variety Layout: Full-Width Horizontal Banner (No Awkward Whitespace) */
+                    (() => {
+                      const millet = visibleMillets[0];
                       const totalVal = Math.round(millet.totalStockKg * millet.processorRate);
 
                       return (
-                        <div
-                          key={index}
-                          className="bg-slate-50/60 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800/80 rounded-xl p-4 flex flex-col justify-between hover:border-emerald-600/50 hover:shadow-xs transition-all"
-                        >
-                          <div className="space-y-3">
-                            {/* Variety Header */}
-                            <div className="flex items-start justify-between gap-2 border-b border-slate-200/60 dark:border-slate-800 pb-2.5">
-                              <div>
-                                <h3 className="font-black text-sm text-slate-900 dark:text-white">
+                        <div className="bg-slate-50/60 dark:bg-slate-950/40 border border-slate-200/90 dark:border-slate-800/80 rounded-xl p-3.5 hover:border-emerald-600/50 hover:shadow-xs transition-all">
+                          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                            {/* Variety & Pricing Breakdown */}
+                            <div className="space-y-1 lg:w-1/4">
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-black text-base text-slate-900 dark:text-white">
                                   {millet.milletType}
                                 </h3>
-                                <p className="text-[11px] text-slate-500 font-medium">
-                                  {millet.fpoName || "Regional FPO"}
-                                </p>
+                                <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[10px] font-extrabold shrink-0">
+                                  {millet.grade || "Grade A"} • CERTIFIED
+                                </Badge>
                               </div>
-                              <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[9px] font-extrabold">
-                                {millet.grade || "Grade A"} • CERTIFIED
-                              </Badge>
+                              <p className="text-xs text-slate-500 font-medium">
+                                FPO: <span className="font-semibold text-slate-700 dark:text-slate-300">{millet.fpoName || "Regional FPO"}</span>
+                              </p>
+                              <div className="flex items-center gap-2 text-[11px] text-slate-500 pt-0.5">
+                                <span>Base: <strong className="text-slate-700 dark:text-slate-300 font-semibold">₹{millet.baseRate.toFixed(2)}/kg</strong></span>
+                                <span>•</span>
+                                <span>FPO Margin: <strong className="text-emerald-700 dark:text-emerald-400 font-semibold">+₹{millet.fpoMargin.toFixed(2)}/kg (+8.5%)</strong></span>
+                              </div>
                             </div>
 
-                            {/* Stock & Max Requestable Information */}
-                            <div className="grid grid-cols-2 gap-2 bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200/80 dark:border-slate-800">
+                            {/* 3 Stats in a Balanced Container */}
+                            <div className="grid grid-cols-3 gap-2 flex-1 bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200/80 dark:border-slate-800">
                               <div>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                                   AVAILABLE STOCK
                                 </p>
                                 <p className="text-base font-black text-emerald-800 dark:text-emerald-400">
                                   {millet.totalStockKg.toLocaleString("en-IN")}{" "}
-                                  <span className="text-[11px] font-semibold text-slate-500">kg</span>
+                                  <span className="text-[10px] font-semibold text-slate-500">kg</span>
                                 </p>
                               </div>
                               <div>
@@ -574,55 +582,126 @@ export default function AvailableLots() {
                                   <span className="text-[10px] font-semibold text-slate-400">/ kg</span>
                                 </p>
                               </div>
+                              <div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                  MAX REQUESTABLE
+                                </p>
+                                <p className="text-base font-black text-emerald-800 dark:text-emerald-400">
+                                  {millet.maxRequestableKg.toLocaleString("en-IN")}{" "}
+                                  <span className="text-[10px] font-semibold text-slate-500">kg</span>
+                                </p>
+                              </div>
                             </div>
 
-                            {/* Max Requestable Limit Badge */}
-                            <div className="p-2 bg-emerald-50 dark:bg-emerald-950/40 rounded-lg border border-emerald-200/80 dark:border-emerald-800/60 flex items-center justify-between text-xs font-semibold text-emerald-900 dark:text-emerald-200">
-                              <span className="flex items-center gap-1.5 text-[11px]">
-                                <Scale className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-                                Max Requestable:
-                              </span>
-                              <span className="font-extrabold font-mono text-emerald-800 dark:text-emerald-300">
-                                {millet.maxRequestableKg.toLocaleString("en-IN")} kg
-                              </span>
-                            </div>
-
-                            {/* Price Breakdown */}
-                            <div className="text-[11px] text-slate-500 space-y-1 pt-1">
-                              <div className="flex justify-between">
-                                <span>Farmer Procured Base:</span>
-                                <span className="font-medium text-slate-700 dark:text-slate-300">
-                                  ₹{millet.baseRate.toFixed(2)} / kg
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>FPO Storage &amp; Handling:</span>
-                                <span className="font-medium text-emerald-700 dark:text-emerald-400">
-                                  +₹{millet.fpoMargin.toFixed(2)} / kg (+8.5%)
-                                </span>
-                              </div>
-                              <div className="flex justify-between font-bold text-slate-900 dark:text-white pt-1 border-t border-slate-200/60 dark:border-slate-800">
-                                <span>Total Inventory Value:</span>
-                                <span className="text-emerald-800 dark:text-emerald-400">
+                            {/* Value and Action Section */}
+                            <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-center gap-2 lg:w-56 shrink-0">
+                              <div className="text-left lg:text-right">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                  TOTAL INVENTORY VALUE
+                                </p>
+                                <p className="text-base font-black text-emerald-800 dark:text-emerald-400">
                                   ₹{totalVal.toLocaleString("en-IN")}
-                                </span>
+                                </p>
                               </div>
+                              <Button
+                                onClick={() => handleOpenRequest(wh, millet)}
+                                className="w-auto lg:w-full bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs h-9 cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+                              >
+                                <Send className="w-3.5 h-3.5" /> Request Stock ({millet.maxRequestableKg.toLocaleString("en-IN")} kg max)
+                              </Button>
                             </div>
-                          </div>
-
-                          {/* Request Button */}
-                          <div className="pt-4 border-t border-slate-200/60 dark:border-slate-800 mt-3">
-                            <Button
-                              onClick={() => handleOpenRequest(wh, millet)}
-                              className="w-full bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs h-9 cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
-                            >
-                              <Send className="w-3.5 h-3.5" /> Request Stock ({millet.maxRequestableKg.toLocaleString("en-IN")} kg max)
-                            </Button>
                           </div>
                         </div>
                       );
-                    })}
-                  </div>
+                    })()
+                  ) : (
+                    /* Multi-variety Grid: Balanced 2 or 3 Columns without Awkward Gaps */
+                    <div className={`grid grid-cols-1 ${visibleMillets.length === 2 ? "md:grid-cols-2" : "md:grid-cols-2 lg:grid-cols-3"} gap-3.5`}>
+                      {visibleMillets.map((millet, index) => {
+                        const totalVal = Math.round(millet.totalStockKg * millet.processorRate);
+
+                        return (
+                          <div
+                            key={index}
+                            className="bg-slate-50/60 dark:bg-slate-950/40 border border-slate-200/90 dark:border-slate-800/80 rounded-xl p-3 flex flex-col justify-between hover:border-emerald-600/50 hover:shadow-xs transition-all"
+                          >
+                            <div className="space-y-2">
+                              {/* Variety Header */}
+                              <div className="flex items-start justify-between gap-2 border-b border-slate-200/60 dark:border-slate-800 pb-2">
+                                <div>
+                                  <h3 className="font-black text-sm text-slate-900 dark:text-white">
+                                    {millet.milletType}
+                                  </h3>
+                                  <p className="text-[11px] text-slate-500 font-medium">
+                                    {millet.fpoName || "Regional FPO"}
+                                  </p>
+                                </div>
+                                <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[9px] font-extrabold shrink-0">
+                                  {millet.grade || "Grade A"} • CERTIFIED
+                                </Badge>
+                              </div>
+
+                              {/* 3-stat Grid: Stock, Rate, Max Requestable */}
+                              <div className="grid grid-cols-3 gap-1.5 bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200/80 dark:border-slate-800 text-center">
+                                <div>
+                                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                                    STOCK
+                                  </p>
+                                  <p className="text-xs sm:text-sm font-black text-emerald-800 dark:text-emerald-400">
+                                    {millet.totalStockKg.toLocaleString("en-IN")}{" "}
+                                    <span className="text-[9px] font-semibold text-slate-500">kg</span>
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                                    RATE
+                                  </p>
+                                  <p className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                                    ₹{millet.processorRate.toFixed(2)}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                                    MAX REQ
+                                  </p>
+                                  <p className="text-xs sm:text-sm font-black text-emerald-800 dark:text-emerald-400">
+                                    {millet.maxRequestableKg.toLocaleString("en-IN")}{" "}
+                                    <span className="text-[9px] font-semibold text-slate-500">kg</span>
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Price Breakdown */}
+                              <div className="text-[11px] text-slate-500 space-y-0.5 pt-0.5">
+                                <div className="flex justify-between">
+                                  <span>Base + FPO Margin:</span>
+                                  <span className="font-medium text-slate-700 dark:text-slate-300">
+                                    ₹{millet.baseRate.toFixed(2)} + ₹{millet.fpoMargin.toFixed(2)}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between font-bold text-slate-900 dark:text-white pt-0.5 border-t border-slate-200/60 dark:border-slate-800">
+                                  <span>Total Value:</span>
+                                  <span className="text-emerald-800 dark:text-emerald-400">
+                                    ₹{totalVal.toLocaleString("en-IN")}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Request Button */}
+                            <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800 mt-2">
+                              <Button
+                                onClick={() => handleOpenRequest(wh, millet)}
+                                className="w-full bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs h-8 cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+                              >
+                                <Send className="w-3.5 h-3.5" /> Request Stock ({millet.maxRequestableKg.toLocaleString("en-IN")} kg max)
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );
