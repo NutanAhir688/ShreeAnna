@@ -11,6 +11,7 @@ import {
   Search,
   Thermometer,
   Trash2,
+  Truck,
   User,
   Warehouse as WarehouseIcon,
 } from "lucide-react";
@@ -261,9 +262,11 @@ function WarehouseDetails() {
 
     return processedLots.filter(
       (lot) =>
-        lot.lotNumber.toLowerCase().includes(query) ||
-        lot.farmerName.toLowerCase().includes(query) ||
-        lot.millet.toLowerCase().includes(query)
+        (lot.lotNumber && lot.lotNumber.toLowerCase().includes(query)) ||
+        (lot.dispatchCode && lot.dispatchCode.toLowerCase().includes(query)) ||
+        (lot.sourceFpo && lot.sourceFpo.toLowerCase().includes(query)) ||
+        (lot.farmerName && lot.farmerName.toLowerCase().includes(query)) ||
+        (lot.millet && lot.millet.toLowerCase().includes(query))
     );
   }, [processedLots, search]);
 
@@ -279,7 +282,7 @@ function WarehouseDetails() {
       <div className="flex h-64 items-center justify-center gap-3">
         <Loader2 className="h-7 w-7 animate-spin text-emerald-800" />
         <span className="text-sm font-semibold text-slate-600">
-          Loading warehouse details & allocated lots...
+          Loading warehouse details & inventory...
         </span>
       </div>
     );
@@ -328,7 +331,7 @@ function WarehouseDetails() {
       {/* Navigation Top Bar */}
       <button
         onClick={() => navigate("/warehouses")}
-        className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors"
+        className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
       >
         <ArrowLeft size={16} />
         Back to Warehouses
@@ -354,21 +357,33 @@ function WarehouseDetails() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowAllocateModal(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-800 hover:bg-emerald-900 px-4 py-2 text-xs font-bold text-white transition shadow-xs"
-          >
-            <Plus size={16} />
-            Allocate Lot to Warehouse
-          </button>
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2 text-xs font-bold text-red-700 hover:bg-red-100 transition shadow-xs"
-          >
-            <Trash2 size={15} />
-            {deleting ? "Deleting..." : "Delete Warehouse"}
-          </button>
+          {isProcessor ? (
+            <button
+              onClick={() => navigate("/available-lots")}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-800 hover:bg-emerald-900 px-4 py-2 text-xs font-bold text-white transition shadow-xs cursor-pointer"
+            >
+              <Plus size={16} />
+              Procure from FPO
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowAllocateModal(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-800 hover:bg-emerald-900 px-4 py-2 text-xs font-bold text-white transition shadow-xs cursor-pointer"
+            >
+              <Plus size={16} />
+              Allocate Lot to Warehouse
+            </button>
+          )}
+          {!isProcessor && (
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2 text-xs font-bold text-red-700 hover:bg-red-100 transition shadow-xs cursor-pointer"
+            >
+              <Trash2 size={15} />
+              {deleting ? "Deleting..." : "Delete Warehouse"}
+            </button>
+          )}
         </div>
       </div>
 
@@ -386,7 +401,9 @@ function WarehouseDetails() {
               </h2>
 
               <p className="text-xs text-slate-500 font-medium">
-                Live warehouse capacity allocated to certified procurement lots
+                {isProcessor
+                  ? "Live storage capacity occupied by raw millets procured directly from FPO"
+                  : "Live warehouse capacity allocated to certified procurement lots"}
               </p>
             </div>
           </div>
@@ -445,8 +462,8 @@ function WarehouseDetails() {
 
             <InfoItem
               icon={Boxes}
-              label="Allocated Stock Lots"
-              value={`${stockLotsCount} Certified Lots`}
+              label={isProcessor ? "Inward Millet Batches" : "Allocated Stock Lots"}
+              value={isProcessor ? `${stockLotsCount} Inward Batches` : `${stockLotsCount} Certified Lots`}
             />
 
             <InfoItem
@@ -515,16 +532,18 @@ function WarehouseDetails() {
         </div>
       </div>
 
-      {/* ALLOCATED PROCUREMENT LOTS TABLE */}
+      {/* ALLOCATED / INWARD STOCK TABLE */}
       <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden space-y-4 p-5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-100">
           <div>
             <h2 className="font-bold text-slate-900 text-base flex items-center gap-2">
               <Boxes className="h-5 w-5 text-emerald-800" />
-              Allocated Procurement Lots in Warehouse
+              {isProcessor ? "Inward Raw Millet Inventory from FPO" : "Allocated Procurement Lots in Warehouse"}
             </h2>
             <p className="text-xs text-slate-500 font-medium mt-0.5">
-              Certified procurement lots assigned and stored in this warehouse facility.
+              {isProcessor
+                ? "Verified raw millet stock procured directly from regional FPO warehouses and received at this processing facility."
+                : "Certified procurement lots assigned and stored in this warehouse facility."}
             </p>
           </div>
 
@@ -535,7 +554,7 @@ function WarehouseDetails() {
             />
             <input
               type="text"
-              placeholder="Search lot or farmer..."
+              placeholder={isProcessor ? "Search shipment or millet variety..." : "Search lot or farmer..."}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-9 pr-3 text-xs text-slate-900 outline-none focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-100 transition"
@@ -547,10 +566,10 @@ function WarehouseDetails() {
           <table className="w-full text-left text-xs border-collapse">
             <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 uppercase tracking-wider text-[11px]">
               <tr>
-                <th className="p-3">Lot ID</th>
-                <th className="p-3">Farmer / Farm</th>
+                <th className="p-3">{isProcessor ? "Shipment Ref" : "Lot ID"}</th>
+                <th className="p-3">{isProcessor ? "Source FPO Storage" : "Farmer / Farm"}</th>
                 <th className="p-3">Millet Commodity</th>
-                <th className="p-3">Allocated Qty</th>
+                <th className="p-3">{isProcessor ? "Received Qty" : "Allocated Qty"}</th>
                 <th className="p-3">Status</th>
                 <th className="p-3 text-right">Action</th>
               </tr>
@@ -562,7 +581,9 @@ function WarehouseDetails() {
                     colSpan={6}
                     className="p-8 text-center text-slate-500 font-medium"
                   >
-                    No procurement lots currently allocated to this warehouse.
+                    {isProcessor
+                      ? "No inward raw millet shipments currently received at this facility."
+                      : "No procurement lots currently allocated to this warehouse."}
                   </td>
                 </tr>
               ) : (
@@ -571,21 +592,43 @@ function WarehouseDetails() {
                     key={lot.id}
                     className="hover:bg-slate-50/80 transition-colors"
                   >
-                    <td className="p-3 font-semibold text-slate-900">
-                      <div>{lot.lotNumber}</div>
-                      <div className="text-[10px] font-mono text-slate-400 truncate max-w-[120px]">
-                        {lot.id}
-                      </div>
-                    </td>
+                    {isProcessor ? (
+                      <td className="p-3 font-semibold text-slate-900">
+                        <div className="font-mono text-xs font-bold text-emerald-800 dark:text-emerald-400">
+                          {lot.dispatchCode || `DSP-${String(lot.id).slice(0, 8).toUpperCase()}`}
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-medium">
+                          Direct FPO Purchase
+                        </div>
+                      </td>
+                    ) : (
+                      <td className="p-3 font-semibold text-slate-900">
+                        <div>{lot.lotNumber}</div>
+                        <div className="text-[10px] font-mono text-slate-400 truncate max-w-[120px]">
+                          {lot.id}
+                        </div>
+                      </td>
+                    )}
 
-                    <td className="p-3">
-                      <div className="font-bold text-slate-900">
-                        {lot.farmerName}
-                      </div>
-                      <div className="text-[11px] text-slate-500">
-                        {lot.farmName}
-                      </div>
-                    </td>
+                    {isProcessor ? (
+                      <td className="p-3">
+                        <div className="font-bold text-slate-900 dark:text-white">
+                          {lot.sourceFpo || "Gujarat FPO Central Storage, Anand"}
+                        </div>
+                        <div className="text-[11px] text-slate-500">
+                          Regional FPO Warehouse Dispatch
+                        </div>
+                      </td>
+                    ) : (
+                      <td className="p-3">
+                        <div className="font-bold text-slate-900">
+                          {lot.farmerName}
+                        </div>
+                        <div className="text-[11px] text-slate-500">
+                          {lot.farmName}
+                        </div>
+                      </td>
+                    )}
 
                     <td className="p-3">
                       <div className="font-medium text-slate-800">
@@ -612,13 +655,23 @@ function WarehouseDetails() {
                     </td>
 
                     <td className="p-3 text-right">
-                      <button
-                        onClick={() => navigate(`/procurement-lots/${lot.id}`)}
-                        className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 hover:bg-slate-100 transition shadow-2xs"
-                      >
-                        <FileText size={13} />
-                        View Lot
-                      </button>
+                      {isProcessor ? (
+                        <button
+                          onClick={() => navigate(lot.dispatchId ? `/dispatches/${lot.dispatchId}` : "/dispatches")}
+                          className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 hover:bg-slate-100 transition shadow-2xs cursor-pointer"
+                        >
+                          <Truck size={13} className="text-emerald-700" />
+                          View Shipment
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => navigate(`/procurement-lots/${lot.id}`)}
+                          className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 hover:bg-slate-100 transition shadow-2xs"
+                        >
+                          <FileText size={13} />
+                          View Lot
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))
