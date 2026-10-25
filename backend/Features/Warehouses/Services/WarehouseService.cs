@@ -110,6 +110,14 @@ public class WarehouseService : IWarehouseService
 
         if (dispatch == null && lot == null) return null;
 
+        var wrStatus = (dispatch?.WarehouseReceiptStatus ?? "").ToUpperInvariant();
+        var lotStatus = (lot?.Status ?? "").ToUpperInvariant();
+        bool isReceiptGenerated = wrStatus == "CONFIRMED" || wrStatus == "DRAFT" || 
+                                  lotStatus == "STORED" || lotStatus == "SETTLED" || 
+                                  lotStatus == "PAID" || lotStatus == "COMPLETED";
+
+        if (!isReceiptGenerated) return null;
+
         var expectedQty = dispatch?.TotalQuantityKg > 0 ? dispatch.TotalQuantityKg : (lot?.AgreedQuantityKg ?? lot?.EstimatedQuantityKg ?? 580);
         var actualQty = dispatch?.FinalReceivedQuantityKg > 0 ? dispatch.FinalReceivedQuantityKg.Value : (lot?.ActualQuantityKg ?? expectedQty);
         var variance = actualQty - expectedQty;

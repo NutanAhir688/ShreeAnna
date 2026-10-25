@@ -48,6 +48,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
   LotModel? _lot;
   String? _currentStatus;
   Map<String, dynamic>? _dispatchDetails;
+  Map<String, dynamic>? _settlement;
   String? _accessToken;
 
   bool _hasInspectionAssignment() {
@@ -93,7 +94,10 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
   void initState() {
     super.initState();
     _currentStatus = widget.status;
-    if (widget.lotId != null && widget.lotId!.isNotEmpty) {
+    final lotKey = (widget.lotId != null && widget.lotId!.isNotEmpty)
+        ? widget.lotId!
+        : widget.lotNumber;
+    if (lotKey.isNotEmpty) {
       _loadTimeline();
     }
   }
@@ -103,31 +107,52 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
       _isLoadingTimeline = true;
     });
 
+    final lotKey = (widget.lotId != null && widget.lotId!.isNotEmpty)
+        ? widget.lotId!
+        : widget.lotNumber;
+
     try {
       _accessToken = await TokenStorage().getAccessToken();
-      final timeline = await _lotApi.getLotTimeline(widget.lotId!);
-      LotModel? lotDetails;
-      Map<String, dynamic>? dispatchDetails;
-
+      LotTimelineModel? timeline;
       try {
-        lotDetails = await _lotApi.getLotById(widget.lotId!);
+        timeline = await _lotApi.getLotTimeline(lotKey);
       } catch (_) {}
 
+      LotModel? lotDetails;
       try {
-        dispatchDetails = await _lotApi.getDispatchByLotId(widget.lotId!);
+        lotDetails = await _lotApi.getLotById(lotKey);
+      } catch (_) {
+        if (widget.lotId != null && widget.lotId!.isNotEmpty && widget.lotId != lotKey) {
+          try {
+            lotDetails = await _lotApi.getLotById(widget.lotId!);
+          } catch (_) {}
+        }
+      }
+
+      Map<String, dynamic>? dispatchDetails;
+      try {
+        dispatchDetails = await _lotApi.getDispatchByLotId(lotKey);
         debugPrint('Dispatch details: $dispatchDetails');
-        debugPrint(
-          'Receipt status: ${dispatchDetails?['warehouseReceiptStatus']}',
-        );
       } catch (e) {
         debugPrint('Failed to load dispatch receipt status: $e');
-        debugPrint('Lot ID: ${widget.lotId}');
+      }
+
+      Map<String, dynamic>? settlementDetails;
+      try {
+        final targetLotNum = (lotDetails?.lotNumber ?? widget.lotNumber).trim();
+        final targetLotId = (lotDetails?.id ?? widget.lotId ?? '').trim();
+        settlementDetails = await _lotApi.getSettlementByLot(
+          targetLotNum.isNotEmpty ? targetLotNum : targetLotId,
+        );
+      } catch (e) {
+        debugPrint('Failed to load settlement details: $e');
       }
 
       setState(() {
         _timeline = timeline;
         _lot = lotDetails;
         _dispatchDetails = dispatchDetails;
+        _settlement = settlementDetails;
 
         if (lotDetails != null) {
           _currentStatus = _formatStatusText(lotDetails.status, lotDetails.negotiationRemarks);
@@ -139,7 +164,6 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
         _isLoadingTimeline = false;
       });
       debugPrint('Error loading lot timeline: $e');
-      debugPrint('Lot ID: ${widget.lotId}');
     }
   }
 
@@ -867,27 +891,27 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                           isCompleted: isStored || isPaymentCompleted,
                           isCurrent: !(isStored || isPaymentCompleted) && isDelivered,
                           isLast: false,
-                          onTap: (isStored || isDelivered || isPaymentCompleted)
+                          onTap: (isStored || isPaymentCompleted)
                               ? () {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (_) => WarehouseReceiptScreen(
-                                        lotId: widget.lotId ?? widget.lotNumber,
-                                        lotNumber: widget.lotNumber,
+                                        lotId: _lot?.id ?? widget.lotId ?? widget.lotNumber,
+                                        lotNumber: _lot?.lotNumber ?? widget.lotNumber,
                                         milletName:
                                             _lot?.milletType ??
                                             widget.milletName,
-                                        farmerName:
-                                            _lot?.farmerName ?? 'Ramesh Patel',
+                                        farmerName: _lot?.farmerName,
                                         actualQty: _lot?.actualQuantityKg,
                                         unitPrice: _lot?.offeredPricePerKg,
+                                        warehouseName: _dispatchDetails?['warehouseName']?.toString() ?? widget.farmName,
                                       ),
                                     ),
                                   );
                                 }
                               : null,
-                          actionLabel: (isStored || isDelivered || isPaymentCompleted)
+                          actionLabel: (isStored || isPaymentCompleted)
                               ? l10n.viewReceipt
                               : null,
                           extraContent: (isStored && !isPaymentCompleted)
@@ -1277,18 +1301,19 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
             ? 'Delivery confirmed. Awaiting warehouse verification.'
             : l10n.warehouseReceiptSubtitle;
 
-        actionLabel = (isStored || isCompleted || isPaymentCompleted) ? l10n.viewReceipt : null;
-        onTap = (isStored || isCompleted || isPaymentCompleted)
+        actionLabel = (isStored || isPaymentCompleted) ? l10n.viewReceipt : null;
+        onTap = (isStored || isPaymentCompleted)
             ? () => Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => WarehouseReceiptScreen(
-                    lotId: widget.lotId ?? widget.lotNumber,
-                    lotNumber: widget.lotNumber,
+                    lotId: _lot?.id ?? widget.lotId ?? widget.lotNumber,
+                    lotNumber: _lot?.lotNumber ?? widget.lotNumber,
                     milletName: _lot?.milletType ?? widget.milletName,
-                    farmerName: _lot?.farmerName ?? 'Ramesh Patel',
+                    farmerName: _lot?.farmerName,
                     actualQty: _lot?.actualQuantityKg,
                     unitPrice: _lot?.offeredPricePerKg,
+                    warehouseName: _dispatchDetails?['warehouseName']?.toString() ?? widget.farmName,
                   ),
                 ),
               )
@@ -1345,7 +1370,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
     } else if (step.step == 'WAREHOUSE_RECEIPT' ||
         step.step == 'WAREHOUSE_RECEIVED' ||
         step.step == 'STORED') {
-      if (isCurrent && !isPaymentCompleted) {
+      if (isStored && !isPaymentCompleted) {
         extraContent = _buildCompactWarehouseReceiptCard(context);
       }
     } else if (step.step == 'PAYMENT') {
@@ -2073,6 +2098,40 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
   }
 
   Widget _buildCompactWarehouseReceiptCard(BuildContext context) {
+    final statusUpper =
+        (_lot?.status ?? _currentStatus ?? widget.status).toUpperCase();
+    final receiptStatus =
+        (_lot?.warehouseReceiptStatus ??
+                _dispatchDetails?['warehouseReceiptStatus'] ??
+                _dispatchDetails?['warehouse_receipt_status'] ??
+                widget.warehouseReceiptStatus ??
+                '')
+            .toString()
+            .trim()
+            .toUpperCase();
+    final isPaymentCompleted = {
+      'PAYMENT_COMPLETED',
+      'PAYMENT_PAID',
+      'PAID',
+      'SETTLED',
+      'COMPLETED',
+    }.contains(statusUpper);
+    final isStored = {
+      'CONFIRMED',
+      'RECEIVED',
+      'STORED',
+      'COMPLETED',
+    }.contains(receiptStatus) ||
+    statusUpper == 'STORED' ||
+    statusUpper == 'SETTLED' ||
+    statusUpper == 'PAID' ||
+    statusUpper == 'PAYMENT_COMPLETED' ||
+    isPaymentCompleted;
+
+    if (!isStored) {
+      return const SizedBox.shrink();
+    }
+
     final actualQty =
         _lot?.actualQuantityKg ??
         _lot?.agreedQuantityKg ??
@@ -2153,12 +2212,13 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                   context,
                   MaterialPageRoute(
                     builder: (_) => WarehouseReceiptScreen(
-                      lotId: widget.lotId ?? widget.lotNumber,
-                      lotNumber: widget.lotNumber,
+                      lotId: _lot?.id ?? widget.lotId ?? widget.lotNumber,
+                      lotNumber: _lot?.lotNumber ?? widget.lotNumber,
                       milletName: _lot?.milletType ?? widget.milletName,
                       farmerName: _lot?.farmerName,
                       actualQty: _lot?.actualQuantityKg,
                       unitPrice: _lot?.offeredPricePerKg,
+                      warehouseName: _dispatchDetails?['warehouseName']?.toString() ?? widget.farmName,
                     ),
                   ),
                 );
@@ -2724,19 +2784,37 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
     final lotNum = (_lot != null && _lot!.lotNumber.isNotEmpty)
         ? _lot!.lotNumber
         : widget.lotNumber;
-    final qty = _lot?.actualQuantityKg ??
+
+    final settlementAmount = (_settlement?['finalAmount'] as num?)?.toDouble() ??
+        (_settlement?['procurementAmount'] as num?)?.toDouble() ??
+        (_settlement?['grossAmount'] as num?)?.toDouble();
+
+    final qty = (_settlement?['quantity'] as num?)?.toDouble() ??
+        _lot?.actualQuantityKg ??
         _lot?.agreedQuantityKg ??
         _lot?.estimatedQuantityKg ??
+        double.tryParse(widget.quantity.replaceAll(RegExp(r'[^0-9.]'), '')) ??
         0.0;
-    final price = _lot?.offeredPricePerKg ?? 0.0;
-    final gross = qty * price;
-    final fee = gross * 0.05;
-    final transport = _lot?.logisticsCost ??
-        ((_lot?.status.toUpperCase() == 'SETTLED' || widget.status.toUpperCase() == 'SETTLED')
-            ? 1000.0
-            : 0.0);
-    final adjustments = _lot?.otherAdjustments ?? 0.0;
-    final payout = gross > 0 ? (gross - fee - transport - adjustments) : 0.0;
+
+    final price = (_settlement?['pricePerKg'] as num?)?.toDouble() ??
+        _lot?.offeredPricePerKg ??
+        (_dispatchDetails?['unitPrice'] as num?)?.toDouble() ??
+        0.0;
+
+    final gross = settlementAmount ?? (qty * price);
+    final fee = (_settlement?['fpoMargin'] as num?)?.toDouble() ?? (gross * 0.05);
+    final transport = (_settlement?['transportCost'] as num?)?.toDouble() ??
+        _lot?.logisticsCost ??
+        0.0;
+    final adjustments = (_settlement?['otherCharges'] as num?)?.toDouble() ??
+        _lot?.otherAdjustments ??
+        0.0;
+
+    final payout = settlementAmount ??
+        (gross > 0 ? (gross - fee - transport - adjustments) : 0.0);
+
+    final paymentMethod = _settlement?['paymentMethod']?.toString() ??
+        'Direct Bank Transfer (DBT)';
 
     return Container(
       width: double.infinity,
@@ -2772,9 +2850,9 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                   color: const Color(0xFF2E7D32),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text(
-                  'PAID',
-                  style: TextStyle(
+                child: Text(
+                  (_settlement?['status']?.toString().toUpperCase()) ?? 'PAID',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
@@ -2792,9 +2870,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                 style: TextStyle(fontSize: 11, color: Color(0xFF555555)),
               ),
               Text(
-                payout > 0
-                    ? '₹${payout.toStringAsFixed(0)}'
-                    : '₹11,750',
+                '₹${payout.toStringAsFixed(0)}',
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
@@ -2811,9 +2887,9 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                 'Lot #$lotNum',
                 style: const TextStyle(fontSize: 11, color: Color(0xFF666666)),
               ),
-              const Text(
-                'Razorpay MockGateway / Bank DBT',
-                style: TextStyle(fontSize: 11, color: Color(0xFF666666)),
+              Text(
+                paymentMethod,
+                style: const TextStyle(fontSize: 11, color: Color(0xFF666666)),
               ),
             ],
           ),

@@ -238,9 +238,14 @@ public class LotService : ILotService
             if (dispatch != null)
             {
                 var dStatus = (dispatch.Status ?? "").ToUpperInvariant();
-                if (dStatus.Contains("DELIVER") || dStatus.Contains("COMPLETED") || dStatus.Contains("RECEIVED") || dStatus.Contains("STORE"))
+                var wrStatus = (dispatch.WarehouseReceiptStatus ?? "").ToUpperInvariant();
+                if (wrStatus == "CONFIRMED" || wrStatus == "GENERATED" || dStatus.Contains("STORE") || dStatus == "COMPLETED")
                 {
                     rawStatus = "STORED";
+                }
+                else if (dStatus.Contains("DELIVER") || dStatus.Contains("AWAITING_WAREHOUSE_RECEIPT"))
+                {
+                    rawStatus = "DELIVERED";
                 }
                 else if (dStatus.Contains("DISPATCH") || dStatus.Contains("TRANSIT") || dStatus.Contains("IN_TRANSIT") || !string.IsNullOrWhiteSpace(dispatch.DriverName))
                 {

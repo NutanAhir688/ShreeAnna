@@ -45,17 +45,33 @@ class _WarehouseReceiptScreenState extends State<WarehouseReceiptScreen> {
   }
 
   Future<void> _loadReceipt() async {
-    if (widget.lotId == null || widget.lotId!.isEmpty) {
+    final queryId = (widget.lotId != null && widget.lotId!.isNotEmpty)
+        ? widget.lotId!
+        : (widget.lotNumber != null && widget.lotNumber!.isNotEmpty)
+            ? widget.lotNumber!
+            : '';
+
+    if (queryId.isEmpty) {
       setState(() => _isLoading = false);
       return;
     }
 
     try {
-      final receipt = await _lotApi.getWarehouseReceipt(widget.lotId!);
+      var receipt = await _lotApi.getWarehouseReceipt(queryId);
+      if (receipt == null && widget.lotNumber != null && widget.lotNumber!.isNotEmpty && widget.lotNumber != queryId) {
+        receipt = await _lotApi.getWarehouseReceipt(widget.lotNumber!);
+      }
+
       LotModel? lot;
       try {
-        lot = await _lotApi.getLotById(widget.lotId!);
-      } catch (_) {}
+        lot = await _lotApi.getLotById(queryId);
+      } catch (_) {
+        if (widget.lotId != null && widget.lotId!.isNotEmpty && widget.lotId != queryId) {
+          try {
+            lot = await _lotApi.getLotById(widget.lotId!);
+          } catch (_) {}
+        }
+      }
 
       setState(() {
         _receiptData = receipt;
@@ -76,6 +92,7 @@ class _WarehouseReceiptScreenState extends State<WarehouseReceiptScreen> {
     required double actQty,
     required double rate,
     required double totalPayable,
+    String? dateReceived,
   }) async {
     try {
       if (!mounted) return;
@@ -97,7 +114,7 @@ class _WarehouseReceiptScreenState extends State<WarehouseReceiptScreen> {
         actQty: actQty,
         unitPrice: rate,
         totalPayable: totalPayable,
-        dateReceived: DateTime.now().toString().split(' ').first,
+        dateReceived: dateReceived ?? DateTime.now().toString().split(' ').first,
       );
 
       final cleanReceiptId = receiptId.replaceAll('/', '_').replaceAll('\\', '_');
@@ -147,11 +164,20 @@ class _WarehouseReceiptScreenState extends State<WarehouseReceiptScreen> {
     final millet = _receiptData?['milletType']?.toString() ?? _lotDetails?.milletType ?? widget.milletName ?? 'Finger Millet';
     final farmer = _receiptData?['farmerName']?.toString() ?? _lotDetails?.farmerName ?? widget.farmerName ?? 'Ramesh Patel';
     final warehouse = _receiptData?['warehouseName']?.toString() ?? widget.warehouseName ?? 'Dahod Central Warehouse';
+    final receivedDate = _receiptData?['receivedAt'] != null
+        ? _receiptData!['receivedAt'].toString().split('T').first
+        : DateTime.now().toString().split(' ').first;
 
     final expQty = (_receiptData?['expectedQuantityKg'] as num?)?.toDouble() ?? _lotDetails?.estimatedQuantityKg ?? widget.actualQty ?? 580.0;
     final actQty = (_receiptData?['actualReceivedQuantityKg'] as num?)?.toDouble() ?? _lotDetails?.actualQuantityKg ?? widget.actualQty ?? expQty;
     final rate = (_receiptData?['unitPrice'] as num?)?.toDouble() ?? _lotDetails?.offeredPricePerKg ?? widget.unitPrice ?? 35.0;
     final totalPayable = (_receiptData?['totalPayableAmount'] as num?)?.toDouble() ?? (actQty * rate);
+
+    final isConfirmed = _receiptData != null ||
+        _lotDetails?.status == 'STORED' ||
+        _lotDetails?.status == 'SETTLED' ||
+        _lotDetails?.status == 'PAID' ||
+        _lotDetails?.warehouseReceiptStatus == 'CONFIRMED';
 
     return Scaffold(
       backgroundColor: ShreeAnnaTheme.background,
@@ -159,6 +185,83 @@ class _WarehouseReceiptScreenState extends State<WarehouseReceiptScreen> {
         child: _isLoading
             ? const Center(
                 child: CircularProgressIndicator(color: ShreeAnnaTheme.primaryGreen),
+              )
+            : !isConfirmed
+            ? SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    InkWell(
+                      onTap: () => Navigator.pop(context),
+                      child: const Row(
+                        children: [
+                          Icon(
+                            Icons.arrow_back,
+                            size: 18,
+                            color: ShreeAnnaTheme.primaryGreen,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Back to Lot Details',
+                            style: TextStyle(
+                              color: ShreeAnnaTheme.primaryGreen,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 48),
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFE0E8DA)),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFFF8E1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.hourglass_top,
+                                size: 40,
+                                color: Color(0xFFF57C00),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Receipt Not Generated Yet',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'The produce has arrived at the warehouse, but the warehouse officer has not completed intake weighing and generated the official receipt yet.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: textSecondary,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               )
             : SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -254,7 +357,7 @@ class _WarehouseReceiptScreenState extends State<WarehouseReceiptScreen> {
                           _detailRow('Millet Type', millet),
                           _detailRow('Farmer', farmer),
                           _detailRow('Warehouse', warehouse),
-                          _detailRow('Date Received', '2026-10-04'),
+                          _detailRow('Date Received', receivedDate),
                         ],
                       ),
                     ),
@@ -352,6 +455,7 @@ class _WarehouseReceiptScreenState extends State<WarehouseReceiptScreen> {
                           actQty: actQty,
                           rate: rate,
                           totalPayable: totalPayable,
+                          dateReceived: receivedDate,
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: ShreeAnnaTheme.primaryGreen,

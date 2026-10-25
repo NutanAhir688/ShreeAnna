@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Package,
@@ -86,130 +86,134 @@ export default function WarehouseReceiving() {
   const [errorMsg, setErrorMsg] = useState("");
 
   // Load Queue data or Single Shipment details from API
-  useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      try {
-        const [dispatchesData, lotsData, whData] = await Promise.all([
-          logisticsApi.getAll().catch(() => []),
-          lotsApi.getAll().catch(() => []),
-          warehousesApi.getAll().catch(() => []),
-        ]);
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [dispatchesData, lotsData, whData] = await Promise.all([
+        logisticsApi.getAll().catch(() => []),
+        lotsApi.getAll().catch(() => []),
+        warehousesApi.getAll().catch(() => []),
+      ]);
 
-        const dispatchesList = Array.isArray(dispatchesData) ? dispatchesData : [];
-        const lotsList = Array.isArray(lotsData) ? lotsData : [];
-        const whList = Array.isArray(whData) ? whData : [];
+      const dispatchesList = Array.isArray(dispatchesData) ? dispatchesData : [];
+      const lotsList = Array.isArray(lotsData) ? lotsData : [];
+      const whList = Array.isArray(whData) ? whData : [];
 
-        setWarehouses(whList);
+      setWarehouses(whList);
 
-        // Build receiving queue strictly from live API database records
-        const queueMapped = dispatchesList.map((d, index) => {
-          const matchingLot = lotsList.find(
+      // Build receiving queue strictly from live API database records
+      const queueMapped = dispatchesList.map((d, index) => {
+        const matchingLot = lotsList.find(
+          (l) =>
+            l.lotNumber === d.lotId ||
+            l.id?.toString() === d.lotId?.toString() ||
+            (d.lotId && l.lotNumber && d.lotId.includes(l.lotNumber)) ||
+            (d.agreementId && l.lotNumber && d.agreementId.includes(l.lotNumber))
+        );
+
+        const displayLotCode =
+          matchingLot?.lotNumber ||
+          d.lotNumber ||
+          (d.lotId && d.lotId.length === 36 ? `LOT-${d.lotId.slice(0, 6).toUpperCase()}` : d.lotId) ||
+          "-";
+
+        const expectedKg = d.totalQuantityKg || d.expectedQuantityKg || 0;
+        const isPassed = !(d.status || "").toUpperCase().includes("FAIL") && !(matchingLot?.qualityStatus || "").toUpperCase().includes("FAIL");
+        const receiptCode = `WR-2026-${(index + 1).toString().padStart(3, "0")}`;
+        const lotPrice = Number(matchingLot?.offeredPricePerKg || matchingLot?.pricePerKg || d.unitPrice || d.offeredPricePerKg || 35);
+
+        const isConfirmed = (d.warehouseReceiptStatus || "").toUpperCase() === "CONFIRMED" || (matchingLot?.status || "").toUpperCase() === "STORED";
+
+        return {
+          id: d.id,
+          receiptCode,
+          dispatchCode: d.dispatchCode || d.id,
+          lotId: displayLotCode,
+          farmerName: d.farmerOrProcessorName || matchingLot?.farmerName || "-",
+          milletType: d.milletType || matchingLot?.milletType || matchingLot?.farmCrop || "-",
+          certifiedQty: expectedKg,
+          actualReceivedQty: d.finalReceivedQuantityKg || expectedKg,
+          grade: (matchingLot?.grade && matchingLot?.grade !== "-") ? matchingLot.grade : (d.grade && d.grade !== "-") ? d.grade : "Grade A",
+          qualityStatus: isPassed ? "PASSED" : "FAILED",
+          expectedDate: d.scheduledDate ? formatDate(d.scheduledDate) : "-",
+          status: isConfirmed ? "COMPLETED" : (d.status || "IN_TRANSIT"),
+          warehouseReceiptStatus: isConfirmed ? "CONFIRMED" : (d.warehouseReceiptStatus || "PENDING"),
+          warehouseName: d.warehouseName || "-",
+          unitPrice: lotPrice,
+        };
+      });
+
+      setReceivingQueue(queueMapped);
+
+      // If ID passed, load single shipment details
+      if (id) {
+        const single = dispatchesList.find((d) => d.id?.toString() === id.toString()) || (await logisticsApi.getById(id).catch(() => null));
+        if (single) {
+          let matchingLot = lotsList.find(
             (l) =>
-              l.lotNumber === d.lotId ||
-              l.id?.toString() === d.lotId?.toString() ||
-              (d.lotId && l.lotNumber && d.lotId.includes(l.lotNumber)) ||
-              (d.agreementId && l.lotNumber && d.agreementId.includes(l.lotNumber))
+              l.lotNumber === single.lotId ||
+              l.id?.toString() === single.lotId?.toString() ||
+              (single.lotId && l.lotNumber && single.lotId.includes(l.lotNumber)) ||
+              (single.agreementId && l.lotNumber && single.agreementId.includes(l.lotNumber))
+          );
+
+          if (!matchingLot && single.lotId) {
+            matchingLot = await lotsApi.getById(single.lotId).catch(() => null);
+          }
+
+          const lotPrice = Number(
+            single.unitPrice ||
+            single.offeredPricePerKg ||
+            single.pricePerKg ||
+            matchingLot?.offeredPricePerKg ||
+            matchingLot?.pricePerKg ||
+            matchingLot?.ratePerKg ||
+            matchingLot?.agreedPrice ||
+            35
           );
 
           const displayLotCode =
             matchingLot?.lotNumber ||
-            d.lotNumber ||
-            (d.lotId && d.lotId.length === 36 ? `LOT-${d.lotId.slice(0, 6).toUpperCase()}` : d.lotId) ||
+            single.lotNumber ||
+            (single.lotId && single.lotId.length === 36 ? `LOT-${single.lotId.slice(0, 6).toUpperCase()}` : single.lotId) ||
             "-";
 
-          const expectedKg = d.totalQuantityKg || d.expectedQuantityKg || 0;
-          const isPassed = !(d.status || "").toUpperCase().includes("FAIL") && !(matchingLot?.qualityStatus || "").toUpperCase().includes("FAIL");
-          const receiptCode = `WR-2026-${(index + 1).toString().padStart(3, "0")}`;
-          const lotPrice = Number(matchingLot?.offeredPricePerKg || matchingLot?.pricePerKg || d.unitPrice || d.offeredPricePerKg || 35);
+          const displayGrade =
+            (single.grade && single.grade !== "-")
+              ? single.grade
+              : (matchingLot?.grade && matchingLot?.grade !== "-")
+                ? matchingLot.grade
+                : "Grade A";
 
-          const isConfirmed = (d.warehouseReceiptStatus || "").toUpperCase() === "CONFIRMED" || (matchingLot?.status || "").toUpperCase() === "STORED";
-
-          return {
-            id: d.id,
-            receiptCode,
-            dispatchCode: d.dispatchCode || d.id,
-            lotId: displayLotCode,
-            farmerName: d.farmerOrProcessorName || matchingLot?.farmerName || "-",
-            milletType: d.milletType || matchingLot?.milletType || matchingLot?.farmCrop || "-",
-            certifiedQty: expectedKg,
-            actualReceivedQty: d.finalReceivedQuantityKg || expectedKg,
-            grade: (matchingLot?.grade && matchingLot?.grade !== "-") ? matchingLot.grade : (d.grade && d.grade !== "-") ? d.grade : "Grade A",
-            qualityStatus: isPassed ? "PASSED" : "FAILED",
-            expectedDate: d.scheduledDate ? formatDate(d.scheduledDate) : "-",
-            status: isConfirmed ? "COMPLETED" : (d.status || "IN_TRANSIT"),
-            warehouseReceiptStatus: isConfirmed ? "CONFIRMED" : (d.warehouseReceiptStatus || "PENDING"),
-            warehouseName: d.warehouseName || "-",
+          const enrichedShipment = {
+            ...single,
+            displayLotCode,
             unitPrice: lotPrice,
+            farmerOrProcessorName: single.farmerOrProcessorName || matchingLot?.farmerName || "-",
+            milletType: single.milletType || matchingLot?.milletType || matchingLot?.farmCrop || "-",
+            grade: displayGrade,
           };
-        });
 
-        setReceivingQueue(queueMapped);
-
-        // If ID passed, load single shipment details
-        if (id) {
-          const single = dispatchesList.find((d) => d.id?.toString() === id.toString()) || (await logisticsApi.getById(id).catch(() => null));
-          if (single) {
-            let matchingLot = lotsList.find(
-              (l) =>
-                l.lotNumber === single.lotId ||
-                l.id?.toString() === single.lotId?.toString() ||
-                (single.lotId && l.lotNumber && single.lotId.includes(l.lotNumber)) ||
-                (single.agreementId && l.lotNumber && single.agreementId.includes(l.lotNumber))
-            );
-
-            if (!matchingLot && single.lotId) {
-              matchingLot = await lotsApi.getById(single.lotId).catch(() => null);
-            }
-
-            const lotPrice = Number(
-              single.unitPrice ||
-              single.offeredPricePerKg ||
-              single.pricePerKg ||
-              matchingLot?.offeredPricePerKg ||
-              matchingLot?.pricePerKg ||
-              matchingLot?.ratePerKg ||
-              matchingLot?.agreedPrice ||
-              35
-            );
-
-            const displayLotCode =
-              matchingLot?.lotNumber ||
-              single.lotNumber ||
-              (single.lotId && single.lotId.length === 36 ? `LOT-${single.lotId.slice(0, 6).toUpperCase()}` : single.lotId) ||
-              "-";
-
-            const displayGrade =
-              (single.grade && single.grade !== "-")
-                ? single.grade
-                : (matchingLot?.grade && matchingLot?.grade !== "-")
-                  ? matchingLot.grade
-                  : "Grade A";
-
-            const enrichedShipment = {
-              ...single,
-              displayLotCode,
-              unitPrice: lotPrice,
-              farmerOrProcessorName: single.farmerOrProcessorName || matchingLot?.farmerName || "-",
-              milletType: single.milletType || matchingLot?.milletType || matchingLot?.farmCrop || "-",
-              grade: displayGrade,
-            };
-
-            setShipment(enrichedShipment);
-            const expected = single.totalQuantityKg || single.expectedQuantityKg || 0;
-            setActualQuantity(single.finalReceivedQuantityKg ? single.finalReceivedQuantityKg.toString() : expected.toString());
-            if (single.warehouseName) setSelectedWarehouse(single.warehouseName);
-          }
+          setShipment(enrichedShipment);
+          const expected = single.totalQuantityKg || single.expectedQuantityKg || 0;
+          setActualQuantity(single.finalReceivedQuantityKg ? single.finalReceivedQuantityKg.toString() : expected.toString());
+          if (single.warehouseName) setSelectedWarehouse(single.warehouseName);
         }
-      } catch (err) {
-        console.error("Error loading warehouse receiving data:", err);
-      } finally {
-        setLoading(false);
+      } else {
+        setShipment(null);
+        setConfirmedReceiptData(null);
+        setReceiptConfirmed(false);
       }
+    } catch (err) {
+      console.error("Error loading warehouse receiving data:", err);
+    } finally {
+      setLoading(false);
     }
-
-    loadData();
   }, [id]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // KPI Card calculations strictly from live queue
   const pendingCount = useMemo(() => {
@@ -325,32 +329,12 @@ export default function WarehouseReceiving() {
       setReceiptConfirmed(!isDraft);
 
       if (!isDraft) {
-        setShipment((prev) =>
-          prev
-            ? {
-              ...prev,
-              status: "COMPLETED",
-              warehouseReceiptStatus: "CONFIRMED",
-              finalReceivedQuantityKg: actualQtyNum || expectedQty,
-            }
-            : prev
-        );
-
-        setReceivingQueue((prevQueue) =>
-          prevQueue.map((q) =>
-            q.id === (shipment?.id || id) || q.lotId === shipment?.lotId
-              ? {
-                ...q,
-                status: "COMPLETED",
-                warehouseReceiptStatus: "CONFIRMED",
-                actualReceivedQty: actualQtyNum || expectedQty,
-              }
-              : q
-          )
-        );
-
         alert(`✓ Warehouse Receipt ${res.receiptNumber || ""} & Lot Allocation confirmed successfully!\n${(actualQtyNum || expectedQty).toLocaleString("en-IN")} kg allocated to storage section ${chosenBin}.`);
+        setShipment(null);
+        setReceiptConfirmed(false);
+        setConfirmedReceiptData(null);
         navigate("/warehouses/receiving");
+        loadData();
       } else {
         alert("Receipt saved as draft.");
       }
@@ -808,7 +792,12 @@ export default function WarehouseReceiving() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => navigate("/warehouses/receiving")}
+            onClick={() => {
+              setShipment(null);
+              setReceiptConfirmed(false);
+              setConfirmedReceiptData(null);
+              navigate("/warehouses/receiving");
+            }}
             className="h-9 text-xs font-bold border-slate-300"
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
@@ -1056,7 +1045,7 @@ export default function WarehouseReceiving() {
                     <Layers className="h-3.5 w-3.5 text-emerald-700" />
                     WAREHOUSE LOT STORAGE ALLOCATION
                   </p>
-                  <Button
+                  {/* <Button
                     type="button"
                     variant="outline"
                     size="sm"
@@ -1071,7 +1060,7 @@ export default function WarehouseReceiving() {
                     className="h-7 text-[11px] font-extrabold text-emerald-800 border-emerald-300 hover:bg-emerald-100"
                   >
                     + Open Detailed Lot Allocation Card
-                  </Button>
+                  </Button> */}
                 </div>
 
                 <div>
@@ -1322,11 +1311,15 @@ export default function WarehouseReceiving() {
               <div className="space-y-2.5 pt-1">
                 <Button
                   onClick={() => handleConfirmReceipt(false)}
-                  disabled={submitting}
+                  disabled={submitting || receiptConfirmed || shipment?.warehouseReceiptStatus === "CONFIRMED"}
                   className="w-full h-11 bg-emerald-900 hover:bg-emerald-950 text-white font-bold text-xs shadow-xs flex items-center justify-center gap-2"
                 >
                   <CheckCircle2 className="h-4 w-4" />
-                  {submitting ? "Confirming..." : "Confirm Warehouse Receipt"}
+                  {submitting
+                    ? "Confirming..."
+                    : (receiptConfirmed || shipment?.warehouseReceiptStatus === "CONFIRMED")
+                      ? "Receipt Confirmed"
+                      : "Confirm Warehouse Receipt"}
                 </Button>
 
                 <Button
