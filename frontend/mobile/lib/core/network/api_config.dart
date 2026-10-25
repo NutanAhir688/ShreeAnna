@@ -56,6 +56,8 @@ class ApiConfig {
       '$baseUrl/api/quality/inspections/lot/$lotId';
   static String qualityCertificate(String lotId) =>
       '$baseUrl/api/quality/certificates/lot/$lotId';
+  static String warehouseReceipt(String identifier) =>
+      '$baseUrl/api/warehouses/receipts/lot/${Uri.encodeComponent(identifier)}';
 
   static String get uploadImage => '$baseUrl/api/upload';
 

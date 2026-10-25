@@ -7,6 +7,7 @@ import 'package:http_parser/http_parser.dart';
 
 import '../storage/token_storage.dart';
 import '../../features/auth/screen/welcome_screen.dart';
+import 'api_config.dart';
 
 /// A global navigator key so ApiClient can redirect to WelcomeScreen
 /// from anywhere in the app when a 401 is received.
@@ -91,10 +92,19 @@ class ApiClient {
     );
   }
 
+  String _normalizeUrl(String url) {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    final cleanPath = url.startsWith('/') ? url : '/$url';
+    return '${ApiConfig.baseUrl}$cleanPath';
+  }
+
   Future<http.Response> _sendWithFallback(
     Future<http.Response> Function(String url) action,
-    String url,
+    String rawUrl,
   ) async {
+    final url = _normalizeUrl(rawUrl);
     try {
       final response = await action(url);
       _checkUnauthorized(response, url: url);

@@ -873,14 +873,15 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                                     context,
                                     MaterialPageRoute(
                                       builder: (_) => WarehouseReceiptScreen(
-                                        lotId: widget.lotId ?? widget.lotNumber,
-                                        lotNumber: widget.lotNumber,
+                                        lotId: _lot?.id ?? widget.lotId ?? widget.lotNumber,
+                                        lotNumber: _lot?.lotNumber ?? widget.lotNumber,
                                         milletName:
                                             _lot?.milletType ??
                                             widget.milletName,
                                         farmerName: _lot?.farmerName,
                                         actualQty: _lot?.actualQuantityKg,
                                         unitPrice: _lot?.offeredPricePerKg,
+                                        warehouseName: _dispatchDetails?['warehouseName']?.toString() ?? widget.farmName,
                                       ),
                                     ),
                                   );
@@ -1282,12 +1283,13 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (_) => WarehouseReceiptScreen(
-                    lotId: widget.lotId ?? widget.lotNumber,
-                    lotNumber: widget.lotNumber,
+                    lotId: _lot?.id ?? widget.lotId ?? widget.lotNumber,
+                    lotNumber: _lot?.lotNumber ?? widget.lotNumber,
                     milletName: _lot?.milletType ?? widget.milletName,
                     farmerName: _lot?.farmerName,
                     actualQty: _lot?.actualQuantityKg,
                     unitPrice: _lot?.offeredPricePerKg,
+                    warehouseName: _dispatchDetails?['warehouseName']?.toString() ?? widget.farmName,
                   ),
                 ),
               )
@@ -2186,12 +2188,13 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                   context,
                   MaterialPageRoute(
                     builder: (_) => WarehouseReceiptScreen(
-                      lotId: widget.lotId ?? widget.lotNumber,
-                      lotNumber: widget.lotNumber,
+                      lotId: _lot?.id ?? widget.lotId ?? widget.lotNumber,
+                      lotNumber: _lot?.lotNumber ?? widget.lotNumber,
                       milletName: _lot?.milletType ?? widget.milletName,
                       farmerName: _lot?.farmerName,
                       actualQty: _lot?.actualQuantityKg,
                       unitPrice: _lot?.offeredPricePerKg,
+                      warehouseName: _dispatchDetails?['warehouseName']?.toString() ?? widget.farmName,
                     ),
                   ),
                 );

@@ -45,17 +45,33 @@ class _WarehouseReceiptScreenState extends State<WarehouseReceiptScreen> {
   }
 
   Future<void> _loadReceipt() async {
-    if (widget.lotId == null || widget.lotId!.isEmpty) {
+    final queryId = (widget.lotId != null && widget.lotId!.isNotEmpty)
+        ? widget.lotId!
+        : (widget.lotNumber != null && widget.lotNumber!.isNotEmpty)
+            ? widget.lotNumber!
+            : '';
+
+    if (queryId.isEmpty) {
       setState(() => _isLoading = false);
       return;
     }
 
     try {
-      final receipt = await _lotApi.getWarehouseReceipt(widget.lotId!);
+      var receipt = await _lotApi.getWarehouseReceipt(queryId);
+      if (receipt == null && widget.lotNumber != null && widget.lotNumber!.isNotEmpty && widget.lotNumber != queryId) {
+        receipt = await _lotApi.getWarehouseReceipt(widget.lotNumber!);
+      }
+
       LotModel? lot;
       try {
-        lot = await _lotApi.getLotById(widget.lotId!);
-      } catch (_) {}
+        lot = await _lotApi.getLotById(queryId);
+      } catch (_) {
+        if (widget.lotId != null && widget.lotId!.isNotEmpty && widget.lotId != queryId) {
+          try {
+            lot = await _lotApi.getLotById(widget.lotId!);
+          } catch (_) {}
+        }
+      }
 
       setState(() {
         _receiptData = receipt;
@@ -76,6 +92,7 @@ class _WarehouseReceiptScreenState extends State<WarehouseReceiptScreen> {
     required double actQty,
     required double rate,
     required double totalPayable,
+    String? dateReceived,
   }) async {
     try {
       if (!mounted) return;
@@ -97,7 +114,7 @@ class _WarehouseReceiptScreenState extends State<WarehouseReceiptScreen> {
         actQty: actQty,
         unitPrice: rate,
         totalPayable: totalPayable,
-        dateReceived: DateTime.now().toString().split(' ').first,
+        dateReceived: dateReceived ?? DateTime.now().toString().split(' ').first,
       );
 
       final cleanReceiptId = receiptId.replaceAll('/', '_').replaceAll('\\', '_');
@@ -147,6 +164,9 @@ class _WarehouseReceiptScreenState extends State<WarehouseReceiptScreen> {
     final millet = _receiptData?['milletType']?.toString() ?? _lotDetails?.milletType ?? widget.milletName ?? 'Finger Millet';
     final farmer = _receiptData?['farmerName']?.toString() ?? _lotDetails?.farmerName ?? widget.farmerName ?? 'Ramesh Patel';
     final warehouse = _receiptData?['warehouseName']?.toString() ?? widget.warehouseName ?? 'Dahod Central Warehouse';
+    final receivedDate = _receiptData?['receivedAt'] != null
+        ? _receiptData!['receivedAt'].toString().split('T').first
+        : DateTime.now().toString().split(' ').first;
 
     final expQty = (_receiptData?['expectedQuantityKg'] as num?)?.toDouble() ?? _lotDetails?.estimatedQuantityKg ?? widget.actualQty ?? 580.0;
     final actQty = (_receiptData?['actualReceivedQuantityKg'] as num?)?.toDouble() ?? _lotDetails?.actualQuantityKg ?? widget.actualQty ?? expQty;
@@ -337,7 +357,7 @@ class _WarehouseReceiptScreenState extends State<WarehouseReceiptScreen> {
                           _detailRow('Millet Type', millet),
                           _detailRow('Farmer', farmer),
                           _detailRow('Warehouse', warehouse),
-                          _detailRow('Date Received', '2026-10-04'),
+                          _detailRow('Date Received', receivedDate),
                         ],
                       ),
                     ),
@@ -435,6 +455,7 @@ class _WarehouseReceiptScreenState extends State<WarehouseReceiptScreen> {
                           actQty: actQty,
                           rate: rate,
                           totalPayable: totalPayable,
+                          dateReceived: receivedDate,
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: ShreeAnnaTheme.primaryGreen,
