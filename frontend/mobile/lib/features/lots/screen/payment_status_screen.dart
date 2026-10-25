@@ -101,6 +101,24 @@ class _PaymentStatusScreenState extends State<PaymentStatusScreen> {
     required String transactionId,
     required String paymentDate,
   }) async {
+    final statusUpper = status.toString().trim().toUpperCase();
+    final isPaid = statusUpper == 'PAID' ||
+        statusUpper == 'SETTLED' ||
+        statusUpper == 'COMPLETED' ||
+        statusUpper == 'SUCCESS' ||
+        statusUpper == 'DISBURSED';
+    if (!isPaid) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cannot download bill while settlement payment is pending.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
     setState(() => _isDownloading = true);
     try {
       final pdfBytes = await PdfGenerator.generateSettlementBillPdf(
@@ -202,10 +220,25 @@ class _PaymentStatusScreenState extends State<PaymentStatusScreen> {
     final finalAmount = (_settlement?['finalAmount'] as num?)?.toDouble() ??
         (gross > 0 ? (gross - fpoMargin - transport - otherCharges) : 0.0);
 
-    final status = _settlement?['status'] ?? (lot?.status == 'SETTLED' ? 'Paid' : 'Completed');
-    final paymentMethod = _settlement?['paymentMethod'] ?? 'Razorpay MockGateway / DBT';
-    final txnId = _settlement?['transactionId'] ?? _settlement?['razorpayPaymentLinkId'] ?? 'TXN-$lotNum';
-    final paymentDate = _settlement?['paymentDate'] ?? '2026-10-13 19:10';
+    final rawStatus = (_settlement?['status'] ??
+            (lot?.status.toUpperCase() == 'SETTLED' ? 'Paid' : 'Pending Settlement'))
+        .toString()
+        .trim();
+    final status = rawStatus;
+    final statusUpper = status.toUpperCase();
+    final isPaid = statusUpper == 'PAID' ||
+        statusUpper == 'SETTLED' ||
+        statusUpper == 'COMPLETED' ||
+        statusUpper == 'SUCCESS' ||
+        statusUpper == 'DISBURSED';
+
+    final paymentMethod = _settlement?['paymentMethod']?.toString() ??
+        (isPaid ? 'Direct Bank Transfer (DBT)' : 'Direct Bank Transfer (Pending)');
+    final txnId = _settlement?['transactionId']?.toString() ??
+        _settlement?['razorpayPaymentLinkId']?.toString() ??
+        (isPaid ? 'TXN-$lotNum' : 'Pending Settlement');
+    final paymentDate = _settlement?['paymentDate']?.toString() ??
+        (isPaid ? DateTime.now().toString().substring(0, 16) : 'Pending Disbursement');
     final shortUrl = _settlement?['razorpayShortUrl'] as String?;
 
     return Scaffold(
@@ -226,37 +259,38 @@ class _PaymentStatusScreenState extends State<PaymentStatusScreen> {
           ),
         ),
         actions: [
-          IconButton(
-            tooltip: 'Download Bill',
-            icon: _isDownloading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(color: ShreeAnnaTheme.primaryGreen, strokeWidth: 2),
-                  )
-                : const Icon(Icons.download, color: ShreeAnnaTheme.primaryGreen),
-            onPressed: _isDownloading
-                ? null
-                : () => _downloadBill(
-                      settlementCode: settlementCode,
-                      orderId: orderId,
-                      lotNumber: lotNum,
-                      milletType: millet,
-                      farmerName: farmerName,
-                      buyerOrg: buyerOrg,
-                      quantity: quantity,
-                      pricePerKg: rate,
-                      grossAmount: gross,
-                      fpoMargin: fpoMargin,
-                      transportCost: transport,
-                      otherCharges: otherCharges,
-                      finalPayout: finalAmount,
-                      status: status,
-                      paymentMethod: paymentMethod,
-                      transactionId: txnId,
-                      paymentDate: paymentDate,
-                    ),
-          ),
+          if (isPaid)
+            IconButton(
+              tooltip: 'Download Bill',
+              icon: _isDownloading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(color: ShreeAnnaTheme.primaryGreen, strokeWidth: 2),
+                    )
+                  : const Icon(Icons.download, color: ShreeAnnaTheme.primaryGreen),
+              onPressed: _isDownloading
+                  ? null
+                  : () => _downloadBill(
+                        settlementCode: settlementCode,
+                        orderId: orderId,
+                        lotNumber: lotNum,
+                        milletType: millet,
+                        farmerName: farmerName,
+                        buyerOrg: buyerOrg,
+                        quantity: quantity,
+                        pricePerKg: rate,
+                        grossAmount: gross,
+                        fpoMargin: fpoMargin,
+                        transportCost: transport,
+                        otherCharges: otherCharges,
+                        finalPayout: finalAmount,
+                        status: status,
+                        paymentMethod: paymentMethod,
+                        transactionId: txnId,
+                        paymentDate: paymentDate,
+                      ),
+            ),
         ],
       ),
       body: SafeArea(
@@ -272,13 +306,17 @@ class _PaymentStatusScreenState extends State<PaymentStatusScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE8F5E9),
+                        color: isPaid ? const Color(0xFFE8F5E9) : const Color(0xFFFFF8E1),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFA5D6A7)),
+                        border: Border.all(color: isPaid ? const Color(0xFFA5D6A7) : const Color(0xFFFFE082)),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.check_circle, color: Color(0xFF2E7D32), size: 36),
+                          Icon(
+                            isPaid ? Icons.check_circle : Icons.hourglass_top,
+                            color: isPaid ? const Color(0xFF2E7D32) : const Color(0xFFF57C00),
+                            size: 36,
+                          ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
@@ -286,16 +324,22 @@ class _PaymentStatusScreenState extends State<PaymentStatusScreen> {
                               children: [
                                 Text(
                                   settlementCode,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1B5E20),
+                                    color: isPaid ? const Color(0xFF1B5E20) : const Color(0xFF795548),
                                   ),
                                 ),
                                 const SizedBox(height: 3),
                                 Text(
-                                  'Status: $status • Disbursed via Direct Bank Transfer',
-                                  style: const TextStyle(fontSize: 12, color: Color(0xFF388E3C)),
+                                  isPaid
+                                      ? 'Status: $status • Disbursed via Direct Bank Transfer'
+                                      : 'Status: $status • Awaiting Bank Disbursement',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: isPaid ? const Color(0xFF388E3C) : const Color(0xFFB78103),
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ],
                             ),
@@ -303,7 +347,7 @@ class _PaymentStatusScreenState extends State<PaymentStatusScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF2E7D32),
+                              color: isPaid ? const Color(0xFF2E7D32) : const Color(0xFFE65100),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -431,10 +475,10 @@ class _PaymentStatusScreenState extends State<PaymentStatusScreen> {
                             ),
                           ),
                           const Divider(height: 20),
-                          _buildRow('Payment Gateway', paymentMethod),
+                          _buildRow('Payment Gateway / Mode', paymentMethod),
                           _buildRow('Transaction / Payment ID', txnId),
                           _buildRow('Payment Date', paymentDate),
-                          if (shortUrl != null && shortUrl.isNotEmpty) ...[
+                          if (isPaid && shortUrl != null && shortUrl.isNotEmpty) ...[
                             const SizedBox(height: 10),
                             OutlinedButton.icon(
                               onPressed: () async {
@@ -444,7 +488,7 @@ class _PaymentStatusScreenState extends State<PaymentStatusScreen> {
                                 }
                               },
                               icon: const Icon(Icons.open_in_new, size: 16),
-                              label: const Text('View Razorpay MockGateway Receipt'),
+                              label: const Text('View Payment Receipt'),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: ShreeAnnaTheme.primaryGreen,
                                 side: const BorderSide(color: ShreeAnnaTheme.primaryGreen),
@@ -457,55 +501,84 @@ class _PaymentStatusScreenState extends State<PaymentStatusScreen> {
 
                     const SizedBox(height: 24),
 
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton.icon(
-                        onPressed: _isDownloading
-                            ? null
-                            : () => _downloadBill(
-                                  settlementCode: settlementCode,
-                                  orderId: orderId,
-                                  lotNumber: lotNum,
-                                  milletType: millet,
-                                  farmerName: farmerName,
-                                  buyerOrg: buyerOrg,
-                                  quantity: quantity,
-                                  pricePerKg: rate,
-                                  grossAmount: gross,
-                                  fpoMargin: fpoMargin,
-                                  transportCost: transport,
-                                  otherCharges: otherCharges,
-                                  finalPayout: finalAmount,
-                                  status: status,
-                                  paymentMethod: paymentMethod,
-                                  transactionId: txnId,
-                                  paymentDate: paymentDate,
-                                ),
-                        style: ElevatedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          backgroundColor: ShreeAnnaTheme.primaryGreen,
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                    if (isPaid) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton.icon(
+                          onPressed: _isDownloading
+                              ? null
+                              : () => _downloadBill(
+                                    settlementCode: settlementCode,
+                                    orderId: orderId,
+                                    lotNumber: lotNum,
+                                    milletType: millet,
+                                    farmerName: farmerName,
+                                    buyerOrg: buyerOrg,
+                                    quantity: quantity,
+                                    pricePerKg: rate,
+                                    grossAmount: gross,
+                                    fpoMargin: fpoMargin,
+                                    transportCost: transport,
+                                    otherCharges: otherCharges,
+                                    finalPayout: finalAmount,
+                                    status: status,
+                                    paymentMethod: paymentMethod,
+                                    transactionId: txnId,
+                                    paymentDate: paymentDate,
+                                  ),
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            backgroundColor: ShreeAnnaTheme.primaryGreen,
+                            elevation: 2,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          icon: _isDownloading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.download, size: 20),
+                          label: Text(
+                            _isDownloading ? 'Generating Bill...' : 'Download Bill',
+                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                           ),
                         ),
-                        icon: _isDownloading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
+                      ),
+                    ] else ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF8E1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFFFE082)),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.info_outline, color: Color(0xFFB78103), size: 20),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Settlement bill and payment receipt will be available for download once payment is settled by the FPO.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFF5D4037),
+                                  fontWeight: FontWeight.w500,
+                                  height: 1.35,
                                 ),
-                              )
-                            : const Icon(Icons.download, size: 20),
-                        label: Text(
-                          _isDownloading ? 'Generating Bill...' : 'Download Bill',
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
+                    ],
 
                     const SizedBox(height: 12),
 
