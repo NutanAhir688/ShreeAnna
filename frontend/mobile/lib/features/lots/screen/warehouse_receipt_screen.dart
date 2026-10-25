@@ -153,12 +153,95 @@ class _WarehouseReceiptScreenState extends State<WarehouseReceiptScreen> {
     final rate = (_receiptData?['unitPrice'] as num?)?.toDouble() ?? _lotDetails?.offeredPricePerKg ?? widget.unitPrice ?? 35.0;
     final totalPayable = (_receiptData?['totalPayableAmount'] as num?)?.toDouble() ?? (actQty * rate);
 
+    final isConfirmed = _receiptData != null ||
+        _lotDetails?.status == 'STORED' ||
+        _lotDetails?.status == 'SETTLED' ||
+        _lotDetails?.status == 'PAID' ||
+        _lotDetails?.warehouseReceiptStatus == 'CONFIRMED';
+
     return Scaffold(
       backgroundColor: ShreeAnnaTheme.background,
       body: SafeArea(
         child: _isLoading
             ? const Center(
                 child: CircularProgressIndicator(color: ShreeAnnaTheme.primaryGreen),
+              )
+            : !isConfirmed
+            ? SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    InkWell(
+                      onTap: () => Navigator.pop(context),
+                      child: const Row(
+                        children: [
+                          Icon(
+                            Icons.arrow_back,
+                            size: 18,
+                            color: ShreeAnnaTheme.primaryGreen,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Back to Lot Details',
+                            style: TextStyle(
+                              color: ShreeAnnaTheme.primaryGreen,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 48),
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFE0E8DA)),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFFF8E1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.hourglass_top,
+                                size: 40,
+                                color: Color(0xFFF57C00),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Receipt Not Generated Yet',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'The produce has arrived at the warehouse, but the warehouse officer has not completed intake weighing and generated the official receipt yet.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: textSecondary,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               )
             : SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

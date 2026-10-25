@@ -867,7 +867,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                           isCompleted: isStored || isPaymentCompleted,
                           isCurrent: !(isStored || isPaymentCompleted) && isDelivered,
                           isLast: false,
-                          onTap: (isStored || isDelivered || isPaymentCompleted)
+                          onTap: (isStored || isPaymentCompleted)
                               ? () {
                                   Navigator.push(
                                     context,
@@ -878,8 +878,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                                         milletName:
                                             _lot?.milletType ??
                                             widget.milletName,
-                                        farmerName:
-                                            _lot?.farmerName ?? 'Ramesh Patel',
+                                        farmerName: _lot?.farmerName,
                                         actualQty: _lot?.actualQuantityKg,
                                         unitPrice: _lot?.offeredPricePerKg,
                                       ),
@@ -887,7 +886,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                                   );
                                 }
                               : null,
-                          actionLabel: (isStored || isDelivered || isPaymentCompleted)
+                          actionLabel: (isStored || isPaymentCompleted)
                               ? l10n.viewReceipt
                               : null,
                           extraContent: (isStored && !isPaymentCompleted)
@@ -1277,8 +1276,8 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
             ? 'Delivery confirmed. Awaiting warehouse verification.'
             : l10n.warehouseReceiptSubtitle;
 
-        actionLabel = (isStored || isCompleted || isPaymentCompleted) ? l10n.viewReceipt : null;
-        onTap = (isStored || isCompleted || isPaymentCompleted)
+        actionLabel = (isStored || isPaymentCompleted) ? l10n.viewReceipt : null;
+        onTap = (isStored || isPaymentCompleted)
             ? () => Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -1286,7 +1285,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                     lotId: widget.lotId ?? widget.lotNumber,
                     lotNumber: widget.lotNumber,
                     milletName: _lot?.milletType ?? widget.milletName,
-                    farmerName: _lot?.farmerName ?? 'Ramesh Patel',
+                    farmerName: _lot?.farmerName,
                     actualQty: _lot?.actualQuantityKg,
                     unitPrice: _lot?.offeredPricePerKg,
                   ),
@@ -1345,7 +1344,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
     } else if (step.step == 'WAREHOUSE_RECEIPT' ||
         step.step == 'WAREHOUSE_RECEIVED' ||
         step.step == 'STORED') {
-      if (isCurrent && !isPaymentCompleted) {
+      if (isStored && !isPaymentCompleted) {
         extraContent = _buildCompactWarehouseReceiptCard(context);
       }
     } else if (step.step == 'PAYMENT') {
@@ -2073,6 +2072,40 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
   }
 
   Widget _buildCompactWarehouseReceiptCard(BuildContext context) {
+    final statusUpper =
+        (_lot?.status ?? _currentStatus ?? widget.status).toUpperCase();
+    final receiptStatus =
+        (_lot?.warehouseReceiptStatus ??
+                _dispatchDetails?['warehouseReceiptStatus'] ??
+                _dispatchDetails?['warehouse_receipt_status'] ??
+                widget.warehouseReceiptStatus ??
+                '')
+            .toString()
+            .trim()
+            .toUpperCase();
+    final isPaymentCompleted = {
+      'PAYMENT_COMPLETED',
+      'PAYMENT_PAID',
+      'PAID',
+      'SETTLED',
+      'COMPLETED',
+    }.contains(statusUpper);
+    final isStored = {
+      'CONFIRMED',
+      'RECEIVED',
+      'STORED',
+      'COMPLETED',
+    }.contains(receiptStatus) ||
+    statusUpper == 'STORED' ||
+    statusUpper == 'SETTLED' ||
+    statusUpper == 'PAID' ||
+    statusUpper == 'PAYMENT_COMPLETED' ||
+    isPaymentCompleted;
+
+    if (!isStored) {
+      return const SizedBox.shrink();
+    }
+
     final actualQty =
         _lot?.actualQuantityKg ??
         _lot?.agreedQuantityKg ??
