@@ -57,7 +57,7 @@ public class ProcurementLot
 
     public decimal? OfferedPricePerKg { get; set; }
     public decimal? AgreedQuantityKg { get; set; }
-    public string? AgreementVersion { get; set; } = "v1.0";
+    public string? AgreementVersion { get; set; }
     public decimal? LogisticsCost { get; set; }
     public decimal? OtherAdjustments { get; set; }
     public string? NegotiationRemarks { get; set; }

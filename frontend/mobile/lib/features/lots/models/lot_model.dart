@@ -20,9 +20,9 @@ class LotModel {
   final double? inspectorLongitude;
   final double? farmLatitude;
   final double? farmLongitude;
-  final String agreementVersion;
-  final String procurementOfficerName;
-  final String procurementOfficerPhone;
+  final String? agreementVersion;
+  final String? procurementOfficerName;
+  final String? procurementOfficerPhone;
   final double? offeredPricePerKg;
   final double? agreedQuantityKg;
   final double? logisticsCost;
@@ -56,9 +56,9 @@ class LotModel {
     this.inspectorLongitude,
     this.farmLatitude,
     this.farmLongitude,
-    this.agreementVersion = 'v2.0',
-    this.procurementOfficerName = 'Rajesh Sharma (Procurement Officer)',
-    this.procurementOfficerPhone = '+91 98765 43210',
+    this.agreementVersion,
+    this.procurementOfficerName,
+    this.procurementOfficerPhone,
     this.offeredPricePerKg,
     this.agreedQuantityKg,
     this.logisticsCost,
@@ -102,12 +102,9 @@ class LotModel {
       inspectorLongitude: (json['inspectorLongitude'] as num?)?.toDouble(),
       farmLatitude: (json['farmLatitude'] as num?)?.toDouble(),
       farmLongitude: (json['farmLongitude'] as num?)?.toDouble(),
-      agreementVersion: json['agreementVersion']?.toString() ??
-          (json['status']?.toString().contains('REJECTED') == true ? 'v1.0' : 'v2.0'),
-      procurementOfficerName: json['procurementOfficerName']?.toString() ??
-          'Rajesh Sharma (Procurement Officer)',
-      procurementOfficerPhone: json['procurementOfficerPhone']?.toString() ??
-          '+91 98765 43210',
+      agreementVersion: json['agreementVersion']?.toString(),
+      procurementOfficerName: json['procurementOfficerName']?.toString(),
+      procurementOfficerPhone: json['procurementOfficerPhone']?.toString(),
       offeredPricePerKg: (json['offeredPricePerKg'] as num?)?.toDouble(),
       agreedQuantityKg: (json['agreedQuantityKg'] as num?)?.toDouble(),
       logisticsCost: (json['logisticsCost'] as num?)?.toDouble(),

@@ -544,6 +544,9 @@ class PdfGenerator {
     required double unitPrice,
     required double totalPayable,
     required String dateReceived,
+    double transportCost = 0.0,
+    double otherAdjustments = 0.0,
+    double fpoMargin = 0.0,
   }) async {
     final pdf = pw.Document();
 
@@ -694,13 +697,27 @@ class PdfGenerator {
                     _pdfRow('Actual Net Weight Received', '${actQty.toStringAsFixed(0)} kg'),
                     pw.SizedBox(height: 4),
                     _pdfRow('Agreed Rate per kg', 'Rs. ${unitPrice.toStringAsFixed(2)} / kg'),
+                    pw.SizedBox(height: 4),
+                    _pdfRow('Procurement Gross Amount', 'Rs. ${(actQty * unitPrice).toStringAsFixed(2)}'),
+                    if (fpoMargin > 0) ...[
+                      pw.SizedBox(height: 4),
+                      _pdfRow('FPO Facilitation Fee / Margin', '- Rs. ${fpoMargin.toStringAsFixed(2)}'),
+                    ],
+                    if (transportCost > 0) ...[
+                      pw.SizedBox(height: 4),
+                      _pdfRow('Transport & Logistics Cost', '- Rs. ${transportCost.toStringAsFixed(2)}'),
+                    ],
+                    if (otherAdjustments > 0) ...[
+                      pw.SizedBox(height: 4),
+                      _pdfRow('Other Adjustments', '- Rs. ${otherAdjustments.toStringAsFixed(2)}'),
+                    ],
                     pw.SizedBox(height: 6),
                     pw.Divider(color: PdfColors.green300),
                     pw.SizedBox(height: 4),
                     pw.Row(
                       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                       children: [
-                        pw.Text('FINAL PAYABLE AMOUNT:', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.green900)),
+                        pw.Text('FINAL SETTLEMENT PAYOUT:', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.green900)),
                         pw.Text('Rs. ${totalPayable.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.green900)),
                       ],
                     ),

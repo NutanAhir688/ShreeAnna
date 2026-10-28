@@ -65,7 +65,11 @@ public record WarehouseReceiptResponse(
     string? StorageBin,
     string? WarehouseName,
     string? Notes,
-    DateTime ReceivedAt
+    DateTime ReceivedAt,
+    decimal LogisticsCost = 0,
+    decimal OtherAdjustments = 0,
+    decimal FpoMargin = 0,
+    decimal NetPayableAmount = 0
 );
 
 public record AllocateLotRequest(

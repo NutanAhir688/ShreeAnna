@@ -605,7 +605,7 @@ public class LotService : ILotService
             lot.Farmer?.Address,
             lot.OfferedPricePerKg,
             lot.AgreedQuantityKg,
-            lot.AgreementVersion ?? "v1.0",
+            lot.AgreementVersion,
             lot.LogisticsCost,
             lot.OtherAdjustments,
             lot.NegotiationRemarks,

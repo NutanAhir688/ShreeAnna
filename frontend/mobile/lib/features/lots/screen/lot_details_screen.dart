@@ -508,7 +508,6 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
 
                     final isAgreementPhase =
                         statusUpper.contains('AGREEMENT') ||
-                        _lot?.agreementVersion != null ||
                         isAgrAccepted ||
                         isDispatched ||
                         isDelivered ||
@@ -560,8 +559,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                       isCurrent =
                           !isCompleted &&
                           (statusUpper.contains('AGREEMENT') ||
-                              statusUpper == 'AGREEMENT_FORMULATED' ||
-                              _lot?.agreementVersion != null);
+                              statusUpper == 'AGREEMENT_FORMULATED');
                     } else if (step.step == 'PICKUP') {
                       isCompleted = isCompleted || isDelivered || isStored || isPaymentCompleted;
                       isCurrent =
@@ -804,8 +802,11 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     _buildCompactAgreementCard(context),
-                                    const SizedBox(height: 10),
-                                    _buildProcurementOfficerCard(_lot, context),
+                                    if (_lot?.procurementOfficerName != null &&
+                                        _lot!.procurementOfficerName!.trim().isNotEmpty) ...[
+                                      const SizedBox(height: 10),
+                                      _buildProcurementOfficerCard(_lot, context),
+                                    ],
                                   ],
                                 )
                               : null,
@@ -905,6 +906,10 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                                         farmerName: _lot?.farmerName,
                                         actualQty: _lot?.actualQuantityKg,
                                         unitPrice: _lot?.offeredPricePerKg,
+                                        payableAmount: (_settlement?['finalAmount'] as num?)?.toDouble(),
+                                        transportCost: (_settlement?['transportCost'] as num?)?.toDouble() ?? _lot?.logisticsCost,
+                                        otherAdjustments: (_settlement?['otherCharges'] as num?)?.toDouble() ?? _lot?.otherAdjustments,
+                                        fpoMargin: (_settlement?['fpoMargin'] as num?)?.toDouble(),
                                         warehouseName: _dispatchDetails?['warehouseName']?.toString() ?? widget.farmName,
                                       ),
                                     ),
@@ -1150,8 +1155,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
     final isAgrPending =
         !isAgrAccepted &&
         (statusUpper.contains('AGREEMENT') ||
-            statusUpper == 'PROCUREMENT_AGREEMENT_PENDING' ||
-            _lot?.agreementVersion != null);
+            statusUpper == 'PROCUREMENT_AGREEMENT_PENDING');
 
     final isCertified =
         statusUpper.contains('CERTIFIED') ||
@@ -1313,6 +1317,10 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                     farmerName: _lot?.farmerName,
                     actualQty: _lot?.actualQuantityKg,
                     unitPrice: _lot?.offeredPricePerKg,
+                    payableAmount: (_settlement?['finalAmount'] as num?)?.toDouble(),
+                    transportCost: (_settlement?['transportCost'] as num?)?.toDouble() ?? _lot?.logisticsCost,
+                    otherAdjustments: (_settlement?['otherCharges'] as num?)?.toDouble() ?? _lot?.otherAdjustments,
+                    fpoMargin: (_settlement?['fpoMargin'] as num?)?.toDouble(),
                     warehouseName: _dispatchDetails?['warehouseName']?.toString() ?? widget.farmName,
                   ),
                 ),
@@ -1358,8 +1366,11 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildCompactAgreementCard(context),
-          const SizedBox(height: 10),
-          _buildProcurementOfficerCard(_lot, context),
+          if (_lot?.procurementOfficerName != null &&
+              _lot!.procurementOfficerName!.trim().isNotEmpty) ...[
+            const SizedBox(height: 10),
+            _buildProcurementOfficerCard(_lot, context),
+          ],
         ],
       );
     } else if (step.step == 'PICKUP' &&
@@ -1679,12 +1690,12 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
         (lot?.assignedInspectorName != null &&
             lot!.assignedInspectorName!.trim().isNotEmpty)
         ? lot.assignedInspectorName!
-        : 'Dr. Ramesh Patel (Senior Quality Inspector)';
+        : 'Assigned Inspector';
     final inspectorPhone =
         (lot?.assignedInspectorPhone != null &&
             lot!.assignedInspectorPhone!.trim().isNotEmpty)
         ? lot.assignedInspectorPhone!
-        : '+91 98765 43210';
+        : '';
     final firstLetter = inspectorName.substring(0, 1).toUpperCase();
 
     return Container(
@@ -1972,14 +1983,18 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
   Widget _buildProcurementOfficerCard(LotModel? lot, BuildContext context) {
     final officerName =
         (lot?.procurementOfficerName != null &&
-            lot!.procurementOfficerName.trim().isNotEmpty)
-        ? lot.procurementOfficerName
-        : 'Rajesh Sharma (Procurement Officer)';
+            lot!.procurementOfficerName!.trim().isNotEmpty)
+        ? lot.procurementOfficerName!
+        : null;
     final officerPhone =
         (lot?.procurementOfficerPhone != null &&
-            lot!.procurementOfficerPhone.trim().isNotEmpty)
-        ? lot.procurementOfficerPhone
-        : '+91 98765 43210';
+            lot!.procurementOfficerPhone!.trim().isNotEmpty)
+        ? lot.procurementOfficerPhone!
+        : null;
+
+    if (officerName == null) {
+      return const SizedBox.shrink();
+    }
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -2046,7 +2061,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                     _showContactInspectorModal(
                       context,
                       officerName,
-                      officerPhone,
+                      officerPhone ?? '',
                     );
                   },
                   icon: const Icon(Icons.phone, size: 16),
@@ -2072,7 +2087,7 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                     _showContactInspectorModal(
                       context,
                       officerName,
-                      officerPhone,
+                      officerPhone ?? '',
                     );
                   },
                   icon: const Icon(Icons.chat, size: 16),
@@ -2144,9 +2159,12 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
     final rateStr = rateNum != null
         ? '₹${rateNum.toStringAsFixed(0)} / kg'
         : null;
-    final billStr = (actualQty != null && rateNum != null)
-        ? '₹${(actualQty * rateNum).toStringAsFixed(0)}'
-        : null;
+    final netAmount = (_settlement?['finalAmount'] as num?)?.toDouble();
+    final billStr = netAmount != null
+        ? '₹${netAmount.round().toString().replaceAllMapped(RegExp(r'(\d+?)(?=(\d\d)+(\d)(?!\d))'), (m) => '${m[1]},')}'
+        : (actualQty != null && rateNum != null)
+            ? '₹${(actualQty * rateNum).round().toString().replaceAllMapped(RegExp(r'(\d+?)(?=(\d\d)+(\d)(?!\d))'), (m) => '${m[1]},')}'
+            : null;
 
     return Container(
       width: double.infinity,
@@ -2218,6 +2236,10 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                       farmerName: _lot?.farmerName,
                       actualQty: _lot?.actualQuantityKg,
                       unitPrice: _lot?.offeredPricePerKg,
+                      payableAmount: (_settlement?['finalAmount'] as num?)?.toDouble(),
+                      transportCost: (_settlement?['transportCost'] as num?)?.toDouble() ?? _lot?.logisticsCost,
+                      otherAdjustments: (_settlement?['otherCharges'] as num?)?.toDouble() ?? _lot?.otherAdjustments,
+                      fpoMargin: (_settlement?['fpoMargin'] as num?)?.toDouble(),
                       warehouseName: _dispatchDetails?['warehouseName']?.toString() ?? widget.farmName,
                     ),
                   ),
@@ -2243,6 +2265,8 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
 
   Widget _buildAgreementNotificationBanner(LotModel lot, BuildContext context) {
     final ver = lot.agreementVersion;
+    final verSuffix = (ver != null && ver.isNotEmpty) ? ' ($ver)' : '';
+    final verLabel = (ver != null && ver.isNotEmpty) ? 'version $ver' : 'the contract';
     final statusUpper = lot.status.toUpperCase();
     final remarks = lot.negotiationRemarks ?? '';
     final isRejected = statusUpper.contains('REJECTED');
@@ -2315,12 +2339,12 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
               Expanded(
                 child: Text(
                   isRejected
-                      ? 'Procurement Agreement Rejected ($ver)'
+                      ? 'Procurement Agreement Rejected$verSuffix'
                       : isAccepted
-                      ? 'Agreement Executed & Signed ($ver)'
+                      ? 'Agreement Executed & Signed$verSuffix'
                       : isAwaitingFpo
-                      ? 'Agreement Consented ($ver) — Awaiting FPO Signature'
-                      : 'New Procurement Agreement Formulated ($ver)',
+                      ? 'Agreement Consented$verSuffix — Awaiting FPO Signature'
+                      : 'New Procurement Agreement Formulated$verSuffix',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
@@ -2339,12 +2363,12 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
           const SizedBox(height: 6),
           Text(
             isRejected
-                ? 'You rejected version $ver. You can view the full commercial terms & re-negotiate with the Procurement Officer.'
+                ? 'You rejected $verLabel. You can view the full commercial terms & re-negotiate with the Procurement Officer.'
                 : isAccepted
-                ? 'Version $ver contract has been accepted and digitally signed.'
+                ? '$verLabel has been accepted and digitally signed.'
                 : isAwaitingFpo
-                ? 'You have consented to version $ver. Awaiting final counter-signature from ShreeAnna FPO Procurement Officer.'
-                : 'FPO Procurement Officer formulated your commercial purchase contract terms ($ver). Review pricing & details.',
+                ? 'You have consented to $verLabel. Awaiting final counter-signature from ShreeAnna FPO Procurement Officer.'
+                : 'FPO Procurement Officer formulated your commercial purchase contract terms$verSuffix. Review pricing & details.',
             style: TextStyle(
               fontSize: 11,
               color: isRejected
@@ -2627,20 +2651,22 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
 
 
   Widget _buildCompactAgreementCard(BuildContext context) {
-    final version = _lot?.agreementVersion ?? 'v2.0';
+    final version = _lot?.agreementVersion;
     final lotNum = (_lot != null && _lot!.lotNumber.isNotEmpty)
         ? _lot!.lotNumber
         : widget.lotNumber;
-    final agrCode = 'AGR-$version-$lotNum';
+    final agrCode = (version != null && version.isNotEmpty)
+        ? 'AGR-$version-$lotNum'
+        : 'AGR-$lotNum';
     final rate = (_lot?.offeredPricePerKg != null)
         ? 'Rate: ₹${_lot!.offeredPricePerKg!.toStringAsFixed(2)} / kg'
-        : 'Rate: ₹28.50 / kg';
+        : null;
     final agreedQuantityKg = _lot?.agreedQuantityKg;
     final qty = agreedQuantityKg != null
         ? 'Qty: ${agreedQuantityKg.toStringAsFixed(0)} kg'
         : (_lot?.estimatedQuantityKg != null
               ? 'Qty: ${_lot!.estimatedQuantityKg.toStringAsFixed(0)} kg'
-              : 'Qty: ${widget.quantity}');
+              : (widget.quantity.isNotEmpty ? 'Qty: ${widget.quantity}' : null));
     final millet =
         (_lot?.milletType != null && _lot!.milletType.trim().isNotEmpty)
         ? _lot!.milletType
@@ -2676,8 +2702,8 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
         : 'Pending';
 
     final detailsList = [
-      rate,
-      qty,
+      if (rate != null) rate,
+      if (qty != null) qty,
       if (millet.isNotEmpty) millet,
     ].join(' | ');
 
