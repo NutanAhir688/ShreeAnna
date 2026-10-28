@@ -124,6 +124,11 @@ public class WarehouseService : IWarehouseService
         var unitPrice = lot?.OfferedPricePerKg ?? 35;
         var totalPayable = actualQty * unitPrice;
         var receiptNum = $"WR-{(dispatch?.Id ?? lot?.Id ?? Guid.NewGuid()).ToString().Replace("-", "").Substring(0, 8).ToUpper()}";
+        var logisticsCost = lot?.LogisticsCost ?? 0m;
+        var otherAdjustments = lot?.OtherAdjustments ?? 0m;
+        var fpoMargin = Math.Round(totalPayable * 0.05m, 2);
+        var netPayable = Math.Max(0, totalPayable - logisticsCost - otherAdjustments);
+        if (netPayable == 0 && totalPayable > 0 && logisticsCost == 0 && otherAdjustments == 0) netPayable = totalPayable;
 
         return new WarehouseReceiptResponse(
             Guid.NewGuid(),
@@ -144,7 +149,11 @@ public class WarehouseService : IWarehouseService
             "BIN-A12",
             dispatch?.Warehouse?.Name ?? "Dahod Central Warehouse",
             "Warehouse receipt verified.",
-            dispatch?.DeliveredDate ?? lot?.UpdatedAt ?? DateTime.UtcNow
+            dispatch?.DeliveredDate ?? lot?.UpdatedAt ?? DateTime.UtcNow,
+            logisticsCost,
+            otherAdjustments,
+            fpoMargin,
+            netPayable
         );
     }
 
@@ -272,6 +281,11 @@ public class WarehouseService : IWarehouseService
         var unitPrice = lot?.OfferedPricePerKg ?? 35;
         var totalPayable = actualQty * unitPrice;
         var receiptNum = $"WR-{dispatch.Id.ToString().Replace("-", "").Substring(0, 8).ToUpper()}";
+        var logisticsCost = lot?.LogisticsCost ?? 0m;
+        var otherAdjustments = lot?.OtherAdjustments ?? 0m;
+        var fpoMargin = Math.Round(totalPayable * 0.05m, 2);
+        var netPayable = Math.Max(0, totalPayable - logisticsCost - otherAdjustments);
+        if (netPayable == 0 && totalPayable > 0 && logisticsCost == 0 && otherAdjustments == 0) netPayable = totalPayable;
 
         return new WarehouseReceiptResponse(
             Guid.NewGuid(),
@@ -292,7 +306,11 @@ public class WarehouseService : IWarehouseService
             request.StorageBin ?? "BIN-A12",
             dispatch.Warehouse?.Name ?? "Dahod Central Warehouse",
             request.ReceivingNotes,
-            DateTime.UtcNow
+            DateTime.UtcNow,
+            logisticsCost,
+            otherAdjustments,
+            fpoMargin,
+            netPayable
         );
     }
 

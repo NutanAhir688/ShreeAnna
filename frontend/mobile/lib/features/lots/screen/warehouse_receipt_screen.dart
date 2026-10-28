@@ -17,6 +17,9 @@ class WarehouseReceiptScreen extends StatefulWidget {
     this.unitPrice,
     this.payableAmount,
     this.warehouseName,
+    this.transportCost,
+    this.otherAdjustments,
+    this.fpoMargin,
   });
 
   final String? lotId;
@@ -27,6 +30,9 @@ class WarehouseReceiptScreen extends StatefulWidget {
   final double? unitPrice;
   final double? payableAmount;
   final String? warehouseName;
+  final double? transportCost;
+  final double? otherAdjustments;
+  final double? fpoMargin;
 
   @override
   State<WarehouseReceiptScreen> createState() => _WarehouseReceiptScreenState();
@@ -36,6 +42,7 @@ class _WarehouseReceiptScreenState extends State<WarehouseReceiptScreen> {
   final LotApi _lotApi = LotApi();
   bool _isLoading = true;
   Map<String, dynamic>? _receiptData;
+  Map<String, dynamic>? _settlementData;
   LotModel? _lotDetails;
 
   @override
@@ -73,8 +80,20 @@ class _WarehouseReceiptScreenState extends State<WarehouseReceiptScreen> {
         }
       }
 
+      Map<String, dynamic>? settlement;
+      try {
+        settlement = await _lotApi.getSettlementByLot(queryId);
+      } catch (_) {
+        if (widget.lotNumber != null && widget.lotNumber!.isNotEmpty && widget.lotNumber != queryId) {
+          try {
+            settlement = await _lotApi.getSettlementByLot(widget.lotNumber!);
+          } catch (_) {}
+        }
+      }
+
       setState(() {
         _receiptData = receipt;
+        _settlementData = settlement;
         _lotDetails = lot;
         _isLoading = false;
       });
@@ -82,6 +101,7 @@ class _WarehouseReceiptScreenState extends State<WarehouseReceiptScreen> {
       setState(() => _isLoading = false);
     }
   }
+
   Future<void> _downloadReceipt({
     required String receiptId,
     required String lotNo,
@@ -93,6 +113,9 @@ class _WarehouseReceiptScreenState extends State<WarehouseReceiptScreen> {
     required double rate,
     required double totalPayable,
     String? dateReceived,
+    double transportCost = 0.0,
+    double otherAdjustments = 0.0,
+    double fpoMargin = 0.0,
   }) async {
     try {
       if (!mounted) return;
@@ -115,6 +138,9 @@ class _WarehouseReceiptScreenState extends State<WarehouseReceiptScreen> {
         unitPrice: rate,
         totalPayable: totalPayable,
         dateReceived: dateReceived ?? DateTime.now().toString().split(' ').first,
+        transportCost: transportCost,
+        otherAdjustments: otherAdjustments,
+        fpoMargin: fpoMargin,
       );
 
       final cleanReceiptId = receiptId.replaceAll('/', '_').replaceAll('\\', '_');
@@ -171,7 +197,33 @@ class _WarehouseReceiptScreenState extends State<WarehouseReceiptScreen> {
     final expQty = (_receiptData?['expectedQuantityKg'] as num?)?.toDouble() ?? _lotDetails?.estimatedQuantityKg ?? widget.actualQty ?? 580.0;
     final actQty = (_receiptData?['actualReceivedQuantityKg'] as num?)?.toDouble() ?? _lotDetails?.actualQuantityKg ?? widget.actualQty ?? expQty;
     final rate = (_receiptData?['unitPrice'] as num?)?.toDouble() ?? _lotDetails?.offeredPricePerKg ?? widget.unitPrice ?? 35.0;
-    final totalPayable = (_receiptData?['totalPayableAmount'] as num?)?.toDouble() ?? (actQty * rate);
+    final grossAmount = (_settlementData?['grossAmount'] as num?)?.toDouble() ?? (actQty * rate);
+
+    final transportCost = (_receiptData?['logisticsCost'] as num?)?.toDouble() ??
+        (_settlementData?['transportCost'] as num?)?.toDouble() ??
+        _lotDetails?.logisticsCost ??
+        widget.transportCost ??
+        0.0;
+
+    final otherAdjustments = (_receiptData?['otherAdjustments'] as num?)?.toDouble() ??
+        (_settlementData?['otherCharges'] as num?)?.toDouble() ??
+        _lotDetails?.otherAdjustments ??
+        widget.otherAdjustments ??
+        0.0;
+
+    final fpoMargin = (_receiptData?['fpoMargin'] as num?)?.toDouble() ??
+        (_settlementData?['fpoMargin'] as num?)?.toDouble() ??
+        widget.fpoMargin ??
+        0.0;
+
+    double finalSettlement = (_receiptData?['netPayableAmount'] as num?)?.toDouble() ??
+        (_settlementData?['finalAmount'] as num?)?.toDouble() ??
+        widget.payableAmount ??
+        (grossAmount - transportCost - otherAdjustments);
+
+    if (finalSettlement <= 0 && grossAmount > 0 && transportCost == 0 && otherAdjustments == 0) {
+      finalSettlement = grossAmount;
+    }
 
     final isConfirmed = _receiptData != null ||
         _lotDetails?.status == 'STORED' ||
@@ -423,16 +475,24 @@ class _WarehouseReceiptScreenState extends State<WarehouseReceiptScreen> {
                         children: [
                           _moneyRow('Received Weight', '${actQty.toStringAsFixed(0)} kg'),
                           _moneyRow('Rate / kg', '₹${rate.toStringAsFixed(0)} / kg'),
+                          const Divider(height: 18, color: borderColor),
+                          _moneyRow('Procurement Gross Amount', _formatInr(grossAmount)),
+                          if (fpoMargin > 0)
+                            _moneyRow('FPO Facilitation Fee / Margin', _formatInr(fpoMargin)),
+                          if (transportCost > 0 || _settlementData != null)
+                            _moneyRow('Transport & Logistics Cost', _formatInr(transportCost)),
+                          if (otherAdjustments > 0 || _settlementData != null)
+                            _moneyRow('Other Adjustments', _formatInr(otherAdjustments)),
                           const Divider(height: 22, color: borderColor),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Text(
-                                'Final Payable Bill',
+                                'Final Settlement Payout',
                                 style: TextStyle(color: textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
                               ),
                               Text(
-                                '₹${totalPayable.toStringAsFixed(0)}',
+                                _formatInr(finalSettlement),
                                 style: const TextStyle(color: ShreeAnnaTheme.primaryGreen, fontSize: 24, fontWeight: FontWeight.bold),
                               ),
                             ],
@@ -454,8 +514,11 @@ class _WarehouseReceiptScreenState extends State<WarehouseReceiptScreen> {
                           expQty: expQty,
                           actQty: actQty,
                           rate: rate,
-                          totalPayable: totalPayable,
+                          totalPayable: finalSettlement,
                           dateReceived: receivedDate,
+                          transportCost: transportCost,
+                          otherAdjustments: otherAdjustments,
+                          fpoMargin: fpoMargin,
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: ShreeAnnaTheme.primaryGreen,
@@ -537,5 +600,14 @@ class _WarehouseReceiptScreenState extends State<WarehouseReceiptScreen> {
         ],
       ),
     );
+  }
+
+  static String _formatInr(num amount) {
+    final intVal = amount.round().toString();
+    final formatted = intVal.replaceAllMapped(
+      RegExp(r'(\d+?)(?=(\d\d)+(\d)(?!\d))'),
+      (Match m) => '${m[1]},',
+    );
+    return '₹$formatted';
   }
 }

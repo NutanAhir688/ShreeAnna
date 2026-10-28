@@ -906,6 +906,10 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                                         farmerName: _lot?.farmerName,
                                         actualQty: _lot?.actualQuantityKg,
                                         unitPrice: _lot?.offeredPricePerKg,
+                                        payableAmount: (_settlement?['finalAmount'] as num?)?.toDouble(),
+                                        transportCost: (_settlement?['transportCost'] as num?)?.toDouble() ?? _lot?.logisticsCost,
+                                        otherAdjustments: (_settlement?['otherCharges'] as num?)?.toDouble() ?? _lot?.otherAdjustments,
+                                        fpoMargin: (_settlement?['fpoMargin'] as num?)?.toDouble(),
                                         warehouseName: _dispatchDetails?['warehouseName']?.toString() ?? widget.farmName,
                                       ),
                                     ),
@@ -1313,6 +1317,10 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                     farmerName: _lot?.farmerName,
                     actualQty: _lot?.actualQuantityKg,
                     unitPrice: _lot?.offeredPricePerKg,
+                    payableAmount: (_settlement?['finalAmount'] as num?)?.toDouble(),
+                    transportCost: (_settlement?['transportCost'] as num?)?.toDouble() ?? _lot?.logisticsCost,
+                    otherAdjustments: (_settlement?['otherCharges'] as num?)?.toDouble() ?? _lot?.otherAdjustments,
+                    fpoMargin: (_settlement?['fpoMargin'] as num?)?.toDouble(),
                     warehouseName: _dispatchDetails?['warehouseName']?.toString() ?? widget.farmName,
                   ),
                 ),
@@ -2151,9 +2159,12 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
     final rateStr = rateNum != null
         ? '₹${rateNum.toStringAsFixed(0)} / kg'
         : null;
-    final billStr = (actualQty != null && rateNum != null)
-        ? '₹${(actualQty * rateNum).toStringAsFixed(0)}'
-        : null;
+    final netAmount = (_settlement?['finalAmount'] as num?)?.toDouble();
+    final billStr = netAmount != null
+        ? '₹${netAmount.round().toString().replaceAllMapped(RegExp(r'(\d+?)(?=(\d\d)+(\d)(?!\d))'), (m) => '${m[1]},')}'
+        : (actualQty != null && rateNum != null)
+            ? '₹${(actualQty * rateNum).round().toString().replaceAllMapped(RegExp(r'(\d+?)(?=(\d\d)+(\d)(?!\d))'), (m) => '${m[1]},')}'
+            : null;
 
     return Container(
       width: double.infinity,
@@ -2225,6 +2236,10 @@ class _LotDetailsScreenState extends State<LotDetailsScreen> {
                       farmerName: _lot?.farmerName,
                       actualQty: _lot?.actualQuantityKg,
                       unitPrice: _lot?.offeredPricePerKg,
+                      payableAmount: (_settlement?['finalAmount'] as num?)?.toDouble(),
+                      transportCost: (_settlement?['transportCost'] as num?)?.toDouble() ?? _lot?.logisticsCost,
+                      otherAdjustments: (_settlement?['otherCharges'] as num?)?.toDouble() ?? _lot?.otherAdjustments,
+                      fpoMargin: (_settlement?['fpoMargin'] as num?)?.toDouble(),
                       warehouseName: _dispatchDetails?['warehouseName']?.toString() ?? widget.farmName,
                     ),
                   ),
