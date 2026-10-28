@@ -108,8 +108,12 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
   }
 
   void _showContactOfficerModal(BuildContext context) {
-    const officerName = "Rajesh Sharma (Procurement Officer)";
-    const officerPhone = "+91 98765 43210";
+    final officerName = (_lot?.procurementOfficerName != null && _lot!.procurementOfficerName!.trim().isNotEmpty)
+        ? _lot!.procurementOfficerName!
+        : "Procurement Desk";
+    final officerPhone = (_lot?.procurementOfficerPhone != null && _lot!.procurementOfficerPhone!.trim().isNotEmpty)
+        ? _lot!.procurementOfficerPhone!
+        : "";
 
     showModalBottomSheet(
       context: context,
@@ -149,23 +153,23 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
+                    children: [
+                      const Text(
                         'Officer Name',
                         style: TextStyle(fontSize: 11, color: Color(0xFF687068)),
                       ),
                       Text(
                         officerName,
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                       ),
-                      SizedBox(height: 8),
-                      Text(
+                      const SizedBox(height: 8),
+                      const Text(
                         'Phone Number',
                         style: TextStyle(fontSize: 11, color: Color(0xFF687068)),
                       ),
                       Text(
-                        officerPhone,
-                        style: TextStyle(
+                        officerPhone.isNotEmpty ? officerPhone : 'Not Provided',
+                        style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF202420),
@@ -182,7 +186,7 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
                         onPressed: () {
                           Navigator.pop(ctx);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Calling Procurement Officer at $officerPhone...')),
+                            SnackBar(content: Text('Calling Procurement Officer at $officerPhone...')),
                           );
                         },
                         icon: const Icon(Icons.phone, size: 18),
@@ -225,8 +229,8 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
   Future<void> _triggerDownloadAgreement() async {
     final agrCode = _lot?.lotNumber != null ? 'AGR-${_lot!.lotNumber}' : 'AGR-${widget.lotId.substring(0, 6).toUpperCase()}';
     final version = _lot?.agreementVersion ?? 'v1.0';
-    final qty = _lot?.agreedQuantityKg ?? _lot?.actualQuantityKg ?? _lot?.estimatedQuantityKg ?? 450.0;
-    final unitPrice = _lot?.offeredPricePerKg ?? (_cert != null && _cert!['offeredPricePerKg'] != null ? (_cert!['offeredPricePerKg'] as num).toDouble() : 45.0);
+    final qty = _lot?.agreedQuantityKg ?? _lot?.actualQuantityKg ?? _lot?.estimatedQuantityKg ?? 0.0;
+    final unitPrice = _lot?.offeredPricePerKg ?? (_cert != null && _cert!['offeredPricePerKg'] != null ? (_cert!['offeredPricePerKg'] as num).toDouble() : 0.0);
     final logisticsCost = _lot?.logisticsCost ?? 0.0;
     final adjustments = _lot?.otherAdjustments ?? 0.0;
     final farmerName = _lot?.farmerName ?? 'Registered Farmer';
@@ -345,8 +349,8 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
   void _showDocumentPreviewModal() {
     final agrCode = _lot?.lotNumber != null ? 'AGR-${_lot!.lotNumber}' : 'AGR-${widget.lotId.substring(0, 6).toUpperCase()}';
     final version = _lot?.agreementVersion ?? 'v1.0';
-    final qty = _lot?.agreedQuantityKg ?? _lot?.actualQuantityKg ?? _lot?.estimatedQuantityKg ?? 450.0;
-    final unitPrice = _lot?.offeredPricePerKg ?? (_cert != null && _cert!['offeredPricePerKg'] != null ? (_cert!['offeredPricePerKg'] as num).toDouble() : 45.0);
+    final qty = _lot?.agreedQuantityKg ?? _lot?.actualQuantityKg ?? _lot?.estimatedQuantityKg ?? 0.0;
+    final unitPrice = _lot?.offeredPricePerKg ?? (_cert != null && _cert!['offeredPricePerKg'] != null ? (_cert!['offeredPricePerKg'] as num).toDouble() : 0.0);
     final subtotal = qty * unitPrice;
     final logisticsCost = _lot?.logisticsCost ?? 0.0;
     final adjustments = _lot?.otherAdjustments ?? 0.0;
@@ -740,10 +744,10 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
     final isFarmerAccepted = isAccepted || hasFarmerAccepted;
     final isPending = !isRejected && !isAccepted;
 
-    final version = _lot?.agreementVersion ?? (isRejected ? 'v1.0' : 'v2.0');
+    final version = _lot?.agreementVersion ?? (isRejected ? 'v1.0' : 'v1.0');
 
-    final qty = _lot?.agreedQuantityKg ?? _lot?.actualQuantityKg ?? _lot?.estimatedQuantityKg ?? 450.0;
-    final unitPrice = _lot?.offeredPricePerKg ?? (_cert != null && _cert!['offeredPricePerKg'] != null ? (_cert!['offeredPricePerKg'] as num).toDouble() : 45.0);
+    final qty = _lot?.agreedQuantityKg ?? _lot?.actualQuantityKg ?? _lot?.estimatedQuantityKg ?? 0.0;
+    final unitPrice = _lot?.offeredPricePerKg ?? (_cert != null && _cert!['offeredPricePerKg'] != null ? (_cert!['offeredPricePerKg'] as num).toDouble() : 0.0);
     final subtotal = qty * unitPrice;
     final logisticsCost = _lot?.logisticsCost ?? 0.0;
     final adjustments = _lot?.otherAdjustments ?? 0.0;
@@ -1317,7 +1321,9 @@ class _ProcurementAgreementScreenState extends State<ProcurementAgreementScreen>
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Rajesh Sharma (Procurement Officer) • Phone: +91 98765 43210',
+                                (_lot?.procurementOfficerName != null && _lot!.procurementOfficerName!.trim().isNotEmpty)
+                                    ? '${_lot!.procurementOfficerName}${(_lot?.procurementOfficerPhone != null && _lot!.procurementOfficerPhone!.trim().isNotEmpty) ? " • Phone: ${_lot!.procurementOfficerPhone}" : ""}'
+                                    : 'FPO Procurement Support Desk',
                                 style: const TextStyle(fontSize: 11, color: Color(0xFF707870)),
                               ),
                               const SizedBox(height: 10),
